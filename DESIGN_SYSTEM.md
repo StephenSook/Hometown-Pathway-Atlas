@@ -160,6 +160,23 @@ Tailwind 12-column grid. Common Atlas layouts:
 | Standard | `py-8 px-6` | `py-12 px-8` | `py-16 px-8` |
 | Compact | `py-4 px-4` | `py-6 px-6` | `py-8 px-8` |
 
+### 2.4 Z-index scale (locked across all fixed/absolute layers)
+
+Single source of truth — all fixed-position components reference this scale by name. Prevents collision between Navbar / Compliance Log / future modals/drawers.
+
+| Layer | Tailwind class | Numeric | Use |
+|-------|---------------|---------|-----|
+| Skip-to-content link | `z-50` | 50 | First focusable, must beat everything |
+| Modal / dialog overlay | `z-50` | 50 | Same plane as skip link (skip link wins on focus) |
+| Floating Navbar pill | `z-40` | 40 | Stays above page content + below modals |
+| Mobile menu drop | `z-40` | 40 | Sibling of Navbar pill, same plane |
+| Compliance Log panel (Day 6) | `z-30` | 30 | Below Navbar (so Navbar covers it on scroll) |
+| Tooltip on map hover | `z-20` | 20 | Above choropleth + analog cards |
+| CountyMap analog pins / pulses | `z-10` | 10 | Above choropleth fill, below tooltip |
+| Default page content | (none) | 0 | Body flow |
+
+When adding a new fixed/sticky layer: pick from this scale. NEVER introduce ad-hoc values like `z-[27]`.
+
 ---
 
 ## 3. Mobile-first breakpoint specs
