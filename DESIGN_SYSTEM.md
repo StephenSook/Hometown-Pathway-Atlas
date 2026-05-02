@@ -33,8 +33,8 @@ Reference: `docs/moodboard/06_palette_swatches.png`
 | Role | Hex | RGB | Use |
 |------|-----|-----|-----|
 | **Brand navy** | `#1F3A5F` | rgb(31, 58, 95) | Headers, primary text, source-county highlight, primary buttons |
-| **Olympic blue** | `#5B7DB1` | rgb(91, 125, 177) | ParityPanel left column, Olympic data series, analog pins |
-| **Paralympic clay** | `#B96B5C` | rgb(185, 107, 92) | ParityPanel right column, Paralympic data series, secondary CTAs |
+| **Olympic blue** | `#5B7DB1` | rgb(91, 125, 177) | ParityPanel left column, Olympic data series, analog pins. **USE: bar fills, large stat numbers (≥24px), icons. NEVER body text on white** (fails WCAG AA at small sizes) |
+| **Paralympic clay** | `#B96B5C` | rgb(185, 107, 92) | ParityPanel right column, Paralympic data series, secondary CTAs. **USE: bar fills, large stat numbers (≥24px), icons. NEVER body text on white** (fails WCAG AA at small sizes) |
 | **Warm neutral** | `#F5F1EB` | rgb(245, 241, 235) | Page background, card backgrounds where contrast needed |
 | **Card white** | `#FFFFFF` | rgb(255, 255, 255) | Card surfaces over warm neutral page |
 | **Soft border** | `#E7E2D9` | rgb(231, 226, 217) | Card borders, dividers |
@@ -162,20 +162,21 @@ Tailwind 12-column grid. Common Atlas layouts:
 
 Tailwind defaults locked: `sm: 640px / md: 768px / lg: 1024px / xl: 1280px / 2xl: 1536px`.
 
-**Component-level mobile rules (NOT optional):**
+**Component-level mobile rules (NOT optional). Concrete Tailwind class examples:**
 
-| Component | Mobile behavior (≤768px) |
-|-----------|--------------------------|
-| `Navbar` | Pill collapses to compact: logo + hamburger only; nav items in dropdown |
-| `Hero` | Full-width single column. Heading scales 40px. ZIP input full-width |
-| `RegionHeader` | Stacks vertically: county name, state+MSA on second line, population on third |
-| `ParityPanel` | **Stacks vertical (Olympic on top, Paralympic below) — NEVER stacks side-by-side at small widths.** Equal vertical real estate. Same hue weight. |
-| `SportMix` | Horizontal bars retain layout, scale down |
-| `AnalogList` | Stacks vertically as full-width cards. Sticky disabled on mobile (UX worse than scroll). |
-| `CountyMap` | Snap to top of viewport, narrative cards stack below — NYT pattern |
-| `PatternGapPanel` | Stacks vertically (Observed Strength → Public Access Signal → Opportunity Hypothesis) |
-| `ComplianceLog` | Bottom drawer slide-up triggered by floating action button. NEVER fixed sidebar (eats screen space) |
-| `Scrollytelling` | Single column. Map renders inline at chapter break, narrative scrolls beneath |
+| Component | Mobile behavior (≤768px) | Tailwind pattern |
+|-----------|--------------------------|------------------|
+| `Navbar` | Pill collapses to compact: logo + hamburger only; nav items in dropdown | `flex items-center justify-between md:justify-center md:gap-8` + `<nav className="hidden md:flex">` for desktop links |
+| `Hero` | Full-width single column. Heading scales 40px. ZIP input full-width | `<h1 className="text-4xl md:text-6xl lg:text-7xl">` + `<form className="w-full md:max-w-xl mx-auto">` |
+| `RegionHeader` | Stacks vertically: county name, state+MSA on second line, population on third | `flex flex-col gap-2 md:flex-row md:items-baseline md:justify-between md:gap-6` |
+| `ParityPanel` | **Stacks vertical (Olympic on top, Paralympic below) — NEVER stacks side-by-side at small widths.** Equal vertical real estate. Same hue weight. | `<div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-soft-border">` |
+| `SportMix` | Horizontal bars retain layout, scale down | `<div className="flex flex-col gap-2 [&>div]:flex [&>div]:items-center [&>div]:gap-3">` |
+| `AnalogList` | Stacks vertically as full-width cards. Sticky disabled on mobile (UX worse than scroll). | `<div className="grid grid-cols-1 md:grid-cols-3 gap-6">` (no `sticky` on mobile) |
+| `CountyMap` | Snap to top of viewport, narrative cards stack below — NYT pattern | `<div className="flex flex-col md:flex-row md:gap-8"><div className="md:order-2 md:flex-[3]"><Map /></div><div className="md:order-1 md:flex-[2]">…</div></div>` |
+| `PatternGapPanel` | Stacks vertically (Observed → Public Access → Hypothesis) | `<div className="grid grid-cols-1 md:grid-cols-3 gap-6">` |
+| `ComplianceLog` | Bottom drawer slide-up triggered by floating action button. NEVER fixed sidebar (eats screen space) | `<div className="fixed bottom-0 left-0 right-0 md:left-auto md:bottom-auto md:top-24 md:right-6 md:w-[380px]">` |
+| `Scrollytelling` | Single column. Map renders inline at chapter break, narrative scrolls beneath | `<section className="grid grid-cols-1 md:grid-cols-[40fr_60fr] gap-8">` |
+| `Pillar5Strip` | Three columns stack vertically | `<div className="grid grid-cols-1 md:grid-cols-3 gap-6">` |
 
 ---
 
@@ -400,10 +401,12 @@ Reference: `docs/moodboard/04_county_map.png`
 - Evidence row: metric + value + caveat (mono)
 - Confidence pill at bottom
 
-**Locked language rules:**
-- Observed Strength uses declarative tone ("Cobb County shows strong Olympic swimming representation per capita")
-- Public Access Signal acknowledges data limit ("Adaptive aquatics presence in our indexed sources is limited")
-- Opportunity Hypothesis uses conditional ONLY ("Where strong Olympic swimming coexists with limited public adaptive signal, a pattern gap could exist")
+**Locked language rules (ALL conditional — no declarative claims about geography or causation):**
+- Observed Strength: data-supported observation, conditional phrasing — *"Cobb County's Olympic swimming representation could be associated with above-median per-capita patterns in our indexed sources"*
+- Public Access Signal: directory-supported observation, conditional + data-limit acknowledgement — *"Adaptive aquatics presence in our indexed sources is limited; the pattern below may not reflect full regional access"*
+- Opportunity Hypothesis: cautious inference framing — *"Where Olympic swimming representation coexists with limited public adaptive signal, a pattern gap could exist — interpretation only, not causation"*
+
+**Banned phrases (auditor + design-time strip):** "produces", "creates", "leads to", "guarantees", "is known for", "will", "makes", "shows strong" (declarative without "could").
 
 ### 4.16 ComplianceLog ★ (Pillar 4 demo moment)
 
@@ -415,12 +418,14 @@ Reference: `docs/moodboard/05_compliance_log.png`
 - Header strip: navy `#1F3A5F` text "LIVE AUDIT" mono uppercase + green pulse dot
 - Body split into TWO columns: "RULES" + "GEMINI" separated by hairline divider
 - Each column shows audit log entries stacked vertically
-- Entry row: status dot + monospace timestamp (`14:02:11`) + check name (`causal_tone`) + status word (`PASS` / `FAIL` / `SUCCESS`)
+- Entry row: status dot + monospace ISO8601 timestamp (`2026-05-11T14:02:11Z`) + check name (`causal_tone`) + status word — **enum LOCKED to PLAN.md Shared Contracts: `pass` / `fail` / `fixed`** (lowercase, NEVER `SUCCESS`)
 
-**Status dot semantic:**
-- Gray = pass (auto-collapses after 1.5s)
-- Amber `#D97706` = fail caught (stays expanded)
-- Green `#2E8B57` = fixed (replaces fail in place via crossfade)
+**Status dot semantic (matches `compliance_log[].status` contract enum exactly):**
+- Gray = `pass` (auto-collapses after 1.5s)
+- Amber `#D97706` = `fail` (stays expanded, shows banned phrase highlighted)
+- Green `#2E8B57` = `fixed` (replaces `fail` in place via 300ms crossfade)
+
+**Demo-mode prop (`demo: boolean`):** when `true`, ComplianceLog renders a canonical pre-scripted `fail` → `fixed` sequence regardless of live Gemini output. Fail entry shows "Draft contained 'produces athletes'" → fixed entry shows "region shows representation patterns". Ensures Pillar 4 demo moment is reproducible during recording. Never enable in production.
 
 **Fail entry expansion (the demo moment):**
 - Shows banned phrase highlighted in mono with strikethrough
@@ -433,6 +438,24 @@ Reference: `docs/moodboard/05_compliance_log.png`
 ### 4.17 LogEntry (sub-component)
 
 Detailed in 4.16. Single audit log row.
+
+### 4.18 Pillar5Strip ★ (Business Numbers — Sookra-flagged silent killer)
+
+**Why it exists:** NotebookLM cross-source synthesis flagged Pillar 5 (Business Numbers — TAM, cost-per-incident, revenue model) as the same vulnerability that lost the prior Compass build. Adding visible Pillar 5 surface to design system so it cannot be skipped Day 6.
+
+**Anatomy:**
+- Horizontal strip at bottom of HomePage and AboutPage (two surfaces)
+- Card on `#F5F1EB` warm neutral, `rounded-2xl`, `border-soft-border`, `p-6`, `shadow-sm`
+- Eyebrow: JetBrains Mono "WHO THIS IS FOR" uppercase navy `#1F3A5F`
+- Three columns side-by-side (mobile: stack):
+  - **TAM column:** Inter weight 700 large stat (≥40px) showing target audience number, e.g., `~6,000` (NGB recruitment programs) or `~50M` (youth athletic households). Below in Inter 14px gray, the audience description. Source citation in 11px Instrument Serif italic at bottom.
+  - **Cost framing column:** stat showing the cost-of-incident or visibility gap, e.g., `Zero` (existing public county-level Atlas tools) or `$150` (per athlete annual travel cost saved by hometown program awareness). Description + source.
+  - **Revenue model column:** Pill or badge showing the model — "B2B licensing → NGBs", "B2G partnerships → state recreation departments", "Open source + sponsored deployment" — Inter 14px weight 600.
+- Below the three columns: a small italic Instrument Serif callout — *"Built for fans, parents, NGB recruiters, and state recreation programs"*
+
+**Locked rule:** Pillar 5 numbers are placeholder until Day 6 lock. Design system reserves the surface; copy is locked Day 6 per PLAN.md task 3.16. Do not ship without all three numbers visible.
+
+**ARIA:** `<section aria-labelledby="pillar5-eyebrow">` with each column as `<article>`.
 
 ---
 
@@ -501,26 +524,33 @@ Total Framer Motion animations active on screen at any time: **≤8**. Beyond th
 
 Atlas does NOT use stock photos or athlete photographs (NIL DQ). Custom illustrated SVG accents only.
 
-### 6.1 Climate zone icons (custom SVG)
+### 6.1 Climate zone icons (Day 6 Gate — Lucide React, NOT custom SVG)
 
-7 illustrated icons, sepia ink hand-drawn aesthetic:
-- Humid subtropical (rolling hills + sun)
-- Marine west coast (waves + cloud)
-- Semi-arid (cactus silhouette + sun)
-- Continental (deciduous tree + temperature gauge)
-- Subarctic (pine + snowflake)
-- Mediterranean (olive branch + sun)
-- Tropical (palm + raindrop)
+**Use existing Lucide React icons (MIT licensed, already in stack).** Custom illustration is Layer B opt-in only — see §6.2.
 
-Stored as `frontend/src/assets/climate/*.svg`. 24x24 + 48x48 variants.
+7 climate zones map to Lucide icons:
+- Humid subtropical → `Sun` + `Droplets` paired
+- Marine west coast → `Cloud`
+- Semi-arid → `Flame`
+- Continental → `Trees`
+- Subarctic → `Snowflake`
+- Mediterranean → `SunMedium`
+- Tropical → `CloudRain`
 
-### 6.2 Custom map accents (Layer B)
+24x24 size, navy `#1F3A5F` color, paired with text label always.
 
-Reference: `docs/moodboard/04_county_map.png` periphery
-- Subtle topographic curves (mountain ranges as ink line accents)
-- Coastline accents (3-4 places — California, NE, FL, Gulf)
+### 6.2 Custom map accents (Layer B opt-in ONLY — Day 8 if Days 1-7 clean)
+
+**Cut from Day 6 Gate per Phase D review (devils-advocate + codex).** Custom illustration consumes 4-8hr that Stephen needs for demo recording Days 9-10.
+
+Default CountyMap implementation: clean choropleth from `react-simple-maps` with no custom accents. Source highlighted in navy, analog pins in Olympic blue, connection arcs in clay `#B96B5C` — these are SVG primitives, no illustration work needed.
+
+Optional Layer B opt-in (Day 8 only if Day 6 Gate green AND Layers A-C complete):
+- Subtle topographic curves at periphery (sepia ink lines, 30-40% opacity)
+- 3-4 coastline accents (CA, NE, FL, Gulf)
 - Hand-drawn directional arrows on connection arcs
-- All sepia ink style at 30-40% opacity
+
+Sources: public-domain USGS topographical SVG. Stephen's call Day 8 EOD whether to add.
 
 ### 6.3 Sources
 
@@ -573,13 +603,16 @@ This preserves the side-by-side parity discipline even when data is sparse. Neve
 | Body `#1C2433` | Card `#FFFFFF` | 14.0:1 | ✅ AAA |
 | Muted `#6B7280` | Card `#FFFFFF` | 4.6:1 | ✅ AA |
 | Navy `#1F3A5F` | Card `#FFFFFF` | 11.2:1 | ✅ AAA |
-| Olympic `#5B7DB1` | Card `#FFFFFF` | 4.7:1 | ✅ AA |
-| Paralympic `#B96B5C` | Card `#FFFFFF` | 4.6:1 | ✅ AA |
+| Olympic `#5B7DB1` (large text/bars only) | Card `#FFFFFF` | **4.19:1** | ⚠️ FAILS AA for body text (<18.66px). PASSES AA for large text (≥24px or ≥18.66px bold) at 3:1 threshold. **USAGE RULE:** large stat numbers, bar fills, icons only. Body text uses Navy. |
+| Paralympic `#B96B5C` (large text/bars only) | Card `#FFFFFF` | **3.95:1** | ⚠️ FAILS AA for body text. PASSES AA for large text. Same usage rule as Olympic. |
 | White on accent teal `#2E8B57` | — | 4.5:1 | ✅ AA |
-| White on amber `#D97706` | — | 3.8:1 | ⚠️ — use only on large text (24px+) or with icon. For status pills on white bg use `#1C2433` text |
+| White on amber `#D97706` | — | 3.8:1 | ⚠️ Large text only. **For status pills use `#1C2433` text** (verified 6.4:1 contrast) |
 | White on danger `#B91C1C` | — | 5.5:1 | ✅ AA |
 
-**Action:** For status pill `#D97706` amber, text uses `#1C2433` not white (verified contrast 6.4:1).
+**Locked AA usage rules:**
+- Olympic + Paralympic accents: large-text only (≥24px). For body text on white, always use Navy `#1F3A5F`.
+- Amber pill: dark text `#1C2433`, never white.
+- All evidence pills: must include text label AND icon (color is never sole information carrier per WCAG 1.4.1).
 
 ### 8.2 Keyboard navigation
 
@@ -720,16 +753,68 @@ STATUS_TEMPLATE.md                       ← handoff template
 
 ---
 
-## 13. Note for Vinh (per pre-audit recommendation)
+## 13. Note for Vinh — Day 1 EOD review required
 
-This document specifies what the user sees. It does not change API shapes or data contracts. If you spot anything that implies a different backend response shape than what's in `PLAN.md` Shared Contracts, **flag it before implementing**. Examples that would matter:
+This document specifies what the user sees. **Required Day 1 EOD checks before coding starts:**
 
-- ParityPanel evidence pill semantic ("high/medium/low") must match the `*_evidence` column in `county_profiles.parquet`
-- Pattern Gap categories ("Observed Strength" / "Public Access Signal" / "Opportunity Hypothesis") must match `category` enum in `/api/pathway/{fips}` response
-- ComplianceLog entry shape (`{layer, check, status, details, ts}`) must match `compliance_log[]` in `/api/region` response
+### 13.1 Verify these contracts match (in `PLAN.md` Shared Contracts)
 
-If your implementation diverges, raise it — design system follows backend reality, not the other way around for these data-bound fields.
+| DESIGN_SYSTEM.md surface | PLAN.md contract field | Required value |
+|---|---|---|
+| ParityPanel evidence pill (§4.4) | `county_profiles.parquet` `*_evidence` column | `"high" \| "medium" \| "low"` |
+| Pattern Gap category badge (§4.15) | `/api/pathway/{fips}` `category` field | `"observed_strength" \| "public_access_signal" \| "opportunity_hypothesis"` |
+| ComplianceLog entry status (§4.16) | `/api/region` `compliance_log[].status` | **`"pass" \| "fail" \| "fixed"` — lowercase, NOT `PASS/FAIL/SUCCESS`** |
+| ComplianceLog timestamp (§4.16) | `/api/region` `compliance_log[].ts` | ISO8601 (`2026-05-11T14:02:11Z`) |
+| ComplianceLog layer (§4.16) | `/api/region` `compliance_log[].layer` | `"rules" \| "gemini"` |
+
+### 13.2 New contract Vinh needs to add (codex review caught this gap)
+
+CountyMap (§4.13) hover tooltip needs per-county metrics for arbitrary counties (not just the one being viewed). PLAN.md only defines `/api/region` returning data for ONE FIPS. Vinh: add `/api/stats/county/{fips}` lightweight endpoint returning `{fips, county_name, olympic_per_100k, paralympic_per_100k, evidence}` for hover tooltips.
+
+Alternative: bake all county profiles into a small static parquet served from the frontend. Either works — Vinh's call.
+
+### 13.3 Hard deadline
+
+**Day 1 EOD:** Vinh confirms contract compatibility in PLAN.md as a comment or status update. If anything diverges, escalate before Stephen starts component implementation Day 2 AM.
+
+If your implementation diverges from these contract values, raise it BEFORE committing. Design system follows backend reality, not the other way around for data-bound fields.
 
 ---
 
-_Locked 2026-05-01 by Stephen + 4-reviewer adversarial pass. Maintainer: Stephen Sookra. Contributions to design system require update to this file + commit with `feat(design):` or `fix(design):` prefix._
+## 14. Note on moodboard image vs spec authority
+
+The moodboard images at `docs/moodboard/*.png` are **visual targets only**, not literal copy targets. Where image content drifts from spec, spec wins.
+
+Specifically:
+- `07_scrollytelling.png` includes `2026 Winter athletes` references. **Disregard the year.** Production data window is 2016-2024 only per CLAUDE.md locked decision D9. Implementation uses computed dataset stats from 2016-2024.
+- `02_parity_panel.png` footnote text includes auto-generated gibberish ("status sherid in 20%"). Disregard. Implementation uses spec'd text: *"Per 100k pop. Percentile rank vs national distribution. Never merged."*
+- `05_compliance_log.png` includes auto-generated check name `no_parlet_r` — placeholder, ignore. Production check names: `no_athlete_names`, `causal_tone`, `parity_check`, `conditional_phrasing`, `forbidden_terminology`.
+- `01_hero.png` has "EXPLORE METHOD ABOUT" nav — production nav is `Region` `Methodology` `About` (avoiding "EXPLORE" overuse).
+
+The moodboard images lock palette + composition + typography hierarchy + motion implied. They do NOT lock specific text content.
+
+---
+
+## 15. Implementation Build Order (component-first sequence)
+
+Per claude-council Executor lens — Monday morning Stephen needs to know which component first.
+
+| Day | Components to build (in order) | Rationale |
+|-----|-------------------------------|-----------|
+| Day 2 AM | Foundation tokens (palette, typography, spacing in `tailwind.config.ts`), `lib/api.ts`, `lib/motion.ts`, `lib/format.ts`, `lib/mocks.ts` | Everything depends on these |
+| Day 2 PM | `ZipInput` (§4.1) + `Navbar` (§4.2) + `pages/HomePage.tsx` shell | Landing surface, simplest components |
+| Day 3 AM | `RegionHeader` (§4.3) + `EvidenceLabel` (§4.8) | Display primitives reused across multiple components |
+| Day 3 PM | `ParityPanel` ★ (§4.4) + `SportMix` (§4.5) | Region profile core. ParityPanel is critical anchor — get this right first |
+| Day 4 AM | `ClimateBadge` (§4.6) + `AdaptiveAccessCard` (§4.7) | Region profile completion |
+| Day 4 PM | `AnalogList` + `AnalogCard` + `SimilarityBreakdown` + `TradeoffPanel` (§4.9–4.12) | Peer comparison |
+| Day 5 AM | `CountyMap` + `CountyTooltip` (§4.13–4.14) | Map layer. Verify Vinh's new `/api/stats/county/{fips}` endpoint works |
+| Day 5 PM | `PatternGapPanel` + `GapCard` (§4.15) | Pattern gaps surface |
+| Day 6 AM | `ComplianceLog` ★ + `LogEntry` (§4.16–4.17) | **Pillar 4 demo moment.** Spec `demo-mode` prop. Test fail→fixed sequence reliability. |
+| Day 6 PM | `Pillar5Strip` (§4.18) + Loading + Error states (§7) + Mobile responsive pass + Accessibility pass | Day 6 Gate work |
+| Day 7+ | Layer B polish woven into existing components per §10 | Ambitious layer additions |
+
+**Critical rule:** never start a Day-N component until Day-(N-1) ones pass visual eyeball test against moodboard. No leapfrogging.
+
+---
+
+_Locked 2026-05-01 by Stephen + 4-reviewer adversarial pass (codex / devils-advocate / sookra-council / claude-council). Maintainer: Stephen Sookra. Contributions to design system require update to this file + commit with `feat(design):` or `fix(design):` prefix._
