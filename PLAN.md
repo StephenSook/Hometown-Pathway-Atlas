@@ -39,6 +39,8 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started · ⛔ blocked · ✂️
 | 0.5 | GCP project + APIs enabled | — | Stephen+Vinh | ⬜ | Project: `pathway-atlas-hackathon`. APIs: Cloud Run, Vertex AI, Cloud Build, Artifact Registry, Secret Manager. Budget alert $50. |
 | 0.6 | gcloud CLI installed + authed | local | Stephen+Vinh | ⬜ | `gcloud auth login` + `gcloud config set project pathway-atlas-hackathon` on both laptops. |
 | 0.7 | Hello-world Cloud Run deploy | `hello/` | Vinh | ⬜ | FastAPI + Vertex AI single endpoint. **Most important 30 min of Day 1.** Pass = `{"message": "..."}`. |
+| 0.8 | Lock design system + moodboard | `DESIGN_SYSTEM.md`, `docs/moodboard/` | Stephen | ✅ | Done May 1. 7 high-fi mockups + 11+4 section spec. 4-reviewer adversarial pass complete (codex/devils-advocate/sookra-council/claude-council). |
+| 0.9 | Vinh contract review of DESIGN_SYSTEM.md §13 | reads `DESIGN_SYSTEM.md` | Vinh | ⬜ | **Day 1 EOD deadline.** Verify (a) `compliance_log[].status` enum is `pass\|fail\|fixed` lowercase, (b) `compliance_log[].ts` is ISO8601, (c) decide on `/api/stats/county/{fips}` endpoint OR static parquet for map tooltips. Comment confirmation in this row. |
 
 ### Phase 1 — Data ingest pipeline (Days 1–3, Vinh)
 
@@ -77,9 +79,9 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started · ⛔ blocked · ✂️
 | # | Component | File(s) | Owner | Status | Deps | Notes |
 |---|---|---|---|---|---|---|
 | 3.1 | Vite+React+TS+Tailwind scaffold | `frontend/` | Stephen | ⬜ | 0.2 | Day 1 PM. Lock visual ambition target — Layer B begins now. |
-| 3.2 | Visual design system | `frontend/src/styles/`, `tailwind.config.ts` | Stephen | ⬜ | 3.1 | Day 1-2. Navy #1F3A5F + accent #2E75B6 + warm neutral #F5F1EB. Inter or IBM Plex. NO red/white/blue. NO IOC ring aesthetic. |
-| 3.3 | Component library installed | `package.json` | Stephen | ⬜ | 3.1 | Day 2. shadcn/ui base + Framer Motion + react-simple-maps + Recharts + React Query. |
-| 3.4 | Wireframes for key screens | `docs/wireframes/` (optional) | Stephen | ⬜ | — | Day 1 PM. Hero / region profile / analog detail. Hand-drawn or Figma OK. |
+| 3.2 | Visual design tokens (Tailwind config) | `frontend/src/styles/`, `tailwind.config.ts` | Stephen | ⬜ | 3.1 | Day 1-2. **Source of truth: `DESIGN_SYSTEM.md` §1.** All palette + typography + spacing tokens implement the locked spec — no improvising. |
+| 3.3 | Component library installed | `package.json` | Stephen | ⬜ | 3.1 | Day 2. shadcn/ui base + Framer Motion + react-simple-maps + Recharts + React Query + Lucide React (Lucide replaces custom climate SVGs per DESIGN_SYSTEM.md §6.1). |
+| 3.4 | Wireframes for key screens | `docs/wireframes/` (skipped) | Stephen | ✂️ | — | Superseded by `docs/moodboard/01-07.png`. Wireframes not needed — moodboard images + DESIGN_SYSTEM.md §4 component anatomy are the visual brief. |
 | 3.5 | ZipInput + landing page | `frontend/src/pages/HomePage.tsx`, `components/ZipInput.tsx` | Stephen | ⬜ | 3.2 | Day 2 AM. Single CTA. ZIP validation. |
 | 3.6 | RegionHeader + ParityPanel | `frontend/src/components/RegionProfile/*` | Stephen | ⬜ | 3.2 | Day 2 PM. Side-by-side O/P metrics. EvidenceLabel badge. **Never merge into single number.** |
 | 3.7 | Mock API responses | `frontend/src/lib/mocks.ts` | Stephen | ⬜ | 2.2 | Day 2. Aligned to schema. Frontend builds against mocks Day 2-3, switches to real Day 4. |

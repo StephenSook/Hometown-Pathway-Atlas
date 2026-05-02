@@ -384,4 +384,29 @@ Three follow-ups for Q&A:
 
 ---
 
-_Last updated: 2026-05-01. Reference PLAN.md for status; reference architecture spec for system design; this doc is execution-only._
+## Addendum — DESIGN_SYSTEM.md is now source of truth (2026-05-01)
+
+**Section 3 "Visual Design System (lock Day 1–2)" of this doc is SUPERSEDED by `DESIGN_SYSTEM.md`.** Do not implement from this doc's §3 — implement from DESIGN_SYSTEM.md §1 (Foundation), §4 (Component anatomy with all states), §5 (Motion choreography), §8 (Accessibility), §15 (Implementation Build Order).
+
+This doc remains source of truth for:
+- §1 Philosophy (3 rules: polish degrades / Compliance Log centerpiece / Layer B woven)
+- §4 Daily component build order with day-by-day breakdown
+- §7 Frontend → backend pre-emption ideas (mocks-first, cache aggressive, demo prefetch, auditor regex contributions, methodology footnotes)
+- §8 Anti-patterns I'm not falling into
+- §9 The pitch I'm rehearsing
+
+When DESIGN_SYSTEM.md and this doc disagree on a visual decision (palette, typography, component anatomy), DESIGN_SYSTEM.md wins.
+
+Critical updates to know:
+- Custom climate SVGs: CUT. Use Lucide React icons per DESIGN_SYSTEM.md §6.1.
+- Custom map illustrated accents: CUT for Day 6 Gate. Layer B opt-in only Day 8.
+- Pillar 5 (Business Numbers): now has dedicated component spec — Pillar5Strip per DESIGN_SYSTEM.md §4.18. Place at Hero footer + AboutPage. Locked Day 6.
+- ComplianceLog: must implement `demo-mode` prop per DESIGN_SYSTEM.md §4.16. Demo reliability requirement.
+- Status enum: `pass | fail | fixed` lowercase. NEVER `PASS/FAIL/SUCCESS` (Vinh's contract).
+- Olympic blue + Paralympic clay: large-text only on white (>=24px). Body text uses Navy.
+
+Reference: `docs/moodboard/*.png` for visual targets.
+
+---
+
+_Last updated: 2026-05-01. Reference PLAN.md for status; reference architecture spec for system design; reference DESIGN_SYSTEM.md for visual identity; this doc is execution roadmap._

@@ -134,6 +134,9 @@ If any of these fail at end of Day 6, all ambitious layers are paused until Day 
 - docs/02_vinh_handoff.docx — operational backend guide, conservative scope
 - docs/03_demo_outline.docx — demo video storyboard
 - docs/04_maximum_scope_addendum.docx — Maximum scope additions, layer cut triggers, updated timeline
+- DESIGN_SYSTEM.md — visual identity spec (palette, typography, 17 components with anatomy + states, motion choreography, accessibility, build order Day 2→Day 6). Locked May 1 after 4-reviewer adversarial pass. Source of truth for everything visual.
+- docs/moodboard/01-07.png — high-fidelity visual targets (hero, parity panel, analog cards, county map, compliance log, palette swatches, scrollytelling). Generated via Banana skill. Visual benchmark when implementing components.
+- REFERENCE_FINDINGS.md — Phase A research dossier (NYT/Bloomberg/Pudding/Reuters/Census patterns + Magic 21st React components + audit feed UIs). Input to DESIGN_SYSTEM.md.
 
 When asked about architectural decisions, check the architecture spec first.
 When proposing changes that conflict with locked decisions above, flag it explicitly and ask for confirmation before proceeding.
