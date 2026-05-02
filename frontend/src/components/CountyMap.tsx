@@ -9,22 +9,31 @@
  * - All counties: `warm-neutral` fill (no per-county metric data yet)
  * - Source FIPS: `navy` fill + label callout
  * - Analog FIPSes: lighter olympic-blue tint + olympic-blue circle pin
- * - Connection arcs: paralympic-clay dotted Bezier with arrowhead marker
+ * - Similarity arcs: paralympic-clay dotted Bezier with arrowhead marker
  * - Bottom-right legend card explains the three marks
+ * - Top-right limited-data chip surfaces when any FIPS is missing a centroid
  *
  * Per-100k choropleth gradient is intentionally deferred — backend `/api/region`
- * does not yet expose neighbor-county metrics. Plan 3.9 ships highlights only.
+ * does not yet expose neighbor-county metrics. PLAN 3.9 ships highlights only.
  *
  * Accessibility:
- * - Outer figure: role="img" (DESIGN_SYSTEM §8.3 verbatim).
- * - Source + analog counties are Tab-reachable with descriptive aria-label —
- *   the 4 highlighted counties are what matter to AT users; the 3000+
- *   background counties remain pointer-only to keep keyboard nav usable.
- * - Hover tooltip is a pointer affordance only; AT consumers read each
- *   highlighted county's aria-label directly.
+ * - Outer figure carries an aria-label but NOT role="img" — role="img" makes
+ *   all descendants presentational, hiding the focusable Geography aria-labels
+ *   AND the Legend from AT (W3C ACT-Rules 307n5z, MDN ARIA img role).
+ * - Source + analog Geographies are Tab-reachable with descriptive aria-label.
+ *   Background counties stay tabIndex={-1} to keep keyboard nav usable.
+ * - Visible keyboard focus ring lives in `index.css` (`.rsm-geography
+ *   [tabindex='0']:focus-visible`) — react-simple-maps merges focus into hover
+ *   internally, so we restore the focus indicator at the CSS layer.
  *
- * React 19 risk: `react-simple-maps` v3 still pulls in `prop-types`. If
- * runtime errors surface here, swap to `@nivo/geo` per PLAN.md task 3.9.
+ * Performance:
+ * - Geography style objects are memoized const (SOURCE_STYLE / ANALOG_STYLE /
+ *   DEFAULT_STYLE). `<Geography>` is wrapped in `memo()` upstream; without
+ *   stable style refs, every hover would re-render all 3000+ counties.
+ *
+ * React 19 risk: `react-simple-maps` v3 still pulls in `prop-types`. Added as
+ * a direct dep so Vite/Rolldown resolves it. If runtime errors surface, swap
+ * to `@nivo/geo` per PLAN.md task 3.9.
  */
 
 import { useCallback, useId, useMemo, useState } from 'react';
@@ -43,8 +52,9 @@ import { fmtPerCapita } from '../lib/format';
 import { cn } from '../lib/utils';
 
 // Hardcoded centroids for the four counties used in the mock dataset.
-// Backend contract addition tracked in PLAN.md task 0.9 — once the
-// `AnalogEntry` shape grows a `centroid` field, this lookup goes away.
+// Backend contract addition tracked in PLAN.md task 0.9 + DESIGN_SYSTEM
+// §13.2.1 — once `AnalogEntry`/`RegionResponse` grow a `centroid` field,
+// this lookup goes away.
 const KNOWN_CENTROIDS: Record<string, [number, number]> = {
   '13067': [-84.55, 33.94], // Cobb County, GA
   '37119': [-80.83, 35.24], // Mecklenburg County, NC
@@ -52,16 +62,24 @@ const KNOWN_CENTROIDS: Record<string, [number, number]> = {
   '21111': [-85.66, 38.19], // Jefferson County, KY
 };
 
-function getCentroid(fips: string): [number, number] | null {
-  const c = KNOWN_CENTROIDS[fips];
-  if (!c && import.meta.env.DEV) {
-    console.warn(
-      `[CountyMap] No centroid for FIPS ${fips}. Pin/arc skipped. ` +
-        `Add to KNOWN_CENTROIDS or wire centroid through the backend AnalogEntry shape.`,
-    );
-  }
-  return c ?? null;
-}
+// Memoized style objects — defined module-level to keep referential equality
+// across renders so memo() on <Geography> bails out and we don't pay for
+// 3000+ rerenders on hover state changes.
+const SOURCE_STYLE = {
+  default: { fill: '#1F3A5F', stroke: '#E7E2D9', strokeWidth: 0.3, outline: 'none' },
+  hover: { fill: '#1F3A5F', stroke: '#1F3A5F', strokeWidth: 0.5, outline: 'none', cursor: 'crosshair' },
+  pressed: { fill: '#1F3A5F', outline: 'none' },
+};
+const ANALOG_STYLE = {
+  default: { fill: '#D6E0EE', stroke: '#E7E2D9', strokeWidth: 0.3, outline: 'none' },
+  hover: { fill: '#E7E2D9', stroke: '#1F3A5F', strokeWidth: 0.5, outline: 'none', cursor: 'crosshair' },
+  pressed: { fill: '#D6E0EE', outline: 'none' },
+};
+const DEFAULT_STYLE = {
+  default: { fill: '#F5F1EB', stroke: '#E7E2D9', strokeWidth: 0.3, outline: 'none' },
+  hover: { fill: '#E7E2D9', stroke: '#1F3A5F', strokeWidth: 0.5, outline: 'none', cursor: 'crosshair' },
+  pressed: { fill: '#F5F1EB', outline: 'none' },
+};
 
 interface CountyMapProps {
   sourceFips: string;
@@ -77,8 +95,6 @@ interface HoverState {
   data: CountyTooltipData;
 }
 
-const DEDUPE_PX = 4;
-
 export default function CountyMap({
   sourceFips,
   sourceTooltip,
@@ -87,6 +103,36 @@ export default function CountyMap({
 }: CountyMapProps) {
   const [hover, setHover] = useState<HoverState | null>(null);
   const arrowMarkerId = useId();
+
+  // Single source of truth for centroid lookup. One DEV-mode warn per
+  // missing FIPS on the way through, plus a missingCount surface for the
+  // visible degradation chip below.
+  const centroids = useMemo(() => {
+    const source = KNOWN_CENTROIDS[sourceFips] ?? null;
+    const analogList = analogs.map((a) => ({
+      fips: a.fips,
+      coords: KNOWN_CENTROIDS[a.fips] ?? null,
+    }));
+    if (import.meta.env.DEV) {
+      if (!source) {
+        console.warn(
+          `[CountyMap] Source FIPS ${sourceFips} missing from KNOWN_CENTROIDS. ` +
+            `Wire centroid through AnalogEntry per DESIGN_SYSTEM §13.2.1.`,
+        );
+      }
+      analogList.forEach((x) => {
+        if (!x.coords) {
+          console.warn(`[CountyMap] Analog FIPS ${x.fips} missing from KNOWN_CENTROIDS.`);
+        }
+      });
+    }
+    return { source, analogList };
+  }, [sourceFips, analogs]);
+
+  const totalCount = 1 + analogs.length;
+  const plottedCount =
+    (centroids.source ? 1 : 0) + centroids.analogList.filter((x) => x.coords).length;
+  const missingCount = totalCount - plottedCount;
 
   const analogTooltipsByFips = useMemo(() => {
     const map = new Map<string, CountyTooltipData>();
@@ -125,19 +171,7 @@ export default function CountyMap({
 
   const handleMove = useCallback(
     (e: React.MouseEvent, id: string, name?: string) => {
-      const x = e.clientX;
-      const y = e.clientY;
-      setHover((prev) => {
-        if (
-          prev &&
-          prev.fips === id &&
-          Math.abs(prev.x - x) < DEDUPE_PX &&
-          Math.abs(prev.y - y) < DEDUPE_PX
-        ) {
-          return prev;
-        }
-        return { fips: id, x, y, data: lookup(id, name) };
-      });
+      setHover({ fips: id, x: e.clientX, y: e.clientY, data: lookup(id, name) });
     },
     [lookup],
   );
@@ -146,110 +180,94 @@ export default function CountyMap({
 
   return (
     <figure
-      role="img"
-      aria-label={`Map of ${sourceTooltip.countyName} and three peer counties`}
-      onMouseLeave={clearHover}
+      aria-label={`Map showing ${sourceTooltip.countyName} and three peer-county candidates our similarity model could be associated with`}
       className={cn(
         'relative rounded-2xl bg-card-white border border-soft-border shadow-card-resting p-4',
         className,
       )}
     >
-      <ComposableMap
-        projection="geoAlbersUsa"
-        projectionConfig={{ scale: 1000 }}
-        width={800}
-        height={500}
-        style={{ width: '100%', height: 'auto' }}
-      >
-        <defs>
-          <marker
-            id={arrowMarkerId}
-            viewBox="0 0 10 10"
-            refX="8"
-            refY="5"
-            markerWidth="6"
-            markerHeight="6"
-            orient="auto-start-reverse"
-            markerUnits="strokeWidth"
-          >
-            <path d="M 0 0 L 10 5 L 0 10 z" fill="#B96B5C" />
-          </marker>
-        </defs>
+      {/* Wrapper carries onMouseLeave so the tooltip clears even when the
+       * pointer exits the SVG into the figure padding gap (figure-level
+       * onMouseLeave wouldn't fire there). */}
+      <div onMouseLeave={clearHover}>
+        <ComposableMap
+          projection="geoAlbersUsa"
+          projectionConfig={{ scale: 1000 }}
+          width={800}
+          height={500}
+          style={{ width: '100%', height: 'auto' }}
+        >
+          <defs>
+            <marker
+              id={arrowMarkerId}
+              viewBox="0 0 10 10"
+              refX="8"
+              refY="5"
+              markerWidth="6"
+              markerHeight="6"
+              orient="auto"
+              markerUnits="strokeWidth"
+            >
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#B96B5C" />
+            </marker>
+          </defs>
 
-        <Geographies geography={countiesTopo}>
-          {({ geographies }) =>
-            geographies.map((geo) => {
-              const id = geo.id as string;
-              const name = (geo.properties as { name?: string })?.name;
-              const isSource = id === sourceFips;
-              const isAnalog = analogFipsSet.has(id);
-              const isHighlighted = isSource || isAnalog;
-              const fill = isSource
-                ? '#1F3A5F'
-                : isAnalog
-                  ? '#D6E0EE'
-                  : '#F5F1EB';
-              const tip = isHighlighted ? lookup(id, name) : null;
-              return (
-                <Geography
-                  key={geo.rsmKey}
-                  geography={geo}
-                  tabIndex={isHighlighted ? 0 : -1}
-                  aria-label={tip ? formatGeographyLabel(tip) : undefined}
-                  onMouseMove={(e) => handleMove(e, id, name)}
-                  onMouseLeave={clearHover}
-                  onFocus={(e) => {
-                    if (!isHighlighted) return;
-                    const rect = (e.target as SVGElement).getBoundingClientRect();
-                    setHover({
-                      fips: id,
-                      x: rect.left + rect.width / 2,
-                      y: rect.top + rect.height / 2,
-                      data: lookup(id, name),
-                    });
-                  }}
-                  onBlur={clearHover}
-                  style={{
-                    default: {
-                      fill,
-                      stroke: '#E7E2D9',
-                      strokeWidth: 0.3,
-                      outline: 'none',
-                    },
-                    hover: {
-                      fill: isSource ? '#1F3A5F' : '#E7E2D9',
-                      stroke: '#1F3A5F',
-                      strokeWidth: 0.5,
-                      outline: 'none',
-                      cursor: 'crosshair',
-                    },
-                    pressed: { fill, outline: 'none' },
-                  }}
-                />
-              );
-            })
-          }
-        </Geographies>
+          <Geographies geography={countiesTopo}>
+            {({ geographies }) =>
+              geographies.map((geo) => {
+                const id = geo.id as string;
+                const name = (geo.properties as { name?: string })?.name;
+                const isSource = id === sourceFips;
+                const isAnalog = analogFipsSet.has(id);
+                const isHighlighted = isSource || isAnalog;
+                const style = isSource
+                  ? SOURCE_STYLE
+                  : isAnalog
+                    ? ANALOG_STYLE
+                    : DEFAULT_STYLE;
+                const tip = isHighlighted ? lookup(id, name) : null;
+                return (
+                  <Geography
+                    key={geo.rsmKey}
+                    geography={geo}
+                    tabIndex={isHighlighted ? 0 : -1}
+                    aria-label={tip ? formatGeographyLabel(tip) : undefined}
+                    onMouseMove={(e) => handleMove(e, id, name)}
+                    onMouseLeave={clearHover}
+                    onFocus={(e) => {
+                      if (!isHighlighted) return;
+                      const rect = (e.target as SVGElement).getBoundingClientRect();
+                      setHover({
+                        fips: id,
+                        x: rect.left + rect.width / 2,
+                        y: rect.top + rect.height / 2,
+                        data: lookup(id, name),
+                      });
+                    }}
+                    onBlur={clearHover}
+                    style={style}
+                  />
+                );
+              })
+            }
+          </Geographies>
 
-        {analogs.map((a) => {
-          const from = getCentroid(sourceFips);
-          const to = getCentroid(a.fips);
-          if (!from || !to) return null;
-          return (
-            <BezierArc
-              key={`arc-${a.fips}`}
-              from={from}
-              to={to}
-              markerId={arrowMarkerId}
-            />
-          );
-        })}
+          {analogs.map((a) => {
+            const from = centroids.source;
+            const to = centroids.analogList.find((x) => x.fips === a.fips)?.coords ?? null;
+            if (!from || !to) return null;
+            return (
+              <BezierArc
+                key={`arc-${a.fips}`}
+                from={from}
+                to={to}
+                markerId={arrowMarkerId}
+              />
+            );
+          })}
 
-        {(() => {
-          const coords = getCentroid(sourceFips);
-          if (!coords) return null;
-          return (
-            <Marker coordinates={coords}>
+          {centroids.source && (
+            <Marker coordinates={centroids.source}>
               <circle r={6} fill="#1F3A5F" stroke="#FFFFFF" strokeWidth={1.5} />
               <text
                 x={10}
@@ -262,21 +280,32 @@ export default function CountyMap({
                 {sourceTooltip.countyName.toUpperCase()}
               </text>
             </Marker>
-          );
-        })()}
+          )}
 
-        {analogs.map((a) => {
-          const coords = getCentroid(a.fips);
-          if (!coords) return null;
-          return (
-            <Marker key={`pin-${a.fips}`} coordinates={coords}>
-              <circle r={5} fill="#5B7DB1" stroke="#FFFFFF" strokeWidth={1.25} />
-            </Marker>
-          );
-        })}
-      </ComposableMap>
+          {centroids.analogList.map((x) =>
+            x.coords ? (
+              <Marker key={`pin-${x.fips}`} coordinates={x.coords}>
+                <circle r={5} fill="#5B7DB1" stroke="#FFFFFF" strokeWidth={1.25} />
+              </Marker>
+            ) : null,
+          )}
+        </ComposableMap>
+      </div>
 
       <Legend />
+
+      {missingCount > 0 && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="absolute top-6 right-6 max-w-[260px] rounded-xl bg-card-white border border-soft-border shadow-md p-3"
+        >
+          <p className="font-serif italic text-caption text-muted-text leading-snug">
+            Map highlights limited — {missingCount} of {totalCount} regions could
+            not be plotted in our indexed location data.
+          </p>
+        </div>
+      )}
 
       {hover && (
         <CountyTooltip
@@ -296,17 +325,25 @@ export default function CountyMap({
 
 function formatGeographyLabel(t: CountyTooltipData): string {
   const o =
-    t.olympicPer100k === null ? 'no data' : `${fmtPerCapita(t.olympicPer100k)} Olympic per 100k`;
+    t.olympicPer100k === null
+      ? 'no Olympic data'
+      : `${fmtPerCapita(t.olympicPer100k)} Olympic per 100k`;
   const p =
     t.paralympicPer100k === null
-      ? 'no data'
+      ? 'no Paralympic data'
       : `${fmtPerCapita(t.paralympicPer100k)} Paralympic per 100k`;
-  return `${t.countyName}${t.state ? `, ${t.state}` : ''}. ${o}. ${p}.`;
+  const place = `${t.countyName}${t.state ? `, ${t.state}` : ''}`;
+  return `${place}. ${o}. ${p}. Representation patterns in our indexed sources.`;
 }
 
 /**
  * BezierArc — quadratic curve between two lng/lat points using the parent
  * map's projection. Lifted perpendicular to the chord for a gentle arc.
+ *
+ * `projection` is set synchronously inside MapProvider before any child
+ * renders (verified in react-simple-maps@3 dist), so we don't guard for
+ * the projection itself. Out-of-bounds coords (e.g. Pacific territories)
+ * still need the p1/p2 null checks because geoAlbersUsa rejects them.
  */
 function BezierArc({
   from,
@@ -318,7 +355,6 @@ function BezierArc({
   markerId: string;
 }) {
   const { projection } = useMapContext();
-  if (!projection) return null;
   const p1 = projection(from);
   const p2 = projection(to);
   if (!p1 || !p2) return null;
@@ -356,7 +392,7 @@ function Legend() {
       </p>
       <LegendRow swatch="navy" label="Source county" />
       <LegendRow swatch="olympic" label="Peer counties" />
-      <LegendRow swatch="clay" label="Pattern link" />
+      <LegendRow swatch="clay" label="Similarity link" />
     </div>
   );
 }
