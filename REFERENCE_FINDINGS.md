@@ -1,5 +1,7 @@
 # REFERENCE_FINDINGS.md — Phase A Design Research
 
+> **Status:** Historical research input only. Superseded by `DESIGN_SYSTEM.md` for implementation decisions. Some patterns and component mappings here were revised during design lock — when this file and DESIGN_SYSTEM.md disagree, DESIGN_SYSTEM.md wins.
+>
 > Working research dossier for Hometown Pathway Atlas frontend design lock. Editorial data journalism archetype, NOT cinematic agency portfolio. Drives DESIGN_SYSTEM.md synthesis (Phase C).
 >
 > **Sources:** Gemini deep research (NYT / Bloomberg / Reuters / Pudding / Census), Magic 21st component library (production React patterns), Pudding homepage scrape, prior council research.

@@ -13,34 +13,59 @@
 ## 🌅 Vinh — read this first when you wake up (2026-05-02 morning)
 
 **End-of-day 2026-05-01 status:**
-Stephen completed full design lock today. 5 commits pushed (`3c9a533` → `97017be`). Repo now contains:
-- `DESIGN_SYSTEM.md` — visual identity spec, 17 components with anatomy + states + motion + accessibility + build order
-- `docs/moodboard/01-07.png` — 7 high-fi visual targets (banana skill generated)
-- `REFERENCE_FINDINGS.md` — Phase A research input
+Stephen completed full design lock today. Repo now contains:
+- `DESIGN_SYSTEM.md` — 15-section visual identity spec, 17 components with anatomy + states + motion + accessibility + build order
+- `docs/moodboard/01-07.png` — 7 visual mockups (component targets)
+- `REFERENCE_FINDINGS.md` — research input that drove design decisions
 - `PLAN.md`, `CLAUDE.md`, `STEPHEN_FRONTEND_STRATEGY.md` updated to reference DESIGN_SYSTEM.md
 
-**Your action items in order (~2.5hr total before backend code):**
+### Decisions affecting backend contracts (read before contract review)
 
-1. **(15 min)** Read `DESIGN_SYSTEM.md` §13 "Note for Vinh" — three contracts to verify
-2. **(10 min)** Update PLAN.md task **0.9** with confirmation OR escalation:
-   - Confirm `compliance_log[].status` enum = `pass | fail | fixed` (lowercase, NOT `PASS/FAIL/SUCCESS`)
-   - Confirm `compliance_log[].ts` = ISO8601 (`2026-05-11T14:02:11Z`)
-   - Decide: add `/api/stats/county/{fips}` lightweight endpoint OR bake static county profile parquet into frontend container for map hover tooltips. Either works.
-3. **(2 hr)** GCP setup with Stephen — tasks **0.5, 0.6, 0.7**. Hello-world Cloud Run deploy is most important 30 min of the build. Coordinate timing in chat.
+1. ComplianceLog `status` enum locked at `pass | fail | fixed` (lowercase) — NOT `PASS/FAIL/SUCCESS`
+2. ComplianceLog `ts` locked at ISO8601 format (`2026-05-11T14:02:11Z`)
+3. Pattern Gap categories locked at `observed_strength | public_access_signal | opportunity_hypothesis`
+4. ParityPanel evidence pill values locked at `high | medium | low` (per pillar — `olympic_evidence` and `paralympic_evidence` are SEPARATE fields, never collapsed)
+5. CountyMap hover tooltips need a new endpoint OR static parquet (your call) — see action item 3 below
+
+### Your action items in order (~2.5hr total before backend code)
+
+> **Note:** "Day 1 EOD deadline" in task 0.9 is now a "first thing 2026-05-02 AM" deadline since you're reading this Day 2 morning. Same urgency, different label.
+
+1. **(15 min)** Read `DESIGN_SYSTEM.md` §13 "Note for Vinh" — full contract checklist
+2. **(15 min)** Update PLAN.md task **0.9** confirming OR escalating ALL of these from §13.1 + §13.2:
+   - **§13.1 confirm 5 contracts match:**
+     - `county_profiles.parquet` `*_evidence` column = `"high" | "medium" | "low"`
+     - `/api/pathway/{fips}` `category` enum = `"observed_strength" | "public_access_signal" | "opportunity_hypothesis"`
+     - `/api/region` `compliance_log[].status` = `"pass" | "fail" | "fixed"` (lowercase)
+     - `/api/region` `compliance_log[].ts` = ISO8601
+     - `/api/region` `compliance_log[].layer` = `"rules" | "gemini"`
+   - **§13.2 decide ONE of these for CountyMap hover tooltips:**
+     - Option A: add new `/api/stats/county/{fips}` lightweight endpoint returning `{fips, county_name, olympic_per_100k, paralympic_per_100k, olympic_evidence, paralympic_evidence}`
+     - Option B: bake static county profile parquet into frontend container (no new endpoint needed)
+3. **(2 hr)** GCP setup with Stephen — tasks **0.5, 0.6, 0.7**. Hello-world Cloud Run deploy is most important 30 min of the build. Coordinate timing — see contact path below.
 4. **(start)** Begin Phase 1 — task **1.1** athlete data scrape. Critical path. Day 2 EOD = GO/NO-GO validation gate.
 
-**What Stephen will be doing in parallel (don't overlap):**
-- Day 1 PM: scaffold `frontend/` (Vite+React+TS+Tailwind) per `DESIGN_SYSTEM.md` §15 build order
-- Day 2: ZipInput + Navbar + RegionHeader components (mocked against `lib/mocks.ts`)
-- Day 4 PM: integrate against your real `/api/region` endpoint
+### What Stephen has done + planned next work (parallel to yours, don't overlap)
 
-**Coordination protocol** (see §"Coordination Protocol" below):
+- ✅ DESIGN_SYSTEM.md, REFERENCE_FINDINGS.md, moodboard, repo coordination — done 2026-05-01
+- ⬜ Next: `frontend/` scaffold (Vite+React+TS+Tailwind) per DESIGN_SYSTEM §15 build order
+- ⬜ Then: ZipInput + Navbar (Day 2 PM per DESIGN_SYSTEM §15 — RegionHeader is Day 3 AM, not Day 2)
+- ⬜ Day 4 PM: integrate against your real `/api/region` endpoint
+
+### Contact path (no Slack/Discord set up — use these in order)
+
+1. **Real-time:** chat platform you and Stephen have been using (text/iMessage/Discord DM)
+2. **Async, attached to file:** add a `🟡 NEEDS-INPUT` row in PLAN.md with your question — Stephen will see on next pull
+3. **Issue tracking:** open a GitHub issue at https://github.com/StephenSook/Hometown-Pathway-Atlas/issues if it's a structured question
+
+Stephen's response window: morning hours fastest, evening within ~2hr. Don't wait silently — escalate within 1hr if blocked.
+
+### Coordination protocol reminder
+
 - Edit `PLAN.md` to claim 🟡, complete ✅, block ⛔, cut ✂️
 - Single-file commit per status change
 - 4-hour stale lock TTL
-- ⚠️ CONTRACT prefix on commits that change Shared Contracts
-
-**If anything is unclear or you find drift:** ping Stephen in chat OR add a `🟡 NEEDS-INPUT` row in PLAN.md with the question. Don't wait silently.
+- ⚠️ CONTRACT prefix on commits that change Shared Contracts (see PLAN.md §Coordination Protocol below)
 
 ---
 
@@ -73,7 +98,7 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started · ⛔ blocked · ✂️
 | 0.5 | GCP project + APIs enabled | — | Stephen+Vinh | ⬜ | Project: `pathway-atlas-hackathon`. APIs: Cloud Run, Vertex AI, Cloud Build, Artifact Registry, Secret Manager. Budget alert $50. |
 | 0.6 | gcloud CLI installed + authed | local | Stephen+Vinh | ⬜ | `gcloud auth login` + `gcloud config set project pathway-atlas-hackathon` on both laptops. |
 | 0.7 | Hello-world Cloud Run deploy | `hello/` | Vinh | ⬜ | FastAPI + Vertex AI single endpoint. **Most important 30 min of Day 1.** Pass = `{"message": "..."}`. |
-| 0.8 | Lock design system + moodboard | `DESIGN_SYSTEM.md`, `docs/moodboard/` | Stephen | ✅ | Done May 1. 7 high-fi mockups + 11+4 section spec. 4-reviewer adversarial pass complete (codex/devils-advocate/sookra-council/claude-council). |
+| 0.8 | Lock design system + moodboard | `DESIGN_SYSTEM.md`, `docs/moodboard/` | Stephen | ✅ | Done May 1. 7 visual mockups + 15-section design spec (17 components). |
 | 0.9 | Vinh contract review of DESIGN_SYSTEM.md §13 | reads `DESIGN_SYSTEM.md` | Vinh | ⬜ | **Day 1 EOD deadline.** Verify (a) `compliance_log[].status` enum is `pass\|fail\|fixed` lowercase, (b) `compliance_log[].ts` is ISO8601, (c) decide on `/api/stats/county/{fips}` endpoint OR static parquet for map tooltips. Comment confirmation in this row. |
 
 ### Phase 1 — Data ingest pipeline (Days 1–3, Vinh)

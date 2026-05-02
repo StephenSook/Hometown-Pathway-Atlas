@@ -13,7 +13,7 @@
 1. [Foundation](#1-foundation)
 2. [Layout system](#2-layout-system)
 3. [Mobile-first breakpoint specs](#3-mobile-first-breakpoint-specs)
-4. [Component anatomy](#4-component-anatomy)
+4. [Component anatomy](#4-component-anatomy) (17 components)
 5. [Motion choreography](#5-motion-choreography)
 6. [Illustration library](#6-illustration-library)
 7. [Loading + error states](#7-loading--error-states)
@@ -21,6 +21,10 @@
 9. [Anti-patterns](#9-anti-patterns)
 10. [Layer B polish targets](#10-layer-b-polish-targets)
 11. [Reference moodboard index](#11-reference-moodboard-index)
+12. [Source-of-truth mapping](#12-source-of-truth-mapping)
+13. [Note for Vinh — Day 1 EOD review required](#13-note-for-vinh--day-1-eod-review-required)
+14. [Note on moodboard image vs spec authority](#14-note-on-moodboard-image-vs-spec-authority)
+15. [Implementation Build Order (component-first sequence)](#15-implementation-build-order-component-first-sequence)
 
 ---
 
@@ -182,7 +186,7 @@ Tailwind defaults locked: `sm: 640px / md: 768px / lg: 1024px / xl: 1280px / 2xl
 
 ## 4. Component anatomy
 
-15 Atlas components. Per component: visual spec + all states + ARIA notes. Implementation lives in `frontend/src/components/`.
+17 Atlas components (4.1 through 4.18, with 4.17 LogEntry as a sub-component of 4.16). Per component: visual spec + all states + ARIA notes. Implementation lives in `frontend/src/components/`.
 
 ### 4.1 ZipInput
 
@@ -425,7 +429,7 @@ Reference: `docs/moodboard/05_compliance_log.png`
 - Amber `#D97706` = `fail` (stays expanded, shows banned phrase highlighted)
 - Green `#2E8B57` = `fixed` (replaces `fail` in place via 300ms crossfade)
 
-**Demo-mode prop (`demo: boolean`):** when `true`, ComplianceLog renders a canonical pre-scripted `fail` → `fixed` sequence regardless of live Gemini output. Fail entry shows "Draft contained 'produces athletes'" → fixed entry shows "region shows representation patterns". Ensures Pillar 4 demo moment is reproducible during recording. Never enable in production.
+**Demo-mode prop (`demoMode: boolean`, default `false`):** when `true`, ComplianceLog renders a canonical pre-scripted `fail` → `fixed` sequence regardless of live Gemini output. Fail entry shows "Draft contained 'produces athletes'" → fixed entry shows "region shows representation patterns". Ensures Pillar 4 demo moment is reproducible during recording. **Production behavior:** `demoMode={false}` always — must NEVER ship enabled. Add a runtime guard: `process.env.NODE_ENV === 'development' || window.location.hostname === 'localhost'` to prevent accidental production enable. Demo recording uses a feature-flag override.
 
 **Fail entry expansion (the demo moment):**
 - Shows banned phrase highlighted in mono with strikethrough
@@ -693,8 +697,8 @@ Per Maximum Scope strategy, Layer B is "NYT/Pudding-grade frontend" woven from D
 | RegionHeader | Static text block | Type-in animation on county name (CharSplit 30ms) |
 | ParityPanel | Static stat cards | Counter-up animation on numbers (0 → value 800ms), evidence pills fade in 100ms staggered |
 | SportMix | Plain Recharts bar | Custom rounded bars, hover reveals sport icon (Lucide), z-score gradient |
-| ClimateBadge | Text label | Custom illustrated icon with subtle SVG path animation |
-| CountyMap | Default choropleth | Custom illustrated topographic accents, source county pulses, analog pins with Bezier connections |
+| ClimateBadge | Lucide icon + label (per §6.1) | Lucide icon paired with subtle CSS-only motion (gentle hover scale or color shift). Custom SVG cut per §6.1. |
+| CountyMap | Default choropleth | Source county pulses, analog pins with Bezier connections. Custom illustrated topographic accents are §6.2 Layer B opt-in only (Day 8 if Days 1-7 clean). |
 | AnalogCard | Card with bars | Hover reveals expanded breakdown, click animates "twin lines" connecting source ↔ analog on map |
 | PatternGapPanel | Three section blocks | Custom typography by category — Observed Strength bold, Public Access muted+caveated, Opportunity Hypothesis sketch border |
 | ComplianceLog | Plain log feed | Full animation choreography per §5.2 — slide-in, color crossfade fail→fixed, panel pulse on new entries |
@@ -769,7 +773,7 @@ This document specifies what the user sees. **Required Day 1 EOD checks before c
 
 ### 13.2 New contract Vinh needs to add (codex review caught this gap)
 
-CountyMap (§4.13) hover tooltip needs per-county metrics for arbitrary counties (not just the one being viewed). PLAN.md only defines `/api/region` returning data for ONE FIPS. Vinh: add `/api/stats/county/{fips}` lightweight endpoint returning `{fips, county_name, olympic_per_100k, paralympic_per_100k, evidence}` for hover tooltips.
+CountyMap (§4.13) hover tooltip needs per-county metrics for arbitrary counties (not just the one being viewed). PLAN.md only defines `/api/region` returning data for ONE FIPS. Vinh: add `/api/stats/county/{fips}` lightweight endpoint returning `{fips, county_name, olympic_per_100k, paralympic_per_100k, olympic_evidence, paralympic_evidence}` for hover tooltips. **Note:** evidence fields are separate per pillar to match `county_profiles.parquet` schema (§3.2 of architecture spec) — never collapse into a single `evidence` field.
 
 Alternative: bake all county profiles into a small static parquet served from the frontend. Either works — Vinh's call.
 

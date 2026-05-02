@@ -158,7 +158,7 @@ Rule of thumb: every state change ≥ 200ms gets a transition. Hover states ≥ 
 - [ ] `lib/api.ts` — typed fetch wrapper + `ApiError` class. Mirror Trace pattern. **Use `import.meta.env.VITE_API_BASE_URL`** for backend URL — defaults to `http://localhost:8000`.
 - [ ] `lib/motion.ts` — Framer Motion presets (§3)
 - [ ] `lib/format.ts` — number formatting helpers (`fmtPercent`, `fmtPerCapita`, `fmtPopulation`)
-- [ ] Wireframe sketches for HomePage + ResultsPage (Figma or paper — doesn't matter, just decide layout)
+- [x] ~~Wireframe sketches~~ — superseded by `docs/moodboard/01-07.png`. Implement directly from moodboard + DESIGN_SYSTEM.md §4 component anatomy.
 
 ### Day 2 — Skeleton + mocks
 
@@ -401,7 +401,7 @@ Critical updates to know:
 - Custom climate SVGs: CUT. Use Lucide React icons per DESIGN_SYSTEM.md §6.1.
 - Custom map illustrated accents: CUT for Day 6 Gate. Layer B opt-in only Day 8.
 - Pillar 5 (Business Numbers): now has dedicated component spec — Pillar5Strip per DESIGN_SYSTEM.md §4.18. Place at Hero footer + AboutPage. Locked Day 6.
-- ComplianceLog: must implement `demo-mode` prop per DESIGN_SYSTEM.md §4.16. Demo reliability requirement.
+- ComplianceLog: must implement `demoMode: boolean` prop per DESIGN_SYSTEM.md §4.16. Default `false` always; runtime guard required to prevent production enable. Demo recording uses feature-flag override only.
 - Status enum: `pass | fail | fixed` lowercase. NEVER `PASS/FAIL/SUCCESS` (Vinh's contract).
 - Olympic blue + Paralympic clay: large-text only on white (>=24px). Body text uses Navy.
 
