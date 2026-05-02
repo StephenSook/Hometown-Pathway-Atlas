@@ -43,7 +43,8 @@ export default function RegionHeader({
       )}
     >
       <div>
-        <h1 className="text-h2 md:text-h1 font-sans font-semibold text-navy leading-tight">
+        {/* §1.2 page title scale: 32px mobile / 32-40px desktop — NOT hero h1 (64px) */}
+        <h1 className="text-h2 md:text-[40px] md:leading-[1.1] md:tracking-[-0.01em] font-sans font-semibold text-navy leading-tight">
           {countyName}
         </h1>
         <p className="mt-1 font-serif italic text-caption text-muted-text">

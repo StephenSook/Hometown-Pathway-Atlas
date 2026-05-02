@@ -21,6 +21,7 @@
  * Reference: docs/moodboard/02_parity_panel.png (LOCKED visual anchor)
  */
 
+import { useId } from 'react';
 import type { ParityMetric } from '../lib/api';
 import { fmtPerCapita, fmtPercentile } from '../lib/format';
 import EvidenceLabel from './EvidenceLabel';
@@ -45,8 +46,11 @@ interface ColumnProps {
 function ParityColumn({ side, metric }: ColumnProps) {
   const isOlympic = side === 'olympic';
   const heading = isOlympic ? 'OLYMPIC' : 'PARALYMPIC';
-  const headerColor = isOlympic ? 'text-navy' : 'text-paralympic-clay';
-  const statColor = isOlympic ? 'text-navy' : 'text-paralympic-clay';
+  // Headers stay navy on both sides per §1.1 contrast rule:
+  // Olympic-blue + Paralympic-clay fail AA at small text (12px eyebrow).
+  // Hue distinction comes from large stat number + bar fill (large-text safe).
+  const headerColor = 'text-navy';
+  const statColor = isOlympic ? 'text-olympic-blue' : 'text-paralympic-clay';
   const fillColor = isOlympic ? 'bg-olympic-blue' : 'bg-paralympic-clay';
 
   // Compute filled segments — round to nearest segment
@@ -105,7 +109,7 @@ export default function ParityPanel({
   paralympic,
   className,
 }: ParityPanelProps) {
-  const headingId = 'parity-panel-heading';
+  const headingId = useId();
 
   return (
     <article
@@ -201,19 +205,13 @@ export function ParityPanelEmpty({
 
       <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-soft-border">
         {(['OLYMPIC', 'PARALYMPIC'] as const).map((heading) => {
-          const isOlympic = heading === 'OLYMPIC';
           return (
             <section
               key={heading}
               aria-label={`${heading} representation — limited data`}
               className="flex-1 flex flex-col items-center gap-3 p-6 text-center"
             >
-              <p
-                className={cn(
-                  'font-mono uppercase tracking-wider text-eyebrow',
-                  isOlympic ? 'text-navy' : 'text-paralympic-clay',
-                )}
-              >
+              <p className="font-mono uppercase tracking-wider text-eyebrow text-navy">
                 {heading}
               </p>
               <p className="font-sans font-bold text-stat-md md:text-stat-lg leading-none text-muted-text/40">

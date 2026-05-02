@@ -43,7 +43,7 @@ export default function HomePage() {
 
           <h1
             id="hero-heading"
-            className="text-h2 md:text-h1 font-sans font-semibold text-navy leading-tight tracking-tight mb-6"
+            className="text-[40px] md:text-h1 font-sans font-semibold text-navy leading-[1.05] tracking-tight mb-6"
           >
             Your county{' '}
             <span className="font-serif italic font-normal">Team USA</span>{' '}
