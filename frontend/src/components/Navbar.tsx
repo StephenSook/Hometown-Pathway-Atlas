@@ -31,13 +31,31 @@ const NAV_LINKS: NavLink[] = [
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [activeHash, setActiveHash] = useState<string>(
+    typeof window !== 'undefined' ? window.location.hash || '#top' : '#top',
+  );
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 100);
+    const handleHashChange = () => setActiveHash(window.location.hash || '#top');
     handleScroll();
     window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener('hashchange', handleHashChange);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('hashchange', handleHashChange);
+    };
   }, []);
+
+  // ESC closes mobile menu (a11y per §8.2 keyboard nav)
+  useEffect(() => {
+    if (!isMobileOpen) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsMobileOpen(false);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isMobileOpen]);
 
   return (
     <nav
@@ -64,16 +82,23 @@ export default function Navbar() {
 
         {/* Desktop nav links */}
         <ul className="hidden md:flex items-center gap-8">
-          {NAV_LINKS.map((link) => (
-            <li key={link.href}>
-              <a
-                href={link.href}
-                className="text-eyebrow font-mono uppercase text-muted-text hover:text-navy transition-colors focus-ring rounded"
-              >
-                {link.label}
-              </a>
-            </li>
-          ))}
+          {NAV_LINKS.map((link) => {
+            const isActive = activeHash === link.href;
+            return (
+              <li key={link.href}>
+                <a
+                  href={link.href}
+                  aria-current={isActive ? 'page' : undefined}
+                  className={cn(
+                    'text-eyebrow font-mono uppercase transition-colors focus-ring rounded',
+                    isActive ? 'text-navy' : 'text-muted-text hover:text-navy',
+                  )}
+                >
+                  {link.label}
+                </a>
+              </li>
+            );
+          })}
         </ul>
 
         {/* Right cluster */}

@@ -32,7 +32,7 @@ export default function HomePage() {
     <div className="min-h-screen bg-warm-neutral">
       <Navbar />
 
-      <main id="top" className="pt-32 md:pt-40 pb-16">
+      <main id="main-content" className="pt-32 md:pt-40 pb-16" tabIndex={-1}>
         <section
           aria-labelledby="hero-heading"
           className="mx-auto max-w-[880px] px-6 text-center"

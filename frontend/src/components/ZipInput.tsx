@@ -1,13 +1,6 @@
 /**
- * ZipInput — Atlas hero entry point.
- * Anatomy per DESIGN_SYSTEM.md §4.1
- *
- * - Pill input with clay submit button on the right
- * - Validates 5-digit US ZIP format client-side
- * - States: default / focus / loading / invalid
- * - ARIA: label + aria-describedby + aria-invalid + form semantics
- *
- * Reference: docs/moodboard/01_hero.png (lower center)
+ * ZipInput — pill input + clay submit. Validates 5-digit US ZIP on submit.
+ * Anatomy per DESIGN_SYSTEM §4.1.
  */
 
 import { useId, useState, type FormEvent } from 'react';
@@ -82,7 +75,7 @@ export default function ZipInput({ onSubmit, loading = false, className }: ZipIn
 
         <button
           type="submit"
-          disabled={loading || zip.length !== 5}
+          disabled={loading}
           className={cn(
             'inline-flex items-center gap-2 rounded-full bg-paralympic-clay px-6 py-2.5 text-body text-card-white font-medium',
             'transition-opacity disabled:opacity-50 disabled:cursor-not-allowed',
