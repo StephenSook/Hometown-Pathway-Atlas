@@ -12,6 +12,42 @@ import type {
   ComplianceLogEntry,
 } from './api';
 
+/**
+ * Canonical demo sequence for ComplianceLog `demoMode={true}`.
+ * Used during demo recording to guarantee judges see the fail→fixed catch.
+ * Production code path uses mockRegion.compliance_log instead.
+ */
+export const demoComplianceScript: ComplianceLogEntry[] = [
+  {
+    layer: 'rules',
+    check: 'no_athlete_names',
+    status: 'pass',
+    ts: '2026-05-02T14:02:11Z',
+  },
+  {
+    layer: 'rules',
+    check: 'parity_check',
+    status: 'pass',
+    ts: '2026-05-02T14:02:11Z',
+  },
+  {
+    layer: 'gemini',
+    check: 'causal_tone',
+    status: 'fail',
+    details: 'Banned causal verb detected',
+    before: 'Cobb County produces Olympic athletes',
+    ts: '2026-05-02T14:02:13Z',
+  },
+  {
+    layer: 'gemini',
+    check: 'causal_tone',
+    status: 'fixed',
+    details: 'Rewritten in conditional phrasing',
+    after: 'Cobb County could be associated with Olympic representation patterns',
+    ts: '2026-05-02T14:02:14Z',
+  },
+];
+
 const sampleCompliance: ComplianceLogEntry[] = [
   {
     layer: 'rules',
@@ -28,9 +64,18 @@ const sampleCompliance: ComplianceLogEntry[] = [
   {
     layer: 'gemini',
     check: 'causal_tone',
-    status: 'pass',
-    details: 'No causal language detected',
-    ts: '2026-05-02T14:02:12Z',
+    status: 'fail',
+    details: 'Banned causal verb detected',
+    before: 'Cobb County produces Olympic athletes',
+    ts: '2026-05-02T14:02:13Z',
+  },
+  {
+    layer: 'gemini',
+    check: 'causal_tone',
+    status: 'fixed',
+    details: 'Rewritten in conditional phrasing',
+    after: 'Cobb County could be associated with Olympic representation patterns',
+    ts: '2026-05-02T14:02:14Z',
   },
 ];
 
