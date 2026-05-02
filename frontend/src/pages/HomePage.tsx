@@ -21,6 +21,7 @@ import ClimateBadge from '../components/ClimateBadge';
 import AdaptiveAccessCard from '../components/AdaptiveAccessCard';
 import AnalogList from '../components/AnalogList';
 import TradeoffPanel from '../components/TradeoffPanel';
+import CountyMap from '../components/CountyMap';
 import { mockRegion, mockAnalogs } from '../lib/mocks';
 
 type View = 'hero' | 'results';
@@ -128,6 +129,21 @@ export default function HomePage() {
                 state={mockRegion.state}
                 msaLabel={mockRegion.msa_label}
                 population={mockRegion.population}
+              />
+            </div>
+
+            <div className="mb-10">
+              <CountyMap
+                sourceFips={mockRegion.fips}
+                sourceTooltip={{
+                  countyName: mockRegion.county_name,
+                  state: mockRegion.state,
+                  olympicPer100k: mockRegion.metrics.olympic.per_100k,
+                  paralympicPer100k: mockRegion.metrics.paralympic.per_100k,
+                  olympicEvidence: mockRegion.metrics.olympic.evidence,
+                  paralympicEvidence: mockRegion.metrics.paralympic.evidence,
+                }}
+                analogs={mockAnalogs.analogs}
               />
             </div>
 
