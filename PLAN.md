@@ -95,9 +95,9 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started · ⛔ blocked · ✂️
 | 0.2 | Local clone of repo | local | Stephen | ✅ | `git clone https://github.com/StephenSook/Hometown-Pathway-Atlas` — cloned May 1. |
 | 0.3 | Drop CLAUDE.md + docs/ into repo | repo root, docs/ | Stephen | ✅ | Done May 1 init commit. |
 | 0.4 | Drop PLAN.md + STATUS_TEMPLATE + STEPHEN_FRONTEND_STRATEGY | repo root | Stephen | ✅ | Done May 1 init commit. Coordination is manual (mirrors Trace) — no hooks, no CLI. |
-| 0.5 | GCP project + APIs enabled | — | Stephen+Vinh | ⬜ | Project: `pathway-atlas-hackathon`. APIs: Cloud Run, Vertex AI, Cloud Build, Artifact Registry, Secret Manager. Budget alert $50. |
-| 0.6 | gcloud CLI installed + authed | local | Stephen+Vinh | ⬜ | `gcloud auth login` + `gcloud config set project pathway-atlas-hackathon` on both laptops. |
-| 0.7 | Hello-world Cloud Run deploy | `hello/` | Vinh | ⬜ | FastAPI + Vertex AI single endpoint. **Most important 30 min of Day 1.** Pass = `{"message": "..."}`. |
+| 0.5 | GCP project + APIs enabled | — | Stephen+Vinh | ✅ | Project `pathway-atlas-hackathon` live. 5 APIs enabled (run, aiplatform, cloudbuild, artifactregistry, secretmanager). Verified May 2 via `gcloud services list`. |
+| 0.6 | gcloud CLI installed + authed | local | Stephen+Vinh | ✅ | Both laptops authed May 2. ADC set up for Vertex AI calls. Vinh granted `roles/editor` + `roles/run.admin` (run.admin needed for Cloud Run IAM management — `roles/editor` excludes `run.services.setIamPolicy`). |
+| 0.7 | Hello-world Cloud Run deploy | `hello-gemini/` | Vinh | ✅ | Live + public at https://hello-gemini-635524063449.us-central1.run.app/ — returns `{"message":"Welcome, and we're thrilled to share our hack!"}` from Gemini call. End-to-end Vertex AI + Cloud Run verified May 2. |
 | 0.8 | Lock design system + moodboard | `DESIGN_SYSTEM.md`, `docs/moodboard/` | Stephen | ✅ | Done May 1. 7 visual mockups + 15-section design spec (17 components). |
 | 0.9 | Vinh contract review of DESIGN_SYSTEM.md §13 | reads `DESIGN_SYSTEM.md` | Vinh | ⬜ | **Day 1 EOD deadline.** Verify (a) `compliance_log[].status` enum is `pass\|fail\|fixed` lowercase, (b) `compliance_log[].ts` is ISO8601, (c) decide on `/api/stats/county/{fips}` endpoint OR static parquet for map tooltips. Comment confirmation in this row. |
 
