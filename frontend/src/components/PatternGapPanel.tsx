@@ -64,14 +64,23 @@ export default function PatternGapPanel({
 }
 
 export function PatternGapPanelSkeleton({ className }: { className?: string }) {
+  // Skeleton mirrors loaded-state landmark hierarchy: same role=region +
+  // aria-labelledby pair so screen readers don't see the AOM landmark
+  // type change when data resolves. Visually-hidden h3 carries the
+  // accessible name during load.
+  const headingId = useId();
   return (
     <article
+      role="region"
+      aria-labelledby={headingId}
       aria-busy="true"
-      aria-label="Loading pattern gaps"
       className={cn('flex flex-col gap-6 animate-pulse', className)}
     >
       <header className="text-center flex flex-col items-center gap-2">
         <div className="h-3 w-24 rounded bg-soft-border" />
+        <h3 id={headingId} className="sr-only">
+          Loading pattern gaps
+        </h3>
         <div className="h-7 w-72 rounded bg-soft-border" />
       </header>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
