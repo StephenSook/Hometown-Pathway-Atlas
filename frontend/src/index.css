@@ -44,4 +44,16 @@
   .focus-ring {
     @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy/50 focus-visible:ring-offset-2 focus-visible:ring-offset-warm-neutral;
   }
+
+  /* Tab-reachable Geographies in CountyMap need a visible keyboard focus
+   * indicator. react-simple-maps@3 inlines `outline: none` in its hover style
+   * (no separate focus key), so we restore the outline at the CSS layer
+   * scoped to keyboard focus + Tab-reachable counties only. WCAG 2.4.7. */
+  .rsm-geography:focus {
+    outline: none;
+  }
+  .rsm-geography[tabindex='0']:focus-visible {
+    outline: 2px solid #1f3a5f;
+    outline-offset: 1px;
+  }
 }
