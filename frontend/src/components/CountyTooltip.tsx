@@ -2,17 +2,21 @@
  * CountyTooltip — floating card shown on county hover in CountyMap.
  * Anatomy per DESIGN_SYSTEM §4.14.
  *
- * Pointer-only affordance: keyboard/AT users get the same data via the
- * `aria-label` set on each highlighted Geography in CountyMap. That's why
- * this component does NOT use `aria-live` — the tooltip remounts on every
- * county change, which would defeat live-region polling anyway.
+ * Pointer-only affordance. AT users read the same data through the
+ * per-Geography aria-label set in CountyMap — no `role="tooltip"` here
+ * because there is no triggering element wiring `aria-describedby` to
+ * a stable id, which is what the WAI-ARIA APG tooltip pattern requires
+ * for AT discovery. role="tooltip" without the pairing is decorative;
+ * we'd rather be honest in the markup.
  *
  * Positioning: `(x, y)` are pointer coords (clientX/clientY) supplied by
- * the parent, so `position: fixed` is the correct reference frame. After
- * mount the card measures itself and clamps inside the viewport so it
- * never renders off-screen at edges.
+ * the parent — `position: fixed` is the correct reference frame. The card
+ * measures itself in useLayoutEffect and clamps inside the viewport. The
+ * pre-measurement render is `visibility: hidden` to eliminate the 1-frame
+ * edge-flash that React 19 concurrent rendering can introduce on slower
+ * devices.
  *
- * No-data variant: when olympic/paralympic per_100k are null, render em dash.
+ * No-data variant: olympic/paralympic per_100k null → em dash.
  */
 
 import { useLayoutEffect, useRef, useState } from 'react';
@@ -54,6 +58,7 @@ export default function CountyTooltip({
 }: CountyTooltipProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState({ left: x + OFFSET, top: y + OFFSET });
+  const [measured, setMeasured] = useState(false);
 
   useLayoutEffect(() => {
     if (!ref.current) return;
@@ -69,13 +74,17 @@ export default function CountyTooltip({
       top = Math.max(VIEWPORT_PADDING, y - rect.height - OFFSET);
     }
     setPos({ left, top });
-  }, [x, y]);
+    if (!measured) setMeasured(true);
+  }, [x, y, measured]);
 
   return (
     <div
       ref={ref}
-      role="tooltip"
-      style={{ left: pos.left, top: pos.top }}
+      style={{
+        left: pos.left,
+        top: pos.top,
+        visibility: measured ? 'visible' : 'hidden',
+      }}
       className={cn(
         'pointer-events-none fixed z-20 min-w-[200px] rounded-xl bg-card-white border border-soft-border shadow-md p-3',
         className,
