@@ -22,7 +22,8 @@ import AdaptiveAccessCard from '../components/AdaptiveAccessCard';
 import AnalogList from '../components/AnalogList';
 import TradeoffPanel from '../components/TradeoffPanel';
 import CountyMap from '../components/CountyMap';
-import { mockRegion, mockAnalogs } from '../lib/mocks';
+import PatternGapPanel from '../components/PatternGapPanel';
+import { mockRegion, mockAnalogs, mockPathway } from '../lib/mocks';
 
 type View = 'hero' | 'results';
 
@@ -163,6 +164,10 @@ export default function HomePage() {
 
             <div className="mt-16">
               <AnalogList analogs={mockAnalogs.analogs} />
+            </div>
+
+            <div className="mt-12">
+              <PatternGapPanel gaps={mockPathway.gaps} />
             </div>
 
             <div className="mt-8">
