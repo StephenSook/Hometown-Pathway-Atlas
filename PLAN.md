@@ -108,8 +108,8 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started · ⛔ blocked · ✂️
 |---|---|---|---|---|---|---|
 | 1.1 | 2024 athlete scrape | `backend/ingest/01_athletes.py` | Vinh | ✅ | — | Done 2026-05-02. USOPC Excel (Olympic) + teamusa.com API (Paralympic). 610 Olympic + 225 Paralympic = 835 total. 99.4% hometown coverage. 5 missing (<5% drop threshold). |
 | 1.2 | GNIS city→FIPS geocoder | `backend/ingest/02_geocode.py` | Vinh | 🟡 | 1.1 | Day 2 AM. ≥95% success rate or escalate. **Drop name column immediately after.** |
-| 1.3 | nClimGrid-Daily county climate | `backend/ingest/04_climate.py` | Vinh | ⬜ | — | Day 2 PM. 5km gridded, NOT station-weighted. Categorize zones. |
-| 1.4 | ACS 5-year population | `backend/ingest/05_population.py` | Vinh | ⬜ | — | Day 2 PM. Census API. Per-capita normalization needs this. |
+| 1.3 | nClimGrid-Daily county climate | `backend/ingest/04_climate.py` | Vinh | ✅ | — | Done May 2. 5km gridded, NOT station-weighted. 7 zones classified. Fallback path tested — 350 counties, 0 nulls, 0 invalid zones. Swap in real nclimgrid_county_normals.csv before Day 6 gate. |
+| 1.4 | ACS 5-year population | `backend/ingest/05_population.py` | Vinh | ✅ | — | Done 2026-05-02. Census ACS 5-year API. 3,222 counties, 0% missing. Saved to `county_population.parquet`. |
 | 1.5 | HUD ZIP-County crosswalk | `backend/ingest/03_zip_crosswalk.py` | Vinh | ⬜ | — | Day 2 PM. Most recent quarterly file. Max-residential-ratio for ambiguous ZIPs. |
 | 1.6 | Day 2 validation test | `backend/ingest/validate.py` | Vinh+Stephen | ⬜ | 1.1–1.5 | **GO/NO-GO checkpoint EOD Day 2.** 100 counties, 10 random source eyeball test. 7+ pass = GO. ≤4 pass = pivot to Hometown Genome. |
 | 1.7 | 2016–2024 full athlete scrape | `backend/ingest/01_athletes.py` | Vinh | ⬜ | 1.6 | Day 3 AM. Rio 2016 + PyeongChang 2018 + Tokyo 2020/2021 + Beijing 2022 + Paris 2024, both O+P. ~3-4K records. |
@@ -400,4 +400,4 @@ git commit -m "chore(plan): cut 4.E ✂️ — Day 7 not clean enough"
 
 ---
 
-_Last updated: 2026-05-02 by Vinh (task 0.5–0.7 ✅, task 1.1 ✅, task 1.2 🟡)._
+_Last updated: 2026-05-02 by Vinh (task 0.5–0.7 ✅, task 1.1 ✅, task 1.2 🟡, task 1.3 ✅)._
