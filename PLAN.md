@@ -4,7 +4,7 @@
 
 **Hackathon:** Team USA × Google Cloud Hackathon — Challenge 2 (Hometown Success Engine)
 **Submission deadline:** May 11, 2026 — 5:00 PM PT
-**Today:** May 1, 2026 — Day 1
+**Today:** May 2, 2026 — Day 2
 **Repo:** https://github.com/StephenSook/Hometown-Pathway-Atlas
 **Strategy:** Maximum Scope — playing for both Challenge 2 Winner ($8K) AND Grand Prize ($15K). Conservative ships first, ambitious layers stack on top, each independently cuttable.
 
@@ -95,9 +95,9 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started · ⛔ blocked · ✂️
 | 0.2 | Local clone of repo | local | Stephen | ✅ | `git clone https://github.com/StephenSook/Hometown-Pathway-Atlas` — cloned May 1. |
 | 0.3 | Drop CLAUDE.md + docs/ into repo | repo root, docs/ | Stephen | ✅ | Done May 1 init commit. |
 | 0.4 | Drop PLAN.md + STATUS_TEMPLATE + STEPHEN_FRONTEND_STRATEGY | repo root | Stephen | ✅ | Done May 1 init commit. Coordination is manual (mirrors Trace) — no hooks, no CLI. |
-| 0.5 | GCP project + APIs enabled | — | Stephen+Vinh | ⬜ | Project: `pathway-atlas-hackathon`. APIs: Cloud Run, Vertex AI, Cloud Build, Artifact Registry, Secret Manager. Budget alert $50. |
-| 0.6 | gcloud CLI installed + authed | local | Stephen+Vinh | ⬜ | `gcloud auth login` + `gcloud config set project pathway-atlas-hackathon` on both laptops. |
-| 0.7 | Hello-world Cloud Run deploy | `hello/` | Vinh | ⬜ | FastAPI + Vertex AI single endpoint. **Most important 30 min of Day 1.** Pass = `{"message": "..."}`. |
+| 0.5 | GCP project + APIs enabled | — | Stephen+Vinh | ✅ | Done 2026-05-02. Project: `pathway-atlas-hackathon`. APIs enabled. Budget alert $50 set. |
+| 0.6 | gcloud CLI installed + authed | local | Stephen+Vinh | ✅ | Done 2026-05-02. `gcloud auth login` + project set on Vinh's laptop. |
+| 0.7 | Hello-world Cloud Run deploy | `hello/` | Vinh | ✅ | Done 2026-05-02. FastAPI + Vertex AI deployed. Toolchain confirmed. |
 | 0.8 | Lock design system + moodboard | `DESIGN_SYSTEM.md`, `docs/moodboard/` | Stephen | ✅ | Done May 1. 7 visual mockups + 15-section design spec (17 components). |
 | 0.9 | Vinh contract review of DESIGN_SYSTEM.md §13 | reads `DESIGN_SYSTEM.md` | Vinh | ⬜ | **Day 1 EOD deadline.** Verify (a) `compliance_log[].status` enum is `pass\|fail\|fixed` lowercase, (b) `compliance_log[].ts` is ISO8601, (c) decide on `/api/stats/county/{fips}` endpoint OR static parquet for map tooltips. Comment confirmation in this row. |
 
@@ -105,8 +105,8 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started · ⛔ blocked · ✂️
 
 | # | Component | File(s) | Owner | Status | Deps | Notes |
 |---|---|---|---|---|---|---|
-| 1.1 | 2024 athlete scrape | `backend/ingest/01_athletes.py` | Vinh | ⬜ | — | Day 1 PM. Wikipedia + teamusa.com. Output `athletes_2024_raw.csv` ~800 rows. Names attached at this stage only. |
-| 1.2 | GNIS city→FIPS geocoder | `backend/ingest/02_geocode.py` | Vinh | ⬜ | 1.1 | Day 2 AM. ≥95% success rate or escalate. **Drop name column immediately after.** |
+| 1.1 | 2024 athlete scrape | `backend/ingest/01_athletes.py` | Vinh | ✅ | — | Done 2026-05-02. USOPC Excel (Olympic) + teamusa.com API (Paralympic). 610 Olympic + 225 Paralympic = 835 total. 99.4% hometown coverage. 5 missing (<5% drop threshold). |
+| 1.2 | GNIS city→FIPS geocoder | `backend/ingest/02_geocode.py` | Vinh | 🟡 | 1.1 | Day 2 AM. ≥95% success rate or escalate. **Drop name column immediately after.** |
 | 1.3 | nClimGrid-Daily county climate | `backend/ingest/04_climate.py` | Vinh | ⬜ | — | Day 2 PM. 5km gridded, NOT station-weighted. Categorize zones. |
 | 1.4 | ACS 5-year population | `backend/ingest/05_population.py` | Vinh | ⬜ | — | Day 2 PM. Census API. Per-capita normalization needs this. |
 | 1.5 | HUD ZIP-County crosswalk | `backend/ingest/03_zip_crosswalk.py` | Vinh | ⬜ | — | Day 2 PM. Most recent quarterly file. Max-residential-ratio for ambiguous ZIPs. |
@@ -399,4 +399,4 @@ git commit -m "chore(plan): cut 4.E ✂️ — Day 7 not clean enough"
 
 ---
 
-_Last updated: 2026-05-01 by Stephen (project init)._
+_Last updated: 2026-05-02 by Vinh (task 0.5–0.7 ✅, task 1.1 ✅, task 1.2 🟡)._
