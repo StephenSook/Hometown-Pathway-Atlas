@@ -1,21 +1,19 @@
 /**
- * EvidenceLabel — tri-color status pill per DESIGN_SYSTEM.md §4.8 + §1.1
+ * EvidenceLabel — confidence/quality/severity pill primitive.
  *
- * Used everywhere parity / quality / confidence is shown:
- * - ParityPanel (§4.4) — Olympic + Paralympic evidence per pillar
- * - AnalogCard (§4.10) — match quality
- * - PatternGapPanel (§4.15) — gap confidence
- * - AdaptiveAccessCard (§4.7) — Move United proxy confidence
+ * Reused by ParityPanel, AnalogCard, PatternGapPanel, AdaptiveAccessCard.
+ * Locks WCAG 1.4.1: every pill carries icon + text, never color-only.
  *
- * Status semantic (tri-color, locked across all confidence/quality/severity):
- * - high   → accent-teal (#2E8B57) bg, white text — verified / strong evidence
- * - medium → status-amber (#D97706) bg, body-text (#1C2433) text — pending
- *           (NOT white text — fails AA contrast at small sizes per §8.1)
- * - low    → soft-border (#E7E2D9) bg, muted-text (#6B7280) — sparse data
- *
- * WCAG 1.4.1: color paired with text label always. Never color-only.
+ * Tier semantic:
+ * - high   = verified / strong evidence (accent-teal bg, white text + check icon)
+ * - medium = pending / partial (status-amber bg, body-text NOT white per §8.1
+ *            contrast rule, alert icon)
+ * - low    = sparse data (neutral soft-border bg, muted-text + minus icon).
+ *            Locked decision: low ≠ danger. Danger is reserved for hard errors
+ *            per DESIGN_SYSTEM §1.1; sparse data is data quality, not failure.
  */
 
+import { Check, AlertTriangle, Minus } from 'lucide-react';
 import type { EvidenceLevel } from '../lib/api';
 import { cn } from '../lib/utils';
 
@@ -32,24 +30,27 @@ const STYLES: Record<EvidenceLevel, string> = {
   low: 'bg-soft-border text-muted-text',
 };
 
-export default function EvidenceLabel({
-  level,
-  label,
-  className,
-}: EvidenceLabelProps) {
+const ICONS: Record<EvidenceLevel, typeof Check> = {
+  high: Check,
+  medium: AlertTriangle,
+  low: Minus,
+};
+
+export default function EvidenceLabel({ level, label, className }: EvidenceLabelProps) {
   const text = label ?? `evidence: ${level}`;
+  const Icon = ICONS[level];
 
   return (
     <span
-      role="status"
       aria-label={text}
       className={cn(
-        'inline-flex items-center rounded-full px-3 py-1',
+        'inline-flex items-center gap-1.5 rounded-full px-3 py-1',
         'font-mono uppercase tracking-wider text-eyebrow whitespace-nowrap',
         STYLES[level],
         className,
       )}
     >
+      <Icon className="h-3 w-3" aria-hidden="true" />
       {text}
     </span>
   );
