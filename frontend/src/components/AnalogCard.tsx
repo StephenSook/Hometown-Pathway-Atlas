@@ -2,8 +2,10 @@
  * AnalogCard — single peer county card.
  * Anatomy per DESIGN_SYSTEM §4.10.
  *
- * Hover state uses CSS hover (no Framer Motion needed for subtle scale).
- * Click handler optional — Day 4 will wire to /region/{fips} drilldown via router.
+ * Interactive mode uses card-link pattern: <article> stays as landmark,
+ * a single inner button activates via ::before pseudo-overlay covering the
+ * whole card. Avoids the invalid HTML of nesting <article> inside <button>.
+ * Hover styles ride the .group/.group-hover pattern on the article.
  */
 
 import { useId } from 'react';
@@ -26,14 +28,14 @@ export default function AnalogCard({
   const headingId = useId();
   const isInteractive = onSelect !== undefined;
 
-  const content = (
+  return (
     <article
       aria-labelledby={headingId}
       className={cn(
-        'rounded-2xl bg-card-white border border-soft-border shadow-card-resting',
+        'group relative rounded-2xl bg-card-white border border-soft-border shadow-card-resting',
         'p-6 flex flex-col gap-4',
         isInteractive &&
-          'transition-all duration-200 hover:shadow-card-hover hover:scale-[1.02] cursor-pointer focus-ring',
+          'transition-all duration-200 group-hover:shadow-card-hover hover:shadow-card-hover hover:scale-[1.02]',
         className,
       )}
     >
@@ -52,11 +54,23 @@ export default function AnalogCard({
       </div>
 
       <div>
-        <h3
-          id={headingId}
-          className="text-h3 font-sans font-semibold text-navy leading-tight"
-        >
-          {analog.county_name}
+        <h3 className="text-h3 font-sans font-semibold text-navy leading-tight">
+          {isInteractive ? (
+            <button
+              id={headingId}
+              type="button"
+              onClick={() => onSelect?.(analog.fips)}
+              className={cn(
+                'text-left focus-ring rounded',
+                // ::before overlay extends click target to whole article surface.
+                "before:content-[''] before:absolute before:inset-0 before:rounded-2xl",
+              )}
+            >
+              {analog.county_name}
+            </button>
+          ) : (
+            <span id={headingId}>{analog.county_name}</span>
+          )}
         </h3>
         <p className="font-serif italic text-caption text-muted-text mt-1">
           {analog.state}
@@ -71,19 +85,6 @@ export default function AnalogCard({
         {analog.narrative}
       </p>
     </article>
-  );
-
-  if (!isInteractive) return content;
-
-  return (
-    <button
-      type="button"
-      onClick={() => onSelect?.(analog.fips)}
-      className="text-left w-full"
-      aria-label={`Open ${analog.county_name}, ${analog.state} region detail`}
-    >
-      {content}
-    </button>
   );
 }
 
