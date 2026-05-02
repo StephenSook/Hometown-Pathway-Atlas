@@ -10,7 +10,7 @@
  * Reference: docs/moodboard/01_hero.png + 02_parity_panel.png + 03_analog_cards.png.
  */
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import ZipInput from '../components/ZipInput';
@@ -28,6 +28,20 @@ type View = 'hero' | 'results';
 export default function HomePage() {
   const [view, setView] = useState<View>('hero');
   const [loading, setLoading] = useState(false);
+  const mainRef = useRef<HTMLElement>(null);
+  // Skip the very first paint — only manage focus on user-driven view change.
+  const isInitialMount = useRef(true);
+
+  // Focus management on view transition (a11y per DESIGN_SYSTEM §8.2):
+  // moves focus to <main> (tabIndex=-1) so screen readers announce the
+  // newly mounted region without jarring sighted users.
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+    mainRef.current?.focus();
+  }, [view]);
 
   const handleSubmit = (zip: string) => {
     setLoading(true);
@@ -44,7 +58,12 @@ export default function HomePage() {
     <div className="min-h-screen bg-warm-neutral">
       <Navbar />
 
-      <main id="main-content" className="pt-32 md:pt-40 pb-16" tabIndex={-1}>
+      <main
+        ref={mainRef}
+        id="main-content"
+        tabIndex={-1}
+        className="pt-32 md:pt-40 pb-16 focus:outline-none"
+      >
         {view === 'hero' ? (
           <>
             <section
