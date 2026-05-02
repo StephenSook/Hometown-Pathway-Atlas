@@ -10,6 +10,40 @@
 
 ---
 
+## 🌅 Vinh — read this first when you wake up (2026-05-02 morning)
+
+**End-of-day 2026-05-01 status:**
+Stephen completed full design lock today. 5 commits pushed (`3c9a533` → `97017be`). Repo now contains:
+- `DESIGN_SYSTEM.md` — visual identity spec, 17 components with anatomy + states + motion + accessibility + build order
+- `docs/moodboard/01-07.png` — 7 high-fi visual targets (banana skill generated)
+- `REFERENCE_FINDINGS.md` — Phase A research input
+- `PLAN.md`, `CLAUDE.md`, `STEPHEN_FRONTEND_STRATEGY.md` updated to reference DESIGN_SYSTEM.md
+
+**Your action items in order (~2.5hr total before backend code):**
+
+1. **(15 min)** Read `DESIGN_SYSTEM.md` §13 "Note for Vinh" — three contracts to verify
+2. **(10 min)** Update PLAN.md task **0.9** with confirmation OR escalation:
+   - Confirm `compliance_log[].status` enum = `pass | fail | fixed` (lowercase, NOT `PASS/FAIL/SUCCESS`)
+   - Confirm `compliance_log[].ts` = ISO8601 (`2026-05-11T14:02:11Z`)
+   - Decide: add `/api/stats/county/{fips}` lightweight endpoint OR bake static county profile parquet into frontend container for map hover tooltips. Either works.
+3. **(2 hr)** GCP setup with Stephen — tasks **0.5, 0.6, 0.7**. Hello-world Cloud Run deploy is most important 30 min of the build. Coordinate timing in chat.
+4. **(start)** Begin Phase 1 — task **1.1** athlete data scrape. Critical path. Day 2 EOD = GO/NO-GO validation gate.
+
+**What Stephen will be doing in parallel (don't overlap):**
+- Day 1 PM: scaffold `frontend/` (Vite+React+TS+Tailwind) per `DESIGN_SYSTEM.md` §15 build order
+- Day 2: ZipInput + Navbar + RegionHeader components (mocked against `lib/mocks.ts`)
+- Day 4 PM: integrate against your real `/api/region` endpoint
+
+**Coordination protocol** (see §"Coordination Protocol" below):
+- Edit `PLAN.md` to claim 🟡, complete ✅, block ⛔, cut ✂️
+- Single-file commit per status change
+- 4-hour stale lock TTL
+- ⚠️ CONTRACT prefix on commits that change Shared Contracts
+
+**If anything is unclear or you find drift:** ping Stephen in chat OR add a `🟡 NEEDS-INPUT` row in PLAN.md with the question. Don't wait silently.
+
+---
+
 ## Sources of truth (priority order)
 
 1. **CLAUDE.md** — persistent context Claude Code reads every turn. Locked decisions live here. If anything in this PLAN.md drifts from CLAUDE.md, fix PLAN.md.
