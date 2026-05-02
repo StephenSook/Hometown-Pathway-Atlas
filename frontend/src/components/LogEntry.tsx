@@ -3,7 +3,7 @@
  * Anatomy per DESIGN_SYSTEM §4.16-4.17.
  *
  * Status semantics (locked):
- * - pass  → soft-border dot, mutes after parent removes from displayed list
+ * - pass  → soft-border dot, parent removes from displayed list 1.5s after mount
  * - fail  → status-amber dot, expansion shows banned phrase strikethrough
  * - fixed → accent-teal dot, expansion shows safe rewrite in teal
  *
@@ -14,13 +14,21 @@
  * so the before-strikethrough exits and the after-rewrite enters as a smooth
  * height-collapse swap inside the same row.
  *
- * Auto-collapse for pass entries is owned by the PARENT — this component
- * fires `onCollapse` after PASS_COLLAPSE_MS so the parent can actually remove
- * the entry from state (and the empty-column placeholder can take over).
+ * Auto-collapse for pass entries: parent passes a STABLE `onCollapse(entry)`
+ * callback. The `entry` close-over here means the effect's deps stay tight to
+ * `entry` + `persist` + `onCollapse` — none of which change per-parent-render
+ * once `onCollapse` is parent-side `useCallback`d. Live-mode pass entries
+ * reliably collapse at 1.5s.
  *
- * Color contrast: the `before` phrase uses dark `text-body-text` with an
- * amber strikethrough decoration rather than amber text on white, which
- * fails AA at the 11px mono size per DESIGN_SYSTEM §8.1.
+ * Color contrast: the `before` phrase uses dark `text-body-text` (#1C2433 on
+ * card-white = ~15.6:1, AAA) with an amber strikethrough decoration rather
+ * than amber text on white. AT receives a sr-only prefix ("Banned phrase,
+ * rewritten:") so the announcement carries the qualifier — text-decoration
+ * is purely visual, AT can't infer "this was caught" from line-through alone.
+ *
+ * `useReducedMotion()` returns null on first render before matchMedia
+ * resolves. Coercing via `?? false` prevents the falsy-null branch from
+ * accidentally animating once for a reduced-motion user.
  */
 
 import { useEffect } from 'react';
@@ -33,7 +41,7 @@ interface LogEntryProps {
   entry: ComplianceLogEntry;
   /** When false (default), pass entries fire onCollapse after 1.5s. */
   persist?: boolean;
-  onCollapse?: () => void;
+  onCollapse?: (entry: ComplianceLogEntry) => void;
   className?: string;
 }
 
@@ -59,19 +67,21 @@ export default function LogEntry({
   onCollapse,
   className,
 }: LogEntryProps) {
-  const reduceMotion = useReducedMotion();
+  const reduceMotion = useReducedMotion() ?? false;
 
   useEffect(() => {
     if (persist || entry.status !== 'pass' || !onCollapse) return;
-    const t = setTimeout(onCollapse, PASS_COLLAPSE_MS);
+    const t = setTimeout(() => onCollapse(entry), PASS_COLLAPSE_MS);
     return () => clearTimeout(t);
-  }, [entry.status, persist, onCollapse]);
+  }, [entry, persist, onCollapse]);
 
   const showExpansion =
     (entry.status === 'fail' || entry.status === 'fixed') &&
     (entry.before || entry.after);
 
   const colorTransition = reduceMotion ? { duration: 0 } : COLOR_TRANSITION;
+  const dotColor = STATUS_BG_HEX[entry.status];
+  const textColor = STATUS_TEXT_HEX[entry.status];
 
   return (
     <motion.li
@@ -87,7 +97,8 @@ export default function LogEntry({
       <div className="flex items-center gap-2">
         <motion.span
           aria-hidden="true"
-          animate={{ backgroundColor: STATUS_BG_HEX[entry.status] }}
+          initial={{ backgroundColor: dotColor }}
+          animate={{ backgroundColor: dotColor }}
           transition={colorTransition}
           className="inline-block h-2 w-2 rounded-full shrink-0"
         />
@@ -101,7 +112,8 @@ export default function LogEntry({
           {entry.check}
         </span>
         <motion.span
-          animate={{ color: STATUS_TEXT_HEX[entry.status] }}
+          initial={{ color: textColor }}
+          animate={{ color: textColor }}
           transition={colorTransition}
           className="font-mono uppercase text-eyebrow tracking-wider shrink-0"
         >
@@ -122,18 +134,14 @@ export default function LogEntry({
             className="ml-4 pl-3 border-l border-soft-border flex flex-col gap-1 overflow-hidden"
           >
             {entry.before && (
-              <p
-                aria-label={`Caught phrase: ${entry.before}`}
-                className="font-mono text-eyebrow text-body-text line-through decoration-status-amber decoration-2 leading-snug"
-              >
+              <p className="font-mono text-eyebrow text-body-text line-through decoration-status-amber decoration-2 leading-snug">
+                <span className="sr-only">Banned phrase, rewritten: </span>
                 {entry.before}
               </p>
             )}
             {entry.after && (
-              <p
-                aria-label={`Rewritten as: ${entry.after}`}
-                className="font-mono text-eyebrow text-accent-teal leading-snug"
-              >
+              <p className="font-mono text-eyebrow text-accent-teal leading-snug">
+                <span className="sr-only">Approved rewrite: </span>
                 {entry.after}
               </p>
             )}
