@@ -23,6 +23,7 @@ import AnalogList from '../components/AnalogList';
 import TradeoffPanel from '../components/TradeoffPanel';
 import CountyMap from '../components/CountyMap';
 import PatternGapPanel from '../components/PatternGapPanel';
+import ComplianceLog from '../components/ComplianceLog';
 import { mockRegion, mockAnalogs, mockPathway } from '../lib/mocks';
 
 type View = 'hero' | 'results';
@@ -181,6 +182,10 @@ export default function HomePage() {
           </section>
         )}
       </main>
+
+      {view === 'results' && (
+        <ComplianceLog entries={mockRegion.compliance_log} demoMode={true} />
+      )}
     </div>
   );
 }
