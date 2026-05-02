@@ -130,7 +130,7 @@ export const mockAnalogs: AnalogsResponse = {
     },
   ],
   tradeoff_explanation:
-    "Mecklenburg leads on overall similarity. Wake County shows stronger Paralympic per-capita representation despite a slightly cooler climate match. Jefferson County offers the closest sport-mix signal for fans focused on swimming pathways.",
+    "Mecklenburg could be associated with the strongest overall similarity in our indexed sources. Wake County may correlate with higher Paralympic per-capita representation despite a cooler climate match. Jefferson County's sport-mix signal could help fans tracking swimming pathways.",
 };
 
 export const mockPathway: PathwayResponse = {

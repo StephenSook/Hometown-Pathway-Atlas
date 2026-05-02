@@ -1,9 +1,9 @@
 /**
- * Framer Motion presets — locked to DESIGN_SYSTEM.md §5.1
+ * Framer Motion presets per DESIGN_SYSTEM.md §5.1.
  *
- * Editorial data journalism motion language. NO bouncy springs, NO bombast.
- * Subtle, audit-grade, NYT-tier transitions. Respect prefers-reduced-motion globally
- * via index.css base layer (animations are disabled via @media reduce).
+ * Editorial motion language: subtle eases for entrances, springs reserved
+ * for the single audit-grade "fixed" status moment per spec §4.16. Global
+ * prefers-reduced-motion respect via index.css base layer.
  */
 
 import type { Variants, Transition } from 'framer-motion';

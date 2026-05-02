@@ -1,4 +1,4 @@
-# Hometown Pathway Atlas — Plan & Coordination
+﻿# Hometown Pathway Atlas — Plan & Coordination
 
 > Living working doc for **Stephen Sookra** (frontend + pitch + project architect) and **Vinh Le** (backend + data + AI). Updated on every task status change and pushed to `main`. Authoritative over the docx specs when they disagree.
 
@@ -42,6 +42,7 @@ Stephen completed full design lock today. Repo now contains:
    - **§13.2 decide ONE of these for CountyMap hover tooltips:**
      - Option A: add new `/api/stats/county/{fips}` lightweight endpoint returning `{fips, county_name, olympic_per_100k, paralympic_per_100k, olympic_evidence, paralympic_evidence}`
      - Option B: bake static county profile parquet into frontend container (no new endpoint needed)
+   - **NEW (Stephen, 2026-05-02):** `AnalogEntry` and `RegionResponse` should expose a `centroid: [number, number]` (lng, lat) field so the CountyMap can place pins + arcs without a hardcoded lookup. Currently `frontend/src/components/CountyMap.tsx` falls back to `KNOWN_CENTROIDS` for the four mock FIPSes; non-Cobb sources will silently render no pins until backend fills this in. Cheap to compute server-side from the `county_profiles.parquet` shapefile.
 3. **(2 hr)** GCP setup with Stephen — tasks **0.5, 0.6, 0.7**. Hello-world Cloud Run deploy is most important 30 min of the build. Coordinate timing — see contact path below.
 4. **(start)** Begin Phase 1 — task **1.1** athlete data scrape. Critical path. Day 2 EOD = GO/NO-GO validation gate.
 
@@ -95,9 +96,9 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started · ⛔ blocked · ✂️
 | 0.2 | Local clone of repo | local | Stephen | ✅ | `git clone https://github.com/StephenSook/Hometown-Pathway-Atlas` — cloned May 1. |
 | 0.3 | Drop CLAUDE.md + docs/ into repo | repo root, docs/ | Stephen | ✅ | Done May 1 init commit. |
 | 0.4 | Drop PLAN.md + STATUS_TEMPLATE + STEPHEN_FRONTEND_STRATEGY | repo root | Stephen | ✅ | Done May 1 init commit. Coordination is manual (mirrors Trace) — no hooks, no CLI. |
-| 0.5 | GCP project + APIs enabled | — | Stephen+Vinh | ✅ | Done 2026-05-02. Project: `pathway-atlas-hackathon`. APIs enabled. Budget alert $50 set. |
-| 0.6 | gcloud CLI installed + authed | local | Stephen+Vinh | ✅ | Done 2026-05-02. `gcloud auth login` + project set on Vinh's laptop. |
-| 0.7 | Hello-world Cloud Run deploy | `hello/` | Vinh | ✅ | Done 2026-05-02. FastAPI + Vertex AI deployed. Toolchain confirmed. |
+| 0.5 | GCP project + APIs enabled | — | Stephen+Vinh | ✅ | Project `pathway-atlas-hackathon` live. 5 APIs enabled (run, aiplatform, cloudbuild, artifactregistry, secretmanager). Verified May 2 via `gcloud services list`. |
+| 0.6 | gcloud CLI installed + authed | local | Stephen+Vinh | ✅ | Both laptops authed May 2. ADC set up for Vertex AI calls. Vinh granted `roles/editor` + `roles/run.admin` (run.admin needed for Cloud Run IAM management — `roles/editor` excludes `run.services.setIamPolicy`). |
+| 0.7 | Hello-world Cloud Run deploy | `hello-gemini/` | Vinh | ✅ | Live + public at https://hello-gemini-635524063449.us-central1.run.app/ — returns `{"message":"Welcome, and we're thrilled to share our hack!"}` from Gemini call. End-to-end Vertex AI + Cloud Run verified May 2. |
 | 0.8 | Lock design system + moodboard | `DESIGN_SYSTEM.md`, `docs/moodboard/` | Stephen | ✅ | Done May 1. 7 visual mockups + 15-section design spec (17 components). |
 | 0.9 | Vinh contract review of DESIGN_SYSTEM.md §13 | reads `DESIGN_SYSTEM.md` | Vinh | ⬜ | **Day 1 EOD deadline.** Verify (a) `compliance_log[].status` enum is `pass\|fail\|fixed` lowercase, (b) `compliance_log[].ts` is ISO8601, (c) decide on `/api/stats/county/{fips}` endpoint OR static parquet for map tooltips. Comment confirmation in this row. |
 
@@ -137,15 +138,15 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started · ⛔ blocked · ✂️
 
 | # | Component | File(s) | Owner | Status | Deps | Notes |
 |---|---|---|---|---|---|---|
-| 3.1 | Vite+React+TS+Tailwind scaffold | `frontend/` | Stephen | ⬜ | 0.2 | Day 1 PM. Lock visual ambition target — Layer B begins now. |
-| 3.2 | Visual design tokens (Tailwind config) | `frontend/src/styles/`, `tailwind.config.ts` | Stephen | ⬜ | 3.1 | Day 1-2. **Source of truth: `DESIGN_SYSTEM.md` §1.** All palette + typography + spacing tokens implement the locked spec — no improvising. |
-| 3.3 | Component library installed | `package.json` | Stephen | ⬜ | 3.1 | Day 2. shadcn/ui base + Framer Motion + react-simple-maps + Recharts + React Query + Lucide React (Lucide replaces custom climate SVGs per DESIGN_SYSTEM.md §6.1). |
+| 3.1 | Vite+React+TS+Tailwind scaffold | `frontend/` | Stephen | ✅ | 0.2 | Day 1 PM. Vite 8 + React 19 + TS strict + Tailwind v3. |
+| 3.2 | Visual design tokens (Tailwind config) | `frontend/tailwind.config.ts`, `src/index.css` | Stephen | ✅ | 3.1 | Atlas Editorial palette + type scale + shadows + Inter/Instrument Serif/JetBrains Mono per DESIGN_SYSTEM §1. |
+| 3.3 | Component library installed | `package.json` | Stephen | ✅ | 3.1 | Framer Motion + react-simple-maps + Recharts + React Query + Lucide + sonner + tailwind-merge + cva + topojson-client + us-atlas + prop-types. |
 | 3.4 | Wireframes for key screens | `docs/wireframes/` (skipped) | Stephen | ✂️ | — | Superseded by `docs/moodboard/01-07.png`. Wireframes not needed — moodboard images + DESIGN_SYSTEM.md §4 component anatomy are the visual brief. |
-| 3.5 | ZipInput + landing page | `frontend/src/pages/HomePage.tsx`, `components/ZipInput.tsx` | Stephen | ⬜ | 3.2 | Day 2 AM. Single CTA. ZIP validation. |
-| 3.6 | RegionHeader + ParityPanel | `frontend/src/components/RegionProfile/*` | Stephen | ⬜ | 3.2 | Day 2 PM. Side-by-side O/P metrics. EvidenceLabel badge. **Never merge into single number.** |
-| 3.7 | Mock API responses | `frontend/src/lib/mocks.ts` | Stephen | ⬜ | 2.2 | Day 2. Aligned to schema. Frontend builds against mocks Day 2-3, switches to real Day 4. |
-| 3.8 | AnalogList + AnalogCard + SimilarityBreakdown | `frontend/src/components/AnalogList/*` | Stephen | ⬜ | 3.6 | Day 3. Three cards. Per-dimension breakdown. Tradeoff panel placeholder. |
-| 3.9 | CountyMap (choropleth) | `frontend/src/components/CountyMap/*` | Stephen | ⬜ | 3.3 | Day 3. react-simple-maps + TopoJSON. Source highlighted, 3 analog pins. Custom illustration (Layer B). |
+| 3.5 | ZipInput + landing page | `frontend/src/pages/HomePage.tsx`, `components/ZipInput.tsx` | Stephen | ✅ | 3.2 | Day 2 AM. Hero + state machine to results view. |
+| 3.6 | RegionHeader + ParityPanel | `frontend/src/components/{RegionHeader,ParityPanel}.tsx` | Stephen | ✅ | 3.2 | Day 2 PM. EvidenceLabel + 5-segment percentile bars + skeleton + empty variants. Both headers navy. |
+| 3.7 | Mock API responses | `frontend/src/lib/mocks.ts` | Stephen | ✅ | 2.2 | Day 2. Cobb GA + 3 NC/KY analogs. Conditional phrasing locked. |
+| 3.8 | AnalogList + AnalogCard + SimilarityBreakdown | `frontend/src/components/{AnalogList,AnalogCard,SimilarityBreakdown}.tsx` | Stephen | ✅ | 3.6 | Day 3. Card-link pattern with ::before overlay. useId for headings. Tradeoff panel + SportMix + ClimateBadge + AdaptiveAccessCard also shipped. |
+| 3.9 | CountyMap + CountyTooltip (choropleth) | `frontend/src/components/{CountyMap,CountyTooltip}.tsx` | Stephen | ✅ | 3.3 | Day 5 AM. react-simple-maps@3 + us-atlas counties-10m. Bezier arcs source→analog with arrowhead marker. Source label callout. Tab-reachable highlighted counties + viewport-clamped tooltip. **Resolved risk:** prop-types added as direct dep — build green, runtime smoke tested zero console errors. **Followup contract:** AnalogEntry needs a `centroid` field (added to task 0.9 review). |
 | 3.10 | PatternGapPanel + GapCard | `frontend/src/components/PatternGapPanel/*` | Stephen | ⬜ | 3.6 | Day 4. Three categories. Conditional language enforced. |
 | 3.11 | ComplianceLog component | `frontend/src/components/ComplianceLog/*` | Stephen | ⬜ | 3.6 | Day 4. Two-column live feed. Pass/fail/fixed status colors. Slide-down animation. |
 | 3.12 | React Query wiring | `frontend/src/hooks/{useRegion,useAnalogs,usePathway}.ts` | Stephen | ⬜ | 3.7, 2.6 | Day 4. Connect to local backend. Loading/error states. |

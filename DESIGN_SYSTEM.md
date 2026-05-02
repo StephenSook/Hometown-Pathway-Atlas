@@ -160,6 +160,23 @@ Tailwind 12-column grid. Common Atlas layouts:
 | Standard | `py-8 px-6` | `py-12 px-8` | `py-16 px-8` |
 | Compact | `py-4 px-4` | `py-6 px-6` | `py-8 px-8` |
 
+### 2.4 Z-index scale (locked across all fixed/absolute layers)
+
+Single source of truth — all fixed-position components reference this scale by name. Prevents collision between Navbar / Compliance Log / future modals/drawers.
+
+| Layer | Tailwind class | Numeric | Use |
+|-------|---------------|---------|-----|
+| Skip-to-content link | `z-50` | 50 | First focusable, must beat everything |
+| Modal / dialog overlay | `z-50` | 50 | Same plane as skip link (skip link wins on focus) |
+| Floating Navbar pill | `z-40` | 40 | Stays above page content + below modals |
+| Mobile menu drop | `z-40` | 40 | Sibling of Navbar pill, same plane |
+| Compliance Log panel (Day 6) | `z-30` | 30 | Below Navbar (so Navbar covers it on scroll) |
+| Tooltip on map hover | `z-20` | 20 | Above choropleth + analog cards |
+| CountyMap analog pins / pulses | `z-10` | 10 | Above choropleth fill, below tooltip |
+| Default page content | (none) | 0 | Body flow |
+
+When adding a new fixed/sticky layer: pick from this scale. NEVER introduce ad-hoc values like `z-[27]`.
+
 ---
 
 ## 3. Mobile-first breakpoint specs
@@ -776,6 +793,10 @@ This document specifies what the user sees. **Required Day 1 EOD checks before c
 CountyMap (§4.13) hover tooltip needs per-county metrics for arbitrary counties (not just the one being viewed). PLAN.md only defines `/api/region` returning data for ONE FIPS. Vinh: add `/api/stats/county/{fips}` lightweight endpoint returning `{fips, county_name, olympic_per_100k, paralympic_per_100k, olympic_evidence, paralympic_evidence}` for hover tooltips. **Note:** evidence fields are separate per pillar to match `county_profiles.parquet` schema (§3.2 of architecture spec) — never collapse into a single `evidence` field.
 
 Alternative: bake all county profiles into a small static parquet served from the frontend. Either works — Vinh's call.
+
+### 13.2.1 CountyMap centroid contract addition (added 2026-05-02 after Day 5 AM build)
+
+`AnalogEntry` (in `/api/analogs/{fips}` response) and `RegionResponse` (in `/api/region/{fips}`) need an optional `centroid: [number, number]` field — `[longitude, latitude]` — so the frontend can place pins and Bezier arcs without a hardcoded FIPS-to-coords lookup. Vinh: cheap to compute server-side from `county_profiles.parquet`'s shapefile column (or from the FIPS centroid lookup table the Census ships). Until this lands, `frontend/src/components/CountyMap.tsx` falls back to a four-county `KNOWN_CENTROIDS` table that only covers the mock dataset; non-Cobb sources render the map with no pins or arcs.
 
 ### 13.3 Hard deadline
 
