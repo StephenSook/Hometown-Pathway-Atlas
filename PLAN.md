@@ -42,6 +42,7 @@ Stephen completed full design lock today. Repo now contains:
    - **§13.2 decide ONE of these for CountyMap hover tooltips:**
      - Option A: add new `/api/stats/county/{fips}` lightweight endpoint returning `{fips, county_name, olympic_per_100k, paralympic_per_100k, olympic_evidence, paralympic_evidence}`
      - Option B: bake static county profile parquet into frontend container (no new endpoint needed)
+   - **NEW (Stephen, 2026-05-02):** `AnalogEntry` and `RegionResponse` should expose a `centroid: [number, number]` (lng, lat) field so the CountyMap can place pins + arcs without a hardcoded lookup. Currently `frontend/src/components/CountyMap.tsx` falls back to `KNOWN_CENTROIDS` for the four mock FIPSes; non-Cobb sources will silently render no pins until backend fills this in. Cheap to compute server-side from the `county_profiles.parquet` shapefile.
 3. **(2 hr)** GCP setup with Stephen — tasks **0.5, 0.6, 0.7**. Hello-world Cloud Run deploy is most important 30 min of the build. Coordinate timing — see contact path below.
 4. **(start)** Begin Phase 1 — task **1.1** athlete data scrape. Critical path. Day 2 EOD = GO/NO-GO validation gate.
 
@@ -137,15 +138,15 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started · ⛔ blocked · ✂️
 
 | # | Component | File(s) | Owner | Status | Deps | Notes |
 |---|---|---|---|---|---|---|
-| 3.1 | Vite+React+TS+Tailwind scaffold | `frontend/` | Stephen | ⬜ | 0.2 | Day 1 PM. Lock visual ambition target — Layer B begins now. |
-| 3.2 | Visual design tokens (Tailwind config) | `frontend/src/styles/`, `tailwind.config.ts` | Stephen | ⬜ | 3.1 | Day 1-2. **Source of truth: `DESIGN_SYSTEM.md` §1.** All palette + typography + spacing tokens implement the locked spec — no improvising. |
-| 3.3 | Component library installed | `package.json` | Stephen | ⬜ | 3.1 | Day 2. shadcn/ui base + Framer Motion + react-simple-maps + Recharts + React Query + Lucide React (Lucide replaces custom climate SVGs per DESIGN_SYSTEM.md §6.1). |
+| 3.1 | Vite+React+TS+Tailwind scaffold | `frontend/` | Stephen | ✅ | 0.2 | Day 1 PM. Vite 8 + React 19 + TS strict + Tailwind v3. |
+| 3.2 | Visual design tokens (Tailwind config) | `frontend/tailwind.config.ts`, `src/index.css` | Stephen | ✅ | 3.1 | Atlas Editorial palette + type scale + shadows + Inter/Instrument Serif/JetBrains Mono per DESIGN_SYSTEM §1. |
+| 3.3 | Component library installed | `package.json` | Stephen | ✅ | 3.1 | Framer Motion + react-simple-maps + Recharts + React Query + Lucide + sonner + tailwind-merge + cva + topojson-client + us-atlas + prop-types. |
 | 3.4 | Wireframes for key screens | `docs/wireframes/` (skipped) | Stephen | ✂️ | — | Superseded by `docs/moodboard/01-07.png`. Wireframes not needed — moodboard images + DESIGN_SYSTEM.md §4 component anatomy are the visual brief. |
-| 3.5 | ZipInput + landing page | `frontend/src/pages/HomePage.tsx`, `components/ZipInput.tsx` | Stephen | ⬜ | 3.2 | Day 2 AM. Single CTA. ZIP validation. |
-| 3.6 | RegionHeader + ParityPanel | `frontend/src/components/RegionProfile/*` | Stephen | ⬜ | 3.2 | Day 2 PM. Side-by-side O/P metrics. EvidenceLabel badge. **Never merge into single number.** |
-| 3.7 | Mock API responses | `frontend/src/lib/mocks.ts` | Stephen | ⬜ | 2.2 | Day 2. Aligned to schema. Frontend builds against mocks Day 2-3, switches to real Day 4. |
-| 3.8 | AnalogList + AnalogCard + SimilarityBreakdown | `frontend/src/components/AnalogList/*` | Stephen | ⬜ | 3.6 | Day 3. Three cards. Per-dimension breakdown. Tradeoff panel placeholder. |
-| 3.9 | CountyMap (choropleth) | `frontend/src/components/CountyMap/*` | Stephen | ⬜ | 3.3 | Day 5 AM per DESIGN_SYSTEM §15. ⚠️ **Risk:** `react-simple-maps@3.0.0` peer deps don't list React 19 (only ^16.8.0 \| 17.x \| 18.x); installed via `--legacy-peer-deps`. Runtime risk because lib still uses `prop-types` (deprecated in React 19). **Fallback:** swap to `@nivo/geo@0.99.0` (officially supports React 19) if runtime breaks. Decision Day 5 AM after first render attempt. |
+| 3.5 | ZipInput + landing page | `frontend/src/pages/HomePage.tsx`, `components/ZipInput.tsx` | Stephen | ✅ | 3.2 | Day 2 AM. Hero + state machine to results view. |
+| 3.6 | RegionHeader + ParityPanel | `frontend/src/components/{RegionHeader,ParityPanel}.tsx` | Stephen | ✅ | 3.2 | Day 2 PM. EvidenceLabel + 5-segment percentile bars + skeleton + empty variants. Both headers navy. |
+| 3.7 | Mock API responses | `frontend/src/lib/mocks.ts` | Stephen | ✅ | 2.2 | Day 2. Cobb GA + 3 NC/KY analogs. Conditional phrasing locked. |
+| 3.8 | AnalogList + AnalogCard + SimilarityBreakdown | `frontend/src/components/{AnalogList,AnalogCard,SimilarityBreakdown}.tsx` | Stephen | ✅ | 3.6 | Day 3. Card-link pattern with ::before overlay. useId for headings. Tradeoff panel + SportMix + ClimateBadge + AdaptiveAccessCard also shipped. |
+| 3.9 | CountyMap + CountyTooltip (choropleth) | `frontend/src/components/{CountyMap,CountyTooltip}.tsx` | Stephen | ✅ | 3.3 | Day 5 AM. react-simple-maps@3 + us-atlas counties-10m. Bezier arcs source→analog with arrowhead marker. Source label callout. Tab-reachable highlighted counties + viewport-clamped tooltip. **Resolved risk:** prop-types added as direct dep — build green, runtime smoke tested zero console errors. **Followup contract:** AnalogEntry needs a `centroid` field (added to task 0.9 review). |
 | 3.10 | PatternGapPanel + GapCard | `frontend/src/components/PatternGapPanel/*` | Stephen | ⬜ | 3.6 | Day 4. Three categories. Conditional language enforced. |
 | 3.11 | ComplianceLog component | `frontend/src/components/ComplianceLog/*` | Stephen | ⬜ | 3.6 | Day 4. Two-column live feed. Pass/fail/fixed status colors. Slide-down animation. |
 | 3.12 | React Query wiring | `frontend/src/hooks/{useRegion,useAnalogs,usePathway}.ts` | Stephen | ⬜ | 3.7, 2.6 | Day 4. Connect to local backend. Loading/error states. |

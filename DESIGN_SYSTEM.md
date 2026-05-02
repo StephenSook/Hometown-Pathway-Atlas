@@ -794,6 +794,10 @@ CountyMap (§4.13) hover tooltip needs per-county metrics for arbitrary counties
 
 Alternative: bake all county profiles into a small static parquet served from the frontend. Either works — Vinh's call.
 
+### 13.2.1 CountyMap centroid contract addition (added 2026-05-02 after Day 5 AM build)
+
+`AnalogEntry` (in `/api/analogs/{fips}` response) and `RegionResponse` (in `/api/region/{fips}`) need an optional `centroid: [number, number]` field — `[longitude, latitude]` — so the frontend can place pins and Bezier arcs without a hardcoded FIPS-to-coords lookup. Vinh: cheap to compute server-side from `county_profiles.parquet`'s shapefile column (or from the FIPS centroid lookup table the Census ships). Until this lands, `frontend/src/components/CountyMap.tsx` falls back to a four-county `KNOWN_CENTROIDS` table that only covers the mock dataset; non-Cobb sources render the map with no pins or arcs.
+
 ### 13.3 Hard deadline
 
 **Day 1 EOD:** Vinh confirms contract compatibility in PLAN.md as a comment or status update. If anything diverges, escalate before Stephen starts component implementation Day 2 AM.
