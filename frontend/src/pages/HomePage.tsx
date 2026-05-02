@@ -1,11 +1,13 @@
 /**
- * HomePage — landing surface + Day 2 PM results stub.
+ * HomePage — landing + Day 2-3 mock-driven results view.
  *
- * Hero (default view) submits a ZIP, transitions to a results view rendered
- * from lib/mocks.ts (mockRegion). Real backend integration + react-router-dom
- * routing replaces this state-machine pattern Day 4.
+ * Hero submits a ZIP → 600ms simulated network → results view renders the
+ * full region profile (header, parity, sport mix, climate, adaptive access,
+ * analog peers, tradeoff narrative) from lib/mocks.ts.
  *
- * Reference: docs/moodboard/01_hero.png + 02_parity_panel.png.
+ * Day 4 replaces the state machine with react-router-dom + api.region(zip).
+ *
+ * Reference: docs/moodboard/01_hero.png + 02_parity_panel.png + 03_analog_cards.png.
  */
 
 import { useState } from 'react';
@@ -14,7 +16,12 @@ import Navbar from '../components/Navbar';
 import ZipInput from '../components/ZipInput';
 import RegionHeader from '../components/RegionHeader';
 import ParityPanel from '../components/ParityPanel';
-import { mockRegion } from '../lib/mocks';
+import SportMix from '../components/SportMix';
+import ClimateBadge from '../components/ClimateBadge';
+import AdaptiveAccessCard from '../components/AdaptiveAccessCard';
+import AnalogList from '../components/AnalogList';
+import TradeoffPanel from '../components/TradeoffPanel';
+import { mockRegion, mockAnalogs } from '../lib/mocks';
 
 type View = 'hero' | 'results';
 
@@ -24,9 +31,6 @@ export default function HomePage() {
 
   const handleSubmit = (zip: string) => {
     setLoading(true);
-    // Day 4 will replace this with: api.region(zip) → route to /region/:fips.
-    // For now, simulate network + display mock Cobb County region per
-    // DESIGN_SYSTEM §15 build order (mocks Days 2–3, real Day 4).
     void zip;
     setTimeout(() => {
       setLoading(false);
@@ -95,6 +99,10 @@ export default function HomePage() {
               Back to home
             </button>
 
+            <h2 id="results-heading" className="sr-only">
+              Region representation results
+            </h2>
+
             <div className="mb-10">
               <RegionHeader
                 countyName={mockRegion.county_name}
@@ -104,10 +112,6 @@ export default function HomePage() {
               />
             </div>
 
-            <h2 id="results-heading" className="sr-only">
-              Region representation results
-            </h2>
-
             <ParityPanel
               countyName={mockRegion.county_name}
               msaLabel={mockRegion.msa_label}
@@ -116,9 +120,23 @@ export default function HomePage() {
               className="max-w-3xl mx-auto"
             />
 
-            <p className="font-serif italic text-caption text-muted-text text-center mt-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+              <SportMix sports={mockRegion.top_sports} />
+              <ClimateBadge climate={mockRegion.climate} />
+              <AdaptiveAccessCard access={mockRegion.adaptive_access} />
+            </div>
+
+            <div className="mt-16">
+              <AnalogList analogs={mockAnalogs.analogs} />
+            </div>
+
+            <div className="mt-8">
+              <TradeoffPanel explanation={mockAnalogs.tradeoff_explanation} />
+            </div>
+
+            <p className="font-serif italic text-caption text-muted-text text-center mt-12">
               Showing mock data while the backend pipeline is in build (Day 4
-              integrates real /api/region responses).
+              integrates real /api/region + /api/analogs responses).
             </p>
           </section>
         )}
