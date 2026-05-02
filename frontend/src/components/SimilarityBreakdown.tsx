@@ -51,7 +51,8 @@ export default function SimilarityBreakdown({
       className={cn('flex flex-col gap-3', className)}
     >
       {rows.map((row) => {
-        const widthPct = Math.min(100, Math.max(0, row.value * 100));
+        const clampedValue = Math.min(1, Math.max(0, row.value));
+        const widthPct = clampedValue * 100;
         return (
           <li key={row.label} className="flex items-center gap-3">
             <span className="w-32 shrink-0 font-mono uppercase tracking-wider text-eyebrow text-muted-text">
@@ -62,7 +63,7 @@ export default function SimilarityBreakdown({
               role="meter"
               aria-valuemin={0}
               aria-valuemax={1}
-              aria-valuenow={row.value}
+              aria-valuenow={clampedValue}
               aria-label={`${row.label} similarity ${fmtPercent(widthPct)}`}
               className="relative flex-1 h-2 rounded bg-soft-border overflow-hidden"
             >

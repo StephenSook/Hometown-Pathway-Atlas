@@ -18,8 +18,12 @@ interface SportMixProps {
 // z-score expected in the 0–3 range for over-indexed sports. Cap at 3 for width math.
 const Z_SCORE_MAX = 3;
 
+function clampZ(z: number): number {
+  return Math.min(Z_SCORE_MAX, Math.max(0, z));
+}
+
 function widthPercent(z: number): number {
-  return Math.min(100, Math.max(0, (z / Z_SCORE_MAX) * 100));
+  return (clampZ(z) / Z_SCORE_MAX) * 100;
 }
 
 export default function SportMix({ sports, className }: SportMixProps) {
@@ -36,31 +40,34 @@ export default function SportMix({ sports, className }: SportMixProps) {
       </p>
 
       <ul className="flex flex-col gap-3">
-        {sports.map((entry) => (
-          <li key={entry.sport} className="flex items-center gap-3">
-            <span className="w-32 shrink-0 text-body text-body-text capitalize">
-              {entry.sport}
-            </span>
+        {sports.map((entry) => {
+          const clamped = clampZ(entry.z_score);
+          return (
+            <li key={entry.sport} className="flex items-center gap-3">
+              <span className="w-32 shrink-0 text-body text-body-text capitalize">
+                {entry.sport}
+              </span>
 
-            <span
-              role="meter"
-              aria-valuemin={0}
-              aria-valuemax={Z_SCORE_MAX}
-              aria-valuenow={entry.z_score}
-              aria-label={`${entry.sport} z-score ${fmtZScore(entry.z_score)}`}
-              className="relative flex-1 h-2 rounded bg-soft-border overflow-hidden"
-            >
               <span
-                className="absolute inset-y-0 left-0 bg-navy rounded"
-                style={{ width: `${widthPercent(entry.z_score)}%` }}
-              />
-            </span>
+                role="meter"
+                aria-valuemin={0}
+                aria-valuemax={Z_SCORE_MAX}
+                aria-valuenow={clamped}
+                aria-label={`${entry.sport} z-score ${fmtZScore(entry.z_score)}`}
+                className="relative flex-1 h-2 rounded bg-soft-border overflow-hidden"
+              >
+                <span
+                  className="absolute inset-y-0 left-0 bg-navy rounded"
+                  style={{ width: `${widthPercent(entry.z_score)}%` }}
+                />
+              </span>
 
-            <span className="w-12 shrink-0 text-right font-mono text-caption tabular text-muted-text">
-              {fmtZScore(entry.z_score)}
-            </span>
-          </li>
-        ))}
+              <span className="w-12 shrink-0 text-right font-mono text-caption tabular text-muted-text">
+                {fmtZScore(entry.z_score)}
+              </span>
+            </li>
+          );
+        })}
       </ul>
 
       <p className="mt-4 font-serif italic text-eyebrow text-muted-text">

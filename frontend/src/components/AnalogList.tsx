@@ -7,6 +7,7 @@
  * "three peers" promise visually even with sparse data.
  */
 
+import { useId } from 'react';
 import type { AnalogEntry } from '../lib/api';
 import AnalogCard, { AnalogCardSkeleton } from './AnalogCard';
 import { cn } from '../lib/utils';
@@ -24,12 +25,13 @@ export default function AnalogList({
   onSelectAnalog,
   className,
 }: AnalogListProps) {
+  const headingId = useId();
   const filledCount = analogs.length;
   const missingCount = Math.max(0, REQUIRED_SLOTS - filledCount);
 
   return (
     <section
-      aria-labelledby="analog-list-heading"
+      aria-labelledby={headingId}
       className={cn('flex flex-col gap-6', className)}
     >
       <header>
@@ -37,7 +39,7 @@ export default function AnalogList({
           Peer counties
         </p>
         <h2
-          id="analog-list-heading"
+          id={headingId}
           className="text-h2 font-sans font-semibold text-navy leading-tight tracking-tight"
         >
           Three regional{' '}
