@@ -34,19 +34,26 @@
  *   stability is what keeps live-mode collapse working across parent
  *   re-renders
  *
- * Demo environment safety: `demoMode` takes effect on a dev build,
- * loopback hosts (`localhost` / `127.0.0.1`), or `*.run.app` Cloud Run
- * hosts. The Cloud Run allow originally OPT-OUT (gate kept this fixture
- * off prod), but the hackathon deploy IS the production demo for judges,
- * so we open the gate for the hackathon period.
+ * Demo environment gate: `demoMode` takes effect on a dev build,
+ * loopback hosts (`localhost` / `127.0.0.1`), or any `*.run.app` host
+ * (the hackathon Cloud Run deploy lives there).
  *
- * Two-layer protection against the fixture leaking when not wanted:
- *   1. The hostname allow-list above (this gate) — hard floor against
- *      arbitrary domain deploys (custom domain, fork to your own site)
- *   2. HomePage passes `demoMode={!compliance_log?.length}` so the demo
- *      auto-disables the moment Vinh task 2.9 (HybridAuditor) ships
- *      real compliance_log entries. Real audit replaces fixture with
- *      zero code change.
+ * Note: the `*.run.app` gate is COARSE — it allows any Cloud Run
+ * tenant, not just our specific service hostname. The honest line of
+ * defense against fixture leak in non-hackathon contexts is the
+ * data-aware demoMode prop:
+ *
+ *   HomePage passes `demoMode={!compliance_log?.length}` — the demo
+ *   only fires when the backend returns an empty compliance_log
+ *   array. The moment Vinh task 2.9 (HybridAuditor) ships and
+ *   populates real compliance_log entries, demoMode auto-flips to
+ *   false and the fixture stops firing. Zero code change to switch
+ *   to live audit. That's the real protection; the hostname check
+ *   is a coarse opt-out for non-Cloud-Run-non-localhost forks.
+ *
+ * For tighter host enforcement post-hackathon: replace the endsWith
+ * check with a `VITE_DEMO_HOST_ALLOWLIST` env var listing exact
+ * known hostnames.
  *
  * A dev console.warn surfaces when demoMode was requested but env-
  * disabled (e.g. demo rehearsal on a non-allow-listed domain).
