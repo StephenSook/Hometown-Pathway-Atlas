@@ -58,6 +58,12 @@ USER appuser
 # rather than reading from $PORT inline, so the entrypoint stays
 # scriptable for local-dev override.
 ENV PORT=8080
+# PYTHONUNBUFFERED=1 forces stdout/stderr to flush per-line. Without
+# this, uvicorn startup logs + per-request logs buffer in Python's
+# default 4KB chunks and Cloud Run reports the container as starting
+# slowly (no logs visible) + logs lag in real-time tailing. Caught
+# during local docker smoke test 2026-05-03.
+ENV PYTHONUNBUFFERED=1
 EXPOSE 8080
 
 # --proxy-headers + --forwarded-allow-ips * because Cloud Run terminates
