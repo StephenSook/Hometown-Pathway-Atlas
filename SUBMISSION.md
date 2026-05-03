@@ -115,10 +115,21 @@ categories), GET /api/stats/county/{fips} (CountyMap hover lookups).
 Backend Pydantic schemas are the authoritative shared contract;
 frontend TypeScript mirrors them 1:1.
 
-**AI:** Vertex AI Gemini 2.5 Flash with structured output JSON schemas
-generates the region narrative, peer-similarity tradeoff explanation,
-and pattern gap framings. Output passes the hybrid auditor before
-reaching the user. The audit events stream as the Compliance Log.
+**AI:** Vertex AI Gemini 2.5 Flash is wired into the backend via
+the official Python SDK and initialized at FastAPI startup
+(`backend/main.py` lifespan). The Pillar 4 demo moment surfaces a
+scripted hybrid-auditor sequence (deterministic regex + Gemini
+self-review schema, both spec'd in README "API contract" section)
+that demonstrates the audit pattern live. The RegionQA Layer C
+panel renders Gemini reasoning + answer surfaces today via a hand-
+authored conditional-phrased fixture; the live Vertex AI inference
+swap is a one-line change at the marked integration point in
+`RegionQA.tsx` when the GeminiService backend service ships
+(currently in flight). Backend response shape (`narrative`,
+`tradeoff_explanation`, `compliance_log`) is the authoritative
+contract — frontend renders whatever the backend emits, falling
+back to demo fixtures while the GeminiService + HybridAuditor
+backend services are under construction.
 
 **Hosting:** Google Cloud Run in us-central1 (frontend nginx:alpine,
 backend python:3.12-slim). Artifact Registry + Cloud Build CI.
