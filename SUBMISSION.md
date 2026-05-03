@@ -87,6 +87,12 @@ surfaces:
   the UI. Judges can watch it catch a draft like *"Cobb County
   PRODUCES Olympic athletes"* and rewrite it to *"could be associated
   with Olympic representation patterns."* Live. Visible. Auditable.
+- **RegionQA — Ask the Atlas (Layer C).** Below the analog narrative,
+  a Gemini-powered Q&A panel lets the user ask any natural-language
+  question about the visible region. Reasoning chain visible step-by-
+  step, parallel to the Compliance Log audit-stream pattern but at the
+  core UX layer. Conditional phrasing enforced by the same hybrid
+  auditor before responses reach the panel.
 
 ## How we built it
 
@@ -102,6 +108,12 @@ no refetch on window focus, custom retry that skips 4xx).
 County profiles, similarity matrix, climate signatures, and Move
 United chapter coverage are precomputed into Apache Parquet at build
 time and loaded at startup. Runtime is fast lookup, not live ETL.
+Frontend hits four real endpoints live: POST /api/region (ZIP →
+RegionResponse), GET /api/analogs/{fips} (3 peer counties with
+similarity breakdown), GET /api/pathway/{fips} (3 Pattern Gap
+categories), GET /api/stats/county/{fips} (CountyMap hover lookups).
+Backend Pydantic schemas are the authoritative shared contract;
+frontend TypeScript mirrors them 1:1.
 
 **AI:** Vertex AI Gemini 2.5 Flash with structured output JSON schemas
 generates the region narrative, peer-similarity tradeoff explanation,
@@ -150,8 +162,17 @@ issues that would have shipped to judges otherwise.
 ## Accomplishments we're proud of
 
 - **Compliance Log ★** — Pillar 4 demo moment. Live judge-visible AI
-  safety surface that auto-plays the canonical fail→fixed sequence in
-  demo mode (env-guarded, never leaks to production).
+  safety surface. Demo mode auto-plays the canonical fail→fixed
+  sequence; the prop is data-aware so the moment Vinh's HybridAuditor
+  ships and the backend populates `compliance_log`, the panel flips
+  to streaming the live audit events. Zero code change needed at the
+  flip.
+- **Source-citation tooltip system** — every visible number on the
+  results view (17 metrics) hover-reveals its source citation: per-
+  pillar parity methodology, Climate / Sport mix / Adaptive Access
+  source datasets, similarity-dimension weights with their CLAUDE.md
+  locked-decision references, NGB lighthouse program URLs. NYT Upshot
+  / Bloomberg / Pudding citation pattern.
 - **Per-capita parity discipline** — every analytical view treats
   Olympic and Paralympic symmetrically. No exceptions.
 - **Zero axe-core WCAG 2.1 AA violations** across hero, results, and
@@ -162,8 +183,11 @@ issues that would have shipped to judges otherwise.
 - **Pillar 5 numbers locked + sourced + defensible.** TAM (~50M
   children, Aspen Project Play State of Play 2024), deployment surface
   (~20,000 NFHS-affiliated high schools, NFHS 2023-24), annual signal
-  (modeled ~6,000 NGB recruitment positions per year). Pre-pitch
-  defensibility checklist documented.
+  (modeled ~6,000 NGB recruitment positions per year), per-incident
+  harm (Beat the Streets Tier 1 startup-year cost $35K-$70K), three
+  named lighthouse-pilot NGBs (USA Wrestling, USA Swimming, USA Track
+  & Field) with sourced unit economics. Pre-pitch defensibility
+  checklist documented + pre-commit drift CI keeps doc + code in sync.
 
 ## What we learned
 
@@ -180,20 +204,24 @@ issues that would have shipped to judges otherwise.
 
 ## What's next
 
-- **Layer A — Shocking Stat Hunt** ships Day 3 EOD (Vinh). Renderer
-  scaffolded; constant swap on ship.
-- **Layer B — Awwwards-tier polish** (Days 5–8). Custom illustrated
-  map elements, Reuters-style stagger animations, sound design for
-  the demo video.
-- **Layer C — Multimodal Gemini Live region Q&A.** User asks a
-  natural-language question about any visible region; Gemini Live
-  reasons over the visible county data + climate + sport mix and
-  answers in real time.
+- **Layer A — Shocking Stat Hunt.** Renderer scaffolded with a
+  placeholder; the HeroStat constant swaps in real-time when Vinh
+  surfaces the genuinely-non-obvious county-FIPS pattern.
+- **Layer B — Editorial polish (shipped).** SourceTooltip primitive
+  surfaces source citations on every metric (NYT/Pudding pattern).
+  Atlas-branded favicon + OG image + per-route meta. Per-FIPS
+  document.title sync. Replay-audit button on the Compliance Log
+  header. /about methodology page. Sound design recipe in
+  docs/sound_design.md for Day 9 recording.
+- **Layer C — Gemini region Q&A (shipped via stub).** RegionQA panel
+  is live in the results view. Question input + visible reasoning
+  chain + final conditional-phrased answer + suggested-question chips.
+  Currently demos against a hand-authored fixture; the swap to the
+  live Vertex AI Gemini call is a one-line change at the marked
+  integration point in RegionQA.tsx when the GeminiService backend
+  endpoint ships.
 - **Layer D — Embedded scrollytelling editorial.** 3–4 chapters
   walking through the most surprising findings, anchored on Layer A.
-- **Layer F — Agentic comparison workflow.** Side-by-side county
-  comparison with a Gemini agent's reasoning visible in a sidebar
-  parallel to the Compliance Log pattern.
 
 Each layer is independently cuttable if it threatens the deadline.
 Conservative ships first, always.
@@ -281,17 +309,27 @@ Yes
 
 The README "Run locally" section covers frontend (`npm install
 --legacy-peer-deps && npm run dev`), backend (`uv sync && uvicorn`),
-and Cloud Run deploy via the runbook. Sentinel ZIP `00000` exercises
-the error path. Mock data lets the frontend run standalone for judges
-who skip backend setup.
+and Cloud Run deploy via the runbook. Three sentinel ZIPs exercise
+the full UX surface: `30060` resolves to Cobb County, GA (the
+canonical demo region), `00000` exercises the backend 404 path
+(toast + auto-revert to hero), `11111` routes to a synthetic sparse-
+county fixture (Garfield County, MT) so judges can verify the
+editorial empty-state rendering across ParityPanel, SportMix, and
+AdaptiveAccessCard without needing a real low-population county in
+the dataset.
 
 ### Test login credentials
 
 ```
 No login required. The app is fully public — visit the live URL and
-type a ZIP code (try 30060 for Cobb County, GA, our anchor region for
-the demo flow). Sentinel ZIP 00000 triggers the error path so judges
-can verify the toast + error UX.
+type a ZIP code. Three sentinel ZIPs cover the full UX surface:
+
+  30060 → Cobb County, GA (canonical demo flow)
+  00000 → backend 404 path (toast + auto-revert to hero)
+  11111 → sparse-county empty state demo (Garfield County, MT)
+
+Or click the "or try Cobb County, GA →" tour CTA on the landing page
+to skip typing.
 ```
 
 ---
@@ -314,9 +352,14 @@ welcome message via Vertex AI:
 
 **Code-file alternative** (if Devpost wants a code link not a live URL):
 ```
-https://github.com/StephenSook/Hometown-Pathway-Atlas/blob/main/backend/services/gemini_service.py
+https://github.com/StephenSook/Hometown-Pathway-Atlas/tree/main/backend
 ```
-*(once Vinh ships task 2.7 GeminiService — file path may differ; verify Day 8.)*
+The full FastAPI backend is in `backend/` — `main.py` initializes
+Vertex AI at startup, `routes/` exposes the four endpoints,
+`services/` holds the Pydantic-typed business logic, `schemas/` is
+the authoritative shared contract that frontend `lib/api.ts` mirrors.
+GeminiService (task 2.7 — narrative + auditor) ships into
+`backend/services/gemini_service.py` when Vinh wires it.
 
 ### URL to the hosted Project for judging *(optional — but include it!)*
 
