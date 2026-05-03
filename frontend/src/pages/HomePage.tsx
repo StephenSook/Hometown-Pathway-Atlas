@@ -27,7 +27,9 @@ import PatternGapPanel from '../components/PatternGapPanel';
 import ComplianceLog from '../components/ComplianceLog';
 import Pillar5Strip from '../components/Pillar5Strip';
 import ResultsSkeleton from '../components/ResultsSkeleton';
+import HeroStat from '../components/HeroStat';
 import { ApiError } from '../lib/api';
+import { HERO_STAT } from '../lib/heroStat';
 import { mockRegion, mockAnalogs, mockPathway } from '../lib/mocks';
 
 type View = 'hero' | 'results';
@@ -101,6 +103,8 @@ export default function HomePage() {
       >
         {view === 'hero' ? (
           <>
+            <HeroStat stat={HERO_STAT} className="mb-8" />
+
             <section
               aria-labelledby="hero-heading"
               className="mx-auto max-w-[880px] px-6 text-center"
