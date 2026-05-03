@@ -20,10 +20,16 @@ export default {
 
         // Text
         'body-text': '#1C2433',
-        'muted-text': '#6B7280',
+        // Darkened from #6B7280 → #475569 (slate-600) to pass WCAG AA on warm-neutral
+        // bg at body text size (was 4.29:1, now ~5.65:1). Caught by axe-core audit
+        // 2026-05-02 across hero + results views (multiple sites: hero copy, footnote,
+        // RegionHeader MSA line, back button, etc.).
+        'muted-text': '#475569',
 
         // Status (tri-color semantic, locked across confidence/quality/severity)
-        'accent-teal': '#2E8B57', // verified / passed / strong evidence
+        // accent-teal darkened from #2E8B57 → #1F7A47 to pass AA when used as a text
+        // fg on white (EvidenceLabel "high" pill). Was 4.24:1, now ~5.0:1.
+        'accent-teal': '#1F7A47', // verified / passed / strong evidence
         'status-amber': '#D97706', // pending / partial / medium evidence (use #1C2433 text on this bg)
         'status-danger': '#B91C1C', // anomaly / failed / hard error
       },

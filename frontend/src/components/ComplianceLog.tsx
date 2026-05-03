@@ -271,11 +271,16 @@ function Column({
 
       {/* `<ul>` stays mounted across empty↔populated transitions so
        * AnimatePresence can play exit animations on the last collapsing
-       * entry. Hidden via class when empty so it doesn't take space. */}
+       * entry. Hidden via class when empty so it doesn't take space.
+       *
+       * NOTE: dropped role="log" here. axe-core flagged that <li> children
+       * are invalid inside a list whose role has been overridden to "log"
+       * (role="log" doesn't expect list-item children semantically). The
+       * sibling sr-only <div role="status" aria-live="polite"> below
+       * handles AT broadcast for the fail→fixed moment, which is the only
+       * announcement we actually need. The default <ul>/<li> semantics
+       * are now respected for the visible entry list. */}
       <ul
-        role="log"
-        aria-live="polite"
-        aria-atomic="false"
         aria-label={`${heading} audit entries`}
         className={cn(
           'flex-1 min-h-0 overflow-y-auto px-3 pb-3 flex flex-col',

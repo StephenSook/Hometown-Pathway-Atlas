@@ -231,6 +231,7 @@ export default function CountyMap({
                     key={geo.rsmKey}
                     geography={geo}
                     tabIndex={isHighlighted ? 0 : -1}
+                    role={isHighlighted ? 'img' : undefined}
                     aria-label={tip ? formatGeographyLabel(tip) : undefined}
                     onMouseMove={(e) => handleMove(e, id, name)}
                     onMouseLeave={clearHover}

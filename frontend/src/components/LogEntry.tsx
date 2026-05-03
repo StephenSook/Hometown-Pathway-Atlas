@@ -47,16 +47,19 @@ interface LogEntryProps {
 
 const PASS_COLLAPSE_MS = 1500;
 
+// Hex constants must stay in sync with tailwind.config.ts color tokens.
+// Changed 2026-05-02: muted-text + accent-teal darkened to pass WCAG AA
+// per axe-core audit findings.
 const STATUS_BG_HEX: Record<ComplianceStatus, string> = {
   pass: '#E7E2D9', // soft-border
   fail: '#D97706', // status-amber
-  fixed: '#2E8B57', // accent-teal
+  fixed: '#1F7A47', // accent-teal (darkened for AA)
 };
 
 const STATUS_TEXT_HEX: Record<ComplianceStatus, string> = {
-  pass: '#6B7280', // muted-text
+  pass: '#475569', // muted-text (darkened for AA)
   fail: '#D97706', // status-amber
-  fixed: '#2E8B57', // accent-teal
+  fixed: '#1F7A47', // accent-teal (darkened for AA)
 };
 
 const COLOR_TRANSITION = { duration: 0.3, ease: [0.16, 1, 0.3, 1] as const };

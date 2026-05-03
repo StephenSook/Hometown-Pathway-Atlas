@@ -76,10 +76,14 @@ export default function ZipInput({ onSubmit, loading = false, className }: ZipIn
         <button
           type="submit"
           disabled={loading}
+          // bg-navy + white passes WCAG AA AAA on body text. The previous
+          // bg-paralympic-clay + white was 3.94:1 (fail AA, axe-core caught
+          // 2026-05-02) AND violated DESIGN_SYSTEM §1.1's clay-only-on-
+          // ≥24px-text rule. Navy is unrestricted.
           className={cn(
-            'inline-flex items-center gap-2 rounded-full bg-paralympic-clay px-6 py-2.5 text-body text-card-white font-medium',
+            'inline-flex items-center gap-2 rounded-full bg-navy px-6 py-2.5 text-body text-card-white font-medium',
             'transition-opacity disabled:opacity-50 disabled:cursor-not-allowed',
-            'hover:bg-paralympic-clay/90 focus-ring',
+            'hover:bg-navy/90 focus-ring',
           )}
         >
           {loading ? (
