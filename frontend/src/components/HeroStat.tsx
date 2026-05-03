@@ -21,7 +21,11 @@
 
 import { useId } from 'react';
 import type { HeroStatData } from '../lib/heroStat';
+import SourceTooltip from './SourceTooltip';
 import { cn } from '../lib/utils';
+
+const HERO_STAT_EXPANDED_SOURCE =
+  'Cross-references Move United 2024 Impact Report (141 of 225 ≈ 63% of 2024 U.S. Paralympic athletes via Move United chapter network) with Atlas county-FIPS aggregated 2016–2024 Team USA roster. Replace with Vinh task 1.11 finding once shipped.';
 
 interface HeroStatProps {
   stat: HeroStatData;
@@ -49,7 +53,9 @@ export default function HeroStat({ stat, className }: HeroStatProps) {
       </p>
 
       <p className="font-sans font-bold text-stat-md md:text-stat-lg text-navy leading-none tabular mb-4">
-        {stat.number}
+        <SourceTooltip source={HERO_STAT_EXPANDED_SOURCE}>
+          {stat.number}
+        </SourceTooltip>
       </p>
 
       <p className="font-sans text-body text-body-text leading-relaxed mb-3">
