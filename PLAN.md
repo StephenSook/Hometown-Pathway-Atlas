@@ -111,7 +111,7 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started · ⛔ blocked · ✂️
 | 1.3 | nClimGrid-Daily county climate | `backend/ingest/04_climate.py` | Vinh | ✅ | — | Done May 2. 5km gridded, NOT station-weighted. 7 zones classified. Fallback path tested — 350 counties, 0 nulls, 0 invalid zones. Swap in real nclimgrid_county_normals.csv before Day 6 gate. |
 | 1.4 | ACS 5-year population | `backend/ingest/05_population.py` | Vinh | ✅ | — | Done 2026-05-02. Census ACS 5-year API. 3,222 counties, 0% missing. Saved to `county_population.parquet`. |
 | 1.5 | HUD ZIP-County crosswalk | `backend/ingest/03_zip_crosswalk.py` | Vinh | ✅ | — | Done 2026-05-02. Max RES_RATIO tiebreak, tot_ratio fallback for PO-box ZIPs. All helpers unit-tested. Requires HUD CSV download before first run (see script header). |
-| 1.6 | Day 2 validation test | `backend/ingest/validate.py` | Vinh+Stephen | ⬜ | 1.1–1.5 | **GO/NO-GO checkpoint EOD Day 2.** 100 counties, 10 random source eyeball test. 7+ pass = GO. ≤4 pass = pivot to Hometown Genome. |
+| 1.6 | Day 2 validation test | `backend/ingest/validate.py` | Vinh+Stephen | ✅ | 1.1–1.5 | **GO/NO-GO checkpoint EOD Day 2.** 8/8 automated checks PASS. VERDICT: GO. 809 geocoded rows, 96.9% FIPS coverage, 350 unique counties, NIL compliant, no geocode collapse. Proceed to 1.7. |
 | 1.7 | 2016–2024 full athlete scrape | `backend/ingest/01_athletes.py` | Vinh | ⬜ | 1.6 | Day 3 AM. Rio 2016 + PyeongChang 2018 + Tokyo 2020/2021 + Beijing 2022 + Paris 2024, both O+P. ~3-4K records. |
 | 1.8 | County profiles aggregation | `backend/ingest/07_aggregate.py` | Vinh | ⬜ | 1.7, 1.3, 1.4 | Day 3 AM. Per-capita + Bayesian shrinkage (alpha=50K) + percentile rank + evidence labels. Output `county_profiles.parquet`. **+ bake Census FIPS centroid (lng, lat) into parquet for CountyMap pins (task 0.9 contract).** |
 | 1.9 | Similarity matrix precompute | `backend/ingest/08_similarity.py` | Vinh | ⬜ | 1.8 | Day 3 PM. ~9.8M pairs. Athlete 40 / sport mix 35 / climate 25. Top 50 per source. MSA diversity constraint. Output `similarity_matrix.parquet`. |
@@ -400,4 +400,4 @@ git commit -m "chore(plan): cut 4.E ✂️ — Day 7 not clean enough"
 
 ---
 
-_Last updated: 2026-05-02 by Vinh (task 0.5–0.7 ✅, task 1.1 ✅, task 1.2 ✅, task 1.3 ✅, task 1.4 ✅, task 1.5 ✅)._
+_Last updated: 2026-05-02 by Vinh (task 0.5–0.7 ✅, task 1.1 ✅, task 1.2 ✅, task 1.3 ✅, task 1.4 ✅, task 1.5 ✅, task 1.6 ✅)._
