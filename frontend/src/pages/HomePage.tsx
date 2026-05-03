@@ -171,6 +171,25 @@ export default function HomePage() {
               </p>
 
               <ZipInput onSubmit={handleSubmit} loading={loading} />
+
+              {/* Tour CTA — eliminates type-friction for judges + demo
+                  recording. Single click jumps to the canonical demo
+                  region (Cobb County, GA / ZIP 30060). Editorial-restrained
+                  styling: serif italic prefix + monospace ZIP token + arrow,
+                  positioned as a soft secondary affordance below the
+                  primary ZipInput rather than competing with it. */}
+              <p className="mt-6 font-serif italic text-caption text-muted-text">
+                or try{' '}
+                <button
+                  type="button"
+                  onClick={() => handleSubmit('30060')}
+                  disabled={loading}
+                  className="font-mono uppercase tracking-wider text-eyebrow text-navy hover:text-olympic-blue focus-ring rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  aria-label="Auto-load Cobb County, GA demo (ZIP 30060)"
+                >
+                  Cobb County, GA →
+                </button>
+              </p>
             </section>
 
             <section
