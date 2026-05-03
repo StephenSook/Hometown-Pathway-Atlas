@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+google-cloud-aiplatform
+pandas
+pyarrow
+requests
+beautifulsoup4
+lxml
+openpyxl
