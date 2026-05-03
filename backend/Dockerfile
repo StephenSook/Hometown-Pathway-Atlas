@@ -21,13 +21,19 @@ WORKDIR /app
 # Install system deps required by pyarrow + pandas wheels on slim base.
 # python:3.12-slim is missing libstdc++ symbols some pandas operations
 # need on certain CPU paths.
+#
+# build-essential is REMOVED post-pip-install to drop ~250MB of compiler
+# tooling from the runtime layer — only needed during wheel install for
+# any source-build fallbacks; runtime never compiles anything.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python deps first for layer caching across source-only changes.
 COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt \
+    && apt-get purge -y --auto-remove build-essential \
+    && rm -rf /var/lib/apt/lists/*
 
 # Source after deps so dep layer caches across source-only edits.
 # Explicit COPY of every dir Vinh's Phase 2 backend uses — schemas/,
@@ -39,6 +45,14 @@ COPY services/ ./services/
 COPY routes/ ./routes/
 COPY ingest/ ./ingest/
 COPY data/ ./data/
+
+# Drop root before runtime — appuser owns /app, runs uvicorn. Cloud Run
+# enforces non-root via container security policies anyway, but baking
+# the user into the image keeps the contract explicit + portable to
+# other K8s/serverless platforms.
+RUN useradd --system --create-home --shell /bin/bash appuser \
+    && chown -R appuser:appuser /app
+USER appuser
 
 # Cloud Run injects PORT (default 8080). uvicorn binds to it explicitly
 # rather than reading from $PORT inline, so the entrypoint stays
