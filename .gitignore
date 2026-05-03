@@ -218,3 +218,10 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Research dossiers (PDFs, docx) — large binaries kept local only
+/research/
+
+# macOS Finder metadata
+.DS_Store
+**/.DS_Store
