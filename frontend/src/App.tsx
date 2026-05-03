@@ -1,8 +1,11 @@
 /**
  * Atlas — root app shell.
  * Skip-to-content link first per DESIGN_SYSTEM §8 keyboard nav requirement.
+ * Sonner Toaster mounted at root so any component can fire toast.error
+ * for ApiError surfaces (HomePage submit handler is the current consumer).
  */
 
+import { Toaster } from 'sonner';
 import HomePage from './pages/HomePage';
 
 export default function App() {
@@ -15,6 +18,16 @@ export default function App() {
         Skip to main content
       </a>
       <HomePage />
+      <Toaster
+        position="top-center"
+        richColors
+        closeButton
+        toastOptions={{
+          classNames: {
+            toast: 'font-sans text-body',
+          },
+        }}
+      />
     </>
   );
 }

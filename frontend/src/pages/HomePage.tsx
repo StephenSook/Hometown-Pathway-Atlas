@@ -12,6 +12,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
+import { toast } from 'sonner';
 import Navbar from '../components/Navbar';
 import ZipInput from '../components/ZipInput';
 import RegionHeader from '../components/RegionHeader';
@@ -25,6 +26,8 @@ import CountyMap from '../components/CountyMap';
 import PatternGapPanel from '../components/PatternGapPanel';
 import ComplianceLog from '../components/ComplianceLog';
 import Pillar5Strip from '../components/Pillar5Strip';
+import ResultsSkeleton from '../components/ResultsSkeleton';
+import { ApiError } from '../lib/api';
 import { mockRegion, mockAnalogs, mockPathway } from '../lib/mocks';
 
 type View = 'hero' | 'results';
@@ -47,13 +50,25 @@ export default function HomePage() {
     mainRef.current?.focus();
   }, [view]);
 
-  const handleSubmit = (zip: string) => {
+  const handleSubmit = async (zip: string) => {
     setLoading(true);
-    void zip;
-    setTimeout(() => {
+    setView('results');
+    try {
+      // Day 4 swap: replace setTimeout with `await api.region(zip)` etc.
+      // For now the simulated network keeps the loading skeleton visible
+      // long enough to perceive on a fast connection.
+      void zip;
+      await new Promise((resolve) => setTimeout(resolve, 600));
       setLoading(false);
-      setView('results');
-    }, 600);
+    } catch (err) {
+      setLoading(false);
+      setView('hero');
+      const message =
+        err instanceof ApiError
+          ? `Could not load that region (${err.status}). Try another ZIP.`
+          : 'Something went wrong loading that region. Try again in a moment.';
+      toast.error(message);
+    }
   };
 
   const handleBack = () => setView('hero');
@@ -126,6 +141,10 @@ export default function HomePage() {
               Region representation results
             </h2>
 
+            {loading ? (
+              <ResultsSkeleton />
+            ) : (
+            <>
             <div className="mb-10">
               <RegionHeader
                 countyName={mockRegion.county_name}
@@ -184,6 +203,8 @@ export default function HomePage() {
               Showing mock data while the backend pipeline is in build (Day 4
               integrates real /api/region + /api/analogs responses).
             </p>
+            </>
+            )}
           </section>
         )}
       </main>
