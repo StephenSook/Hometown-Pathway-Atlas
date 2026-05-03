@@ -34,9 +34,12 @@ import TradeoffPanel from '../components/TradeoffPanel';
 // CountyMap is lazy-loaded — its static import of us-atlas/counties-10m
 // .json adds 250KB gz to the bundle (55% of total). Splitting it into
 // its own chunk pulls that weight off the initial bundle. CountyMap
-// only mounts after region data lands (inside loading conditional);
-// chunk download runs in parallel with the API request, so the user
-// never perceives a Suspense delay.
+// only mounts AFTER region data lands (inside the loading conditional),
+// so the chunk download isn't truly parallel with the API request — the
+// chunk request fires when the Suspense boundary first attempts to
+// render, which is gated on activeRegion. CountyMapSkeleton fallback
+// covers the brief load, and the chunk is cached for subsequent
+// region-view mounts within the same session.
 const CountyMap = lazy(() => import('../components/CountyMap'));
 import PatternGapPanel from '../components/PatternGapPanel';
 import ComplianceLog from '../components/ComplianceLog';
