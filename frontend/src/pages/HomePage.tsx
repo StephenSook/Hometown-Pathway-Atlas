@@ -1,18 +1,26 @@
 /**
- * HomePage — landing + Day 2-3 mock-driven results view.
+ * HomePage — landing + results view, real-backend integrated as of
+ * 2026-05-03 PM (Vinh Phase 2 ship).
  *
- * Hero submits a ZIP → 600ms simulated network → results view renders the
- * full region profile (header, parity, sport mix, climate, adaptive access,
- * analog peers, tradeoff narrative) from lib/mocks.ts.
+ * Hero submits a ZIP → useRegion fires POST /api/region → useAnalogs +
+ * usePathway chain off the resolved FIPS → results view renders the full
+ * region profile from real backend response data.
  *
- * Day 4 replaces the state machine with react-router-dom + api.region(zip).
+ * Sentinel ZIPs (frontend-only escape hatches preserved through
+ * Phase 2 wire):
+ *   - 11111 → frontend mock-only sparse region (Garfield County, MT).
+ *     Skips network call entirely — backend has no 11111 in its zip
+ *     crosswalk (would 404 anyway), and the empty-state demo is a
+ *     pitch surface independent of backend data shape.
+ *   - 00000 → real backend 404 (no entry in crosswalk). QueryCache.
+ *     onError in lib/queryClient.ts auto-fires Sonner toast; an effect
+ *     here reverts view to hero when query errors land.
  *
  * Reference: docs/moodboard/01_hero.png + 02_parity_panel.png + 03_analog_cards.png.
  */
 
 import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
-import { toast } from 'sonner';
 import Navbar from '../components/Navbar';
 import ZipInput from '../components/ZipInput';
 import RegionHeader from '../components/RegionHeader';
@@ -30,14 +38,13 @@ import Pillar5Defense from '../components/Pillar5Defense';
 import ResultsSkeleton from '../components/ResultsSkeleton';
 import HeroStat from '../components/HeroStat';
 import MethodologyPage from '../components/MethodologyPage';
-import { ApiError } from '../lib/api';
+import { useRegion } from '../hooks/useRegion';
+import { useAnalogs } from '../hooks/useAnalogs';
+import { usePathway } from '../hooks/usePathway';
 import { HERO_STAT } from '../lib/heroStat';
-import {
-  mockRegion,
-  mockSparseRegion,
-  mockAnalogs,
-  mockPathway,
-} from '../lib/mocks';
+import { mockSparseRegion, mockAnalogs, mockPathway } from '../lib/mocks';
+
+const SPARSE_SENTINEL_ZIP = '11111';
 
 type View = 'hero' | 'results' | 'methodology';
 
@@ -65,13 +72,37 @@ export default function HomePage() {
           : 'hero';
 
   const [view, setView] = useState<View>(initialView);
-  const [loading, setLoading] = useState(false);
-  // Sparse-county sentinel — ZIP `11111` routes to mockSparseRegion
-  // (Garfield County, MT — pop ~1,100, zero athlete placements in
-  // mock dataset) to demo the editorial empty-state rendering across
-  // ParityPanel + SportMix + AdaptiveAccessCard without waiting for
-  // backend integration.
-  const [activeRegion, setActiveRegion] = useState(mockRegion);
+  // submittedZip drives all 3 React Query hooks. Null when no ZIP yet.
+  // Initialized from URL ?zip= for deep-link hydration.
+  const initialZip =
+    typeof window === 'undefined'
+      ? null
+      : new URLSearchParams(window.location.search).get('zip');
+  const [submittedZip, setSubmittedZip] = useState<string | null>(initialZip);
+
+  const isSparse = submittedZip === SPARSE_SENTINEL_ZIP;
+
+  // React Query hooks — disabled when sparse sentinel routes to local
+  // mock OR when no ZIP submitted yet. useAnalogs + usePathway chain
+  // off the FIPS resolved by useRegion (their hooks are no-op until
+  // region.data lands, per Boolean(fips) enabled guard).
+  const region = useRegion(isSparse ? null : submittedZip);
+  const analogs = useAnalogs(isSparse ? null : region.data?.fips);
+  const pathway = usePathway(isSparse ? null : region.data?.fips);
+
+  // Derived data — sparse path uses local mocks, real path uses query
+  // results once they land. AnalogList and PatternGapPanel render
+  // skeletons inside ResultsSkeleton during their own loading state.
+  const activeRegion = isSparse ? mockSparseRegion : region.data;
+  const activeAnalogs = isSparse ? mockAnalogs : analogs.data;
+  const activePathway = isSparse ? mockPathway : pathway.data;
+
+  // Loading: sparse never loads (instant from mock), real path waits for
+  // all 3 queries. analogs.isFetching covers refetches too; the dependent
+  // chain means analogs/pathway naturally idle when region hasn't resolved.
+  const loading = !isSparse &&
+    (region.isPending || analogs.isFetching || pathway.isFetching);
+
   const mainRef = useRef<HTMLElement>(null);
   // Skip the very first paint — only manage focus on user-driven view change.
   const isInitialMount = useRef(true);
@@ -91,7 +122,7 @@ export default function HomePage() {
   // get navigable browser-tab labels instead of every tab reading
   // "Hometown Pathway Atlas — Team USA county-level analytics".
   useEffect(() => {
-    if (view === 'results') {
+    if (view === 'results' && activeRegion) {
       document.title = resultsTitle(activeRegion.county_name, activeRegion.state);
     } else if (view === 'methodology') {
       document.title = 'Methodology — Hometown Pathway Atlas';
@@ -99,6 +130,17 @@ export default function HomePage() {
       document.title = DEFAULT_TITLE;
     }
   }, [view, activeRegion]);
+
+  // Error recovery — when region query errors out (most often the 00000
+  // sentinel 404), revert to hero. QueryCache.onError in lib/queryClient.ts
+  // already fired the Sonner toast; this effect just unwinds the view.
+  useEffect(() => {
+    if (region.error && view === 'results' && !isSparse) {
+      setView('hero');
+      setSubmittedZip(null);
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, [region.error, view, isSparse]);
 
   // Hash-router for the methodology page. Listens for clicks on the
   // Navbar #about anchor; updating window.location.hash triggers the
@@ -125,57 +167,36 @@ export default function HomePage() {
     }
   };
 
-  const handleSubmit = async (zip: string) => {
-    setLoading(true);
+  const handleSubmit = (zip: string) => {
+    setSubmittedZip(zip);
     setView('results');
-    // Sentinel ZIP `11111` switches to mockSparseRegion to exercise
-    // the empty-state rendering. All other ZIPs (including the
-    // canonical demo 30060) use mockRegion.
-    const region = zip === '11111' ? mockSparseRegion : mockRegion;
-    setActiveRegion(region);
-    // URL state sync — push deep-link with both zip + fips so judges can
-    // share the exact view. Mock data always resolves to active region's
-    // fips until Day 4 backend integrates real ZIP→FIPS resolution.
+    // URL state sync — push deep-link with zip immediately. The fips
+    // param is added in a follow-up effect once region.data lands (we
+    // don't know the FIPS until backend resolves the ZIP). Sparse
+    // sentinel uses mockSparseRegion.fips synchronously.
     const params = new URLSearchParams();
     params.set('zip', zip);
-    params.set('fips', region.fips);
-    window.history.replaceState({}, '', `?${params.toString()}`);
-    try {
-      // ───────── DAY 4 INTEGRATION POINT ─────────
-      // Replace the simulated network below with React Query hook adoption:
-      //   1. Lift `setSubmittedZip(zip)` to component state
-      //   2. Read `useRegion(submittedZip)` + `useAnalogs(region.data?.fips)`
-      //      + `usePathway(region.data?.fips)` at the top of HomePage
-      //   3. Derive `loading` from `region.isPending || analogs.isFetching
-      //      || pathway.isFetching` (`isPending` not `isLoading` per RQ v5)
-      //   4. Drop the manual try/catch — `QueryCache.onError` in
-      //      lib/queryClient.ts already toasts every failure globally
-      //   5. Pass `region.data`, `mockAnalogs.analogs`→`analogs.data?.analogs`,
-      //      `mockPathway.gaps`→`pathway.data?.gaps` into the existing JSX
-      //
-      // Sentinel ZIP `00000` throws ApiError(404) so the catch arm and the
-      // global QueryCache.onError handler both get exercised before Day 4
-      // — without this, the entire error UX is dead code until the real
-      // backend ships.
-      if (zip === '00000') {
-        throw new ApiError(404, 'No region for ZIP 00000 (sentinel test)');
-      }
-      void zip;
-      await new Promise((resolve) => setTimeout(resolve, 600));
-      setLoading(false);
-    } catch (err) {
-      setView('hero');
-      setLoading(false);
-      const message =
-        err instanceof ApiError
-          ? `Could not load that region (HTTP ${err.status}). Try another ZIP.`
-          : 'Something went wrong loading that region. Try again in a moment.';
-      toast.error(message);
+    if (zip === SPARSE_SENTINEL_ZIP) {
+      params.set('fips', mockSparseRegion.fips);
     }
+    window.history.replaceState({}, '', `?${params.toString()}`);
   };
+
+  // Once region.data resolves from backend, append fips to URL params
+  // so the deep-link is shareable with the resolved FIPS too. This runs
+  // independently of handleSubmit because the FIPS isn't known at
+  // submit time for non-sentinel ZIPs.
+  useEffect(() => {
+    if (!region.data || isSparse) return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('fips') === region.data.fips) return;
+    params.set('fips', region.data.fips);
+    window.history.replaceState({}, '', `?${params.toString()}`);
+  }, [region.data, isSparse]);
 
   const handleBack = () => {
     setView('hero');
+    setSubmittedZip(null);
     // Clear URL params on navigation back so the deep-link doesn't
     // re-trigger results-view hydration if the user refreshes.
     window.history.replaceState({}, '', window.location.pathname);
@@ -272,7 +293,7 @@ export default function HomePage() {
               Region representation results
             </h2>
 
-            {loading ? (
+            {loading || !activeRegion ? (
               <ResultsSkeleton />
             ) : (
             <>
@@ -296,7 +317,7 @@ export default function HomePage() {
                   olympicEvidence: activeRegion.metrics.olympic.evidence,
                   paralympicEvidence: activeRegion.metrics.paralympic.evidence,
                 }}
-                analogs={mockAnalogs.analogs}
+                analogs={activeAnalogs?.analogs ?? []}
               />
             </div>
 
@@ -315,15 +336,17 @@ export default function HomePage() {
             </div>
 
             <div className="mt-16">
-              <AnalogList analogs={mockAnalogs.analogs} />
+              <AnalogList analogs={activeAnalogs?.analogs ?? []} />
             </div>
 
             <div className="mt-12">
-              <PatternGapPanel gaps={mockPathway.gaps} />
+              <PatternGapPanel gaps={activePathway?.gaps ?? []} />
             </div>
 
             <div className="mt-8">
-              <TradeoffPanel explanation={mockAnalogs.tradeoff_explanation} />
+              <TradeoffPanel
+                explanation={activeAnalogs?.tradeoff_explanation ?? ''}
+              />
             </div>
             </>
             )}
@@ -345,16 +368,22 @@ export default function HomePage() {
               <Pillar5Defense />
             </div>
 
-            <p className="font-serif italic text-caption text-muted-text text-center mt-12">
-              Showing mock data while the backend pipeline is in build (Day 4
-              integrates real /api/region + /api/analogs responses).
-            </p>
+            {isSparse && (
+              <p className="font-serif italic text-caption text-muted-text text-center mt-12">
+                ZIP 11111 routes to a synthetic sparse-county fixture
+                (Garfield County, MT) to demo the editorial empty-state
+                rendering. Real ZIPs hit the live backend.
+              </p>
+            )}
           </section>
         )}
       </main>
 
       {view === 'results' && (
-        <ComplianceLog entries={activeRegion.compliance_log} demoMode={true} />
+        <ComplianceLog
+          entries={activeRegion?.compliance_log ?? []}
+          demoMode={!activeRegion?.compliance_log?.length}
+        />
       )}
     </div>
   );
