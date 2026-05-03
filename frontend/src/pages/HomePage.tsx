@@ -26,6 +26,7 @@ import CountyMap from '../components/CountyMap';
 import PatternGapPanel from '../components/PatternGapPanel';
 import ComplianceLog from '../components/ComplianceLog';
 import Pillar5Strip from '../components/Pillar5Strip';
+import Pillar5Defense from '../components/Pillar5Defense';
 import ResultsSkeleton from '../components/ResultsSkeleton';
 import HeroStat from '../components/HeroStat';
 import { ApiError } from '../lib/api';
@@ -217,6 +218,10 @@ export default function HomePage() {
 
             <div className="mt-16">
               <Pillar5Strip />
+            </div>
+
+            <div className="mt-6">
+              <Pillar5Defense />
             </div>
 
             <p className="font-serif italic text-caption text-muted-text text-center mt-12">

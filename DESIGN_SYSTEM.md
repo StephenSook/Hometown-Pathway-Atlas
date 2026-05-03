@@ -480,6 +480,26 @@ Detailed in 4.16. Single audit log row.
 
 ---
 
+### 4.19 Pillar5Defense (per-incident harm + lighthouse NGB pilots)
+
+**Why it exists:** Added 2026-05-03 after Sookra Council weakest-pillar verdict on Pillar 5. The locked §4.18 Pillar5Strip (TAM + Zero + Revenue pills) does not surface (a) per-incident dollar harm or (b) named first-customer ICP. Council ruled both must be on stage, not Q&A-only. §4.18 anatomy stays locked at 3 columns; §4.19 carries the second-layer defensibility receipts.
+
+**Anatomy:**
+- Sibling card to Pillar5Strip, rendered immediately below at `mt-6` spacing (tight pairing — same Pillar 5 conceptual unit)
+- Card on `#FFFFFF` `bg-card-white`, `rounded-2xl`, `border-soft-border`, `p-6`, `shadow-sm` — inverted background relative to §4.18's `bg-warm-neutral` so the two cards read as paired layers, not duplicate stacks
+- Eyebrow: JetBrains Mono uppercase navy `#1F3A5F` — `"Defensibility — what mistargeting could cost · who buys first"`
+- Two-zone grid `[1fr_2fr]` (mobile: stack), divided by hairline border on the right edge of zone A on `md+`:
+  - **Zone A — Per-incident harm (1fr):** Inter weight 700 large stat at `text-stat-md` (28px) showing the sourced unit-cost number from `PILLAR5_HARM` (`$35K–$70K` Beat the Streets startup year). Eyebrow above ("PER-INCIDENT HARM"), label below in Inter 16px body, source in Instrument Serif italic 13px caption.
+  - **Zone B — Lighthouse pilots (2fr):** Eyebrow ("LIGHTHOUSE PILOTS") above a 3-column chip grid (mobile: stack) sourced from `PILLAR5_LIGHTHOUSE_NGBS`. Each chip on `bg-warm-neutral` (inverted vs. card's `bg-card-white`) showing: NGB name (Inter bold 18px navy), program (JetBrains Mono eyebrow), reach (Inter caption), unit economics (Instrument Serif italic caption).
+
+**Locked rule:** The 3 NGB chips must always render in their declared `PILLAR5_LIGHTHOUSE_NGBS` order (USA Wrestling → USA Swimming → USA Track & Field). The order is the validation sequence (smallest/fastest validation cycle first); reordering breaks the pitch Q&A elevator surfaces in `docs/pitch_pillar5.md`. If NGB roster changes, update both surfaces in the same commit (drift script enforces).
+
+**ARIA:** `<article role="region" aria-labelledby={eyebrowId}>` matching §4.18 landmark pattern (sibling cards use the same role so screen readers don't hop between heterogeneous landmarks). Sub-zones use sr-only `<h3>` headings. NGB chip list uses `<ul role="list">` to preserve list semantics under Tailwind's reset.
+
+**Motion:** No bespoke motion. Inherits `fadeUp` from page transition. Future ambition: stagger NGB chip entry on results-view first paint (50ms `reutersStagger` per §5.2 AnalogCard pattern) — not in scope for the May 11 ship; revisit Day 9 if buffer.
+
+---
+
 ## 5. Motion choreography
 
 All Framer Motion. Reference `frontend/src/lib/motion.ts` (to be created).
