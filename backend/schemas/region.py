@@ -1,0 +1,60 @@
+from __future__ import annotations
+
+from typing import Literal
+
+from pydantic import BaseModel, Field
+
+
+class ZipRequest(BaseModel):
+    zip: str = Field(..., pattern=r"^\d{5}$")
+
+
+class MetricBlock(BaseModel):
+    count: int
+    per_100k: float
+    percentile: float
+    evidence: Literal["high", "medium", "low"]
+
+
+class MetricsBlock(BaseModel):
+    olympic: MetricBlock
+    paralympic: MetricBlock
+
+
+class SportEntry(BaseModel):
+    sport: str
+    share: float
+
+
+class ClimateBlock(BaseModel):
+    zone: str
+    avg_temp_f: float | None
+    annual_precip_in: float | None
+
+
+class AdaptiveAccessBlock(BaseModel):
+    chapters_within_50mi: int
+    confidence: Literal["high", "medium", "none"]
+
+
+class ComplianceEntry(BaseModel):
+    layer: Literal["rules", "gemini"]
+    check: str
+    status: Literal["pass", "fail", "fixed"]
+    details: str
+    ts: str  # ISO8601
+
+
+class RegionResponse(BaseModel):
+    fips: str
+    county_name: str
+    state: str
+    msa_label: str
+    population: int
+    centroid: tuple[float, float] | None  # [lng, lat]
+    metrics: MetricsBlock
+    top_sports: list[SportEntry]
+    climate: ClimateBlock
+    adaptive_access: AdaptiveAccessBlock
+    narrative: str
+    compliance_log: list[ComplianceEntry]

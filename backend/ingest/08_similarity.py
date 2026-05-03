@@ -121,12 +121,16 @@ def build_climate_matrix(df: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
     temp = df["avg_temp_f"].to_numpy(dtype=np.float64)
     precip = df["annual_precip_in"].to_numpy(dtype=np.float64)
 
-    # Min-max normalize to [0, 1] across the population
+    # Min-max normalize to [0, 1] across the population.
+    # Use nanmin/nanmax so NaN counties don't corrupt the range;
+    # fill remaining NaNs with 0.5 (midpoint = no signal).
     def normalize(arr: np.ndarray) -> np.ndarray:
-        lo, hi = arr.min(), arr.max()
+        lo, hi = np.nanmin(arr), np.nanmax(arr)
         if hi == lo:
             return np.zeros_like(arr)
-        return (arr - lo) / (hi - lo)
+        out = (arr - lo) / (hi - lo)
+        np.nan_to_num(out, nan=0.5, copy=False)
+        return out
 
     mat = np.column_stack([normalize(temp), normalize(precip)])
     zones = df["climate_zone"].to_numpy(dtype=str)
@@ -166,10 +170,14 @@ def climate_similarity(
     zone_bonus      = 0.2 if zones match, else 0.0
     combined        = 0.8 * continuous_sim + 0.2 * zone_bonus
     """
+    zone_bonus = 1.0 if zone_i == zone_j else 0.0
+    # After normalize() NaNs are filled with 0.5, so cont vectors are always finite here.
+    # Guard defensively in case of unexpected NaN from a future data change.
+    if np.isnan(cont_i).any() or np.isnan(cont_j).any():
+        return float(np.clip(0.2 * zone_bonus, 0.0, 1.0))
     dist = norm(cont_i - cont_j)
     max_dist = float(np.sqrt(len(cont_i)))  # sqrt(2) for 2-D unit hypercube
     continuous_sim = 1.0 - min(dist / max_dist, 1.0)
-    zone_bonus = 1.0 if zone_i == zone_j else 0.0
     return float(np.clip(0.8 * continuous_sim + 0.2 * zone_bonus, 0.0, 1.0))
 
 

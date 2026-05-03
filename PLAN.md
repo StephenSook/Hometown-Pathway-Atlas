@@ -123,10 +123,10 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started · ⛔ blocked · ✂️
 | # | Component | File(s) | Owner | Status | Deps | Notes |
 |---|---|---|---|---|---|---|
 | 2.1 | FastAPI scaffold + config | `backend/main.py`, `backend/config.py` | Vinh | ✅ | 0.7 | Done 2026-05-03. CORS for localhost:5173. Vertex AI init on lifespan startup. `/health` returns 200. `pydantic-settings` added to requirements.txt. |
-| 2.2 | Pydantic schemas | `backend/schemas/{region,analog,pathway}.py` | Vinh | ⬜ | — | Day 4 AM. Match API contracts in spec §5.2 EXACTLY (camelCase output, snake_case envelope). |
-| 2.3 | ProfileService | `backend/services/profile_service.py` | Vinh | ⬜ | 1.8, 2.2 | Day 4 PM. ZIP→FIPS lookup. Returns region profile from parquet. |
-| 2.4 | AnalogService | `backend/services/analog_service.py` | Vinh | ⬜ | 1.9, 2.2 | Day 4 PM. Top 3 from similarity matrix. Apply MSA diversity constraint at request time. |
-| 2.5 | PathwayService | `backend/services/pathway_service.py` | Vinh | ⬜ | 1.8, 2.2 | Day 4 PM. Generates Pattern Gaps in 3 categories (Observed Strength / Public Access Signal / Opportunity Hypothesis). |
+| 2.2 | Pydantic schemas | `backend/schemas/{region,analog,pathway}.py` | Vinh | ✅ | — | Done 2026-05-03. ZipRequest, RegionResponse, AnalogsResponse, PathwayResponse + all sub-models. centroid field on RegionResponse + AnalogEntry (task 0.9 contract). |
+| 2.3 | ProfileService | `backend/services/profile_service.py` | Vinh | ✅ | 1.8, 2.2 | Done 2026-05-03. ZIP→FIPS via crosswalk. Returns full RegionResponse from county_profiles.parquet. Singleton via lru_cache. ZipNotFoundError + ProfileNotFoundError. |
+| 2.4 | AnalogService | `backend/services/analog_service.py` | Vinh | ✅ | 1.9, 2.2 | Done 2026-05-03. Top 3 from similarity matrix with D10 MSA diversity (≥2 MSAs). Candidate pool=20, diversity-first then fallback. **⚠️ KNOWN DATA ISSUE: similarity_matrix.parquet overall_score + climate_score columns are all NaN — run 08_similarity.py again before task 2.6 smoke test.** |
+| 2.5 | PathwayService | `backend/services/pathway_service.py` | Vinh | ✅ | 1.8, 2.2 | Done 2026-05-03. All 3 gap categories: observed_strength (dominant percentile track), public_access_signal (Move United chapters, display-only per D2), opportunity_hypothesis (weaker track vs climate peers). Conditional phrasing enforced. |
 | 2.6 | Routes — `/api/region`, `/api/analogs/{fips}`, `/api/pathway/{fips}` | `backend/routes/*.py` | Vinh | ⬜ | 2.3, 2.4, 2.5 | Day 4 PM. **+ add `/api/stats/county/{fips}` returning `{fips, county_name, olympic_per_100k, paralympic_per_100k, olympic_evidence, paralympic_evidence}` for CountyMap hover tooltips (task 0.9 contract).** |
 | 2.7 | GeminiService — region narrative | `backend/services/gemini_service.py` | Vinh | ⬜ | 2.3 | Day 5 AM. Vertex AI structured output schema. Region narrative + analog tradeoff + pattern gap prompts. |
 | 2.8 | GeminiService — test 5 sample counties | `backend/tests/test_gemini.py` | Vinh | ⬜ | 2.7 | Day 5 PM. Verify structured JSON output reliable. |
@@ -400,4 +400,4 @@ git commit -m "chore(plan): cut 4.E ✂️ — Day 7 not clean enough"
 
 ---
 
-_Last updated: 2026-05-03 by Vinh (task 2.1 ✅)._
+_Last updated: 2026-05-03 by Vinh (tasks 2.2–2.5 ✅)._
