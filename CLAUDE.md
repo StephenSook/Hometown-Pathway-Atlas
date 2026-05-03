@@ -5,6 +5,13 @@ Web app for Team USA × Google Cloud Hackathon Challenge 2 (Hometown Success Eng
 Submission deadline: May 11, 2026 at 5pm PT.
 Reference docs in `docs/` — architecture spec is the source of truth for conservative scope, Maximum Scope Addendum extends it.
 
+## Status snapshot (last updated 2026-05-03 PM)
+- Phase 1 ingest pipeline ✓ shipped (Vinh tasks 1.7–1.10).
+- Phase 2 backend service layer + 4 API routes ✓ shipped (Vinh tasks 2.2–2.6).
+- Frontend ↔ backend wire ✓ shipped — React Query hooks live, schemas reconciled, all 3 sentinel ZIPs (30060 / 00000 / 11111) end-to-end verified.
+- Cloud Run deploy still pending (Day 8 ops work). Backend Dockerfile + .dockerignore in place to unblock.
+- Outstanding Vinh deps: task 1.11 (Layer A stat) → unblocks A1 + Layer D; task 2.7 (GeminiService) → unblocks RegionQA real backend; task 2.9 (HybridAuditor) → ComplianceLog auto-flips to live mode.
+
 ## Team
 - Stephen Sookra: frontend (React/Vite/TS/Tailwind), pitch, project architect
 - Vinh Le: backend (FastAPI/Python), data pipeline
@@ -56,44 +63,33 @@ Hunt the dataset for one to three genuinely non-obvious findings. Examples we're
 
 The discovery is uniquely ours because we're the only team aggregating to county FIPS with parity. Surfaces in pitch, demo, and scrollytelling. Lowest cost / highest ROI ambitious layer.
 
-### Layer B — NYT/Pudding-Grade Frontend (Days 5–8, Stephen)
-Push visual design beyond "sober editorial" toward Awwwards-tier polish:
-- Custom-illustrated map elements (not flat choropleth)
-- Smooth Framer Motion transitions between every state change
-- Micro-interactions on hover, click, drill-down
-- Custom data visualizations beyond default Recharts (e.g., parity comparison radial)
-- Sound design for demo video
-- Typography and spacing at editorial publication tier
+### Layer A — Shocking Stat Hunt (Day 3, Vinh, ~2 hours) [PENDING — Vinh task 1.11]
+HeroStat renderer is scaffolded with a placeholder; constant swap on Vinh's ship.
 
-### Layer C — Multimodal Gemini Live Region Q&A (Days 5–6, Vinh + Stephen integration Day 7)
-User asks a natural-language question about any region they're viewing. Gemini Live receives the current map state (as image or structured data) plus the user's question and answers in real time using reasoning over visible context.
+### Layer B — NYT/Pudding-Grade Frontend (Days 5–8, Stephen) [SHIPPED 2026-05-03 PM]
+- SourceTooltip primitive on every visible metric (17 wires) — NYT/Pudding citation pattern
+- Atlas favicon parity-glyph + OG image + per-route social meta tags
+- Per-FIPS document.title sync + deep-link URLs (?zip=&fips=)
+- "Try Cobb County" tour CTA on landing
+- Replay-audit button on ComplianceLog header
+- /about methodology editorial page (#about hash route)
+- Sparse-county empty-state rendering across ParityPanel + SportMix + AdaptiveAccessCard (sentinel ZIP 11111)
+- Pillar5Defense second-layer card (per-incident harm + 3 lighthouse NGB chips)
+- Sound design recipe in `docs/sound_design.md` for Day 9 recording (still Stephen-action)
 
-Example: "Why does this region produce so many wrestlers?" → Gemini Live reasons over visible county data + climate + sport mix and returns a conditional, evidence-grounded answer.
+### Layer C — Multimodal Gemini Live Region Q&A [SHIPPED VIA STUB 2026-05-03 PM — awaits Vinh task 2.7]
+RegionQA panel renders below TradeoffPanel on results view. Question input + visible reasoning chain + final conditional-phrased answer + suggested-question chips. Currently demos against a hand-authored fixture; one-line swap to live Gemini call when GeminiService backend ships. CLAUDE-side responsibility: keep the integration point marked + fixtures conditional-phrased.
 
-This is the highest-tier "Gemini in new ways" play. Multimodality + reasoning + context, all called out in judging criteria.
+CUT TRIGGER (preserved): if Vinh task 2.7 doesn't ship by Day 9 EOD, RegionQA stays on stub through demo recording — single fixture answer is honest as a "design preview" rather than risking incomplete real-Gemini integration in front of judges. Component is removable in 1 import + 1 JSX line if you decide to fully cut.
 
-CUT TRIGGER: if Gemini Live integration is fighting us at end of Day 6, cut and ship without it. Conservative version still demos cleanly.
+### Layer D — Embedded Scrollytelling Editorial (Days 6–7, Stephen) [PENDING — depends on Layer A]
+Anchored on Layer A's discovered stat. Cut trigger: if Layer A fails to surface a genuinely surprising stat, scrollytelling has nothing to anchor on. Cut.
 
-### Layer D — Embedded Scrollytelling Editorial (Days 6–7, Stephen)
-Beyond the interactive tool, a 3–4 chapter scrollytelling piece walks the user through the most surprising findings from the dataset. Map drives the reveal at each step. Pudding-style narrative-first interactivity.
+### Layer E — Temporal Layer (Day 8, both, only if Days 1–6 are clean) [CUT 2026-05-02]
+Re-architects similarity matrix. Cost > marginal demo impact. Stays cut.
 
-Anchored on Layer A's discovered stats. Becomes the demo video's structure (we walk through our own scrollytelling piece).
-
-CUT TRIGGER: if Layer A fails to surface a genuinely surprising stat, scrollytelling has nothing to anchor on. Cut.
-
-### Layer E — Temporal Layer (Day 8, both, only if Days 1–6 are clean)
-Show how a region's Team USA story shifts from 2016 → 2024. Animated time slider on the choropleth. Sport mix evolution. Migration patterns. Gemini narrates the temporal arc.
-
-HIGHEST COST / HIGHEST RISK ambitious layer. Adds a new data dimension (per-Games rather than aggregated). Significant re-architecture of similarity matrix.
-
-CUT TRIGGER: if any other layer is delayed past Day 7, do not start the temporal layer. Default to cut.
-
-### Layer F — Agentic Comparison Workflow (Day 8–9, Vinh)
-User selects two counties side-by-side. A Gemini agent runs comparative analysis with tool calls — pulls evidence from both regions, reasons about tradeoffs, generates structured comparison report with cited evidence. Agent's "thinking" visible in sidebar (which counties it's examining, which dimensions it's weighing).
-
-Visible reasoning sidebar parallels the Compliance Log pattern but in core UX, not auditing.
-
-CUT TRIGGER: if Layers C, D, or E are running long, this is the first to cut.
+### Layer F — Agentic Comparison Workflow [CUT 2026-05-03]
+RegionQA Layer C covers the visible-reasoning + Gemini-on-region surface differently (Q&A rather than side-by-side comparison) without the cost of a second analytical-data-dimension. Stays cut to avoid splitting judge attention between parallel reasoning surfaces.
 
 ## Day 6 Gate (Critical Discipline)
 
@@ -134,9 +130,19 @@ If any of these fail at end of Day 6, all ambitious layers are paused until Day 
 - docs/02_vinh_handoff.docx — operational backend guide, conservative scope
 - docs/03_demo_outline.docx — demo video storyboard
 - docs/04_maximum_scope_addendum.docx — Maximum scope additions, layer cut triggers, updated timeline
-- DESIGN_SYSTEM.md — visual identity spec (palette, typography, 17 components with anatomy + states, motion choreography, accessibility, build order Day 2→Day 6). Locked 2026-05-01. Source of truth for everything visual.
+- DESIGN_SYSTEM.md — visual identity spec (palette, typography, components with anatomy + states, motion choreography, accessibility, build order Day 2→Day 6). Locked 2026-05-01. Source of truth for everything visual. §4.19 added 2026-05-03 for Pillar5Defense.
 - docs/moodboard/01-07.png — visual targets (hero, parity panel, analog cards, county map, compliance log, palette swatches, scrollytelling). Visual benchmark when implementing components.
 - REFERENCE_FINDINGS.md — Phase A research dossier (NYT/Bloomberg/Pudding/Reuters/Census patterns + Magic 21st React components + audit feed UIs). Input to DESIGN_SYSTEM.md.
+- SUBMISSION.md — Devpost form fill-in source-of-truth. Updated 2026-05-03 PM to reflect real-backend wire + Layer B/C ship.
+- docs/pitch_script.md — locked beat-by-beat narration for the demo recording.
+- docs/pitch_pillar5.md — Pillar 5 numbers + sources + Q&A elevator surfaces. Drift CI in scripts/check-pillar5-drift.mjs.
+- docs/council_2026-05-03.md — Sookra Council Day 7 chairman synthesis + Day 8 follow-up flags.
+- docs/notebooklm_oracle_prompts.md — 5-prompt deck Stephen runs in NotebookLM before final pitch lock.
+- docs/sound_design.md — Day 9 demo recording sound recipe.
+- docs/pitch_rehearsal.md — `./scripts/pitch-stopwatch.sh` protocol + per-beat target table.
+- docs/visual_verification_checklist.md — manual browser walkthrough for the 17-commit Editorial Polish Layer.
+- docs/mobile_audit_2026-05-03.md — static mobile-breakpoint sweep (no fixes required).
+- docs/cloud_run_deploy.md — frontend deploy runbook (backend deploy section pending).
 
 When asked about architectural decisions, check the architecture spec first.
 When proposing changes that conflict with locked decisions above, flag it explicitly and ask for confirmation before proceeding.
