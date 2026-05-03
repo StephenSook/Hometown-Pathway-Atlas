@@ -35,9 +35,16 @@ Per-capita parity. County granularity. Audit-grade. A live county-level Olympic 
 
 ### Thumbnail *(JPG/PNG/GIF, 5MB, 3:2 ratio)*
 
-**`{{Day 9: capture screenshot of results view at 1200×800 (3:2). Crop to show RegionHeader + ParityPanel + first row of analog cards. Save as docs/thumbnail.png.}}`**
+Use [`docs/thumbnail.png`](docs/thumbnail.png) — editorial title card
+generated via Gemini Nano Banana 2 (3:2 ratio, 2K resolution, 2.1MB).
+Bold serif "HOMETOWN PATHWAY ATLAS" wordmark in navy on warm-cream
+background, with a stylized US map dotted in olympic-blue + paralympic-
+clay scatter representing county-level data points. NYT Upshot /
+WIRED data-journalism aesthetic.
 
-Backup if no clean screenshot: editorial title card with "Hometown Pathway Atlas" + tagline on warm-neutral background.
+Alternative if Devpost prefers a screenshot: capture results view at
+1200×800 (3:2) showing RegionHeader + ParityPanel + first row of
+analog cards.
 
 ---
 
