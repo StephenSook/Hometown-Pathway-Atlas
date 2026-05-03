@@ -59,15 +59,24 @@ function resultsTitle(countyName: string, state: string): string {
 }
 
 export default function HomePage() {
-  // URL-state hydration on first mount: ?fips=13067 in the URL means a
-  // judge clicked a deep-link share — skip the hero view and land
-  // directly on results. #about hash routes to the methodology page.
-  // window.location used directly (no react-router dependency yet);
-  // Day 4 router migration will swap to useSearchParams + useNavigate.
+  // URL-state hydration on first mount: ?zip= AND ?fips= in the URL
+  // means a judge clicked a deep-link share — skip the hero view and
+  // land directly on results. ?fips= ALONE is intentionally NOT a
+  // valid hydration path — frontend useRegion takes a ZIP not a FIPS,
+  // so a fips-only URL would render an indefinite ResultsSkeleton.
+  // Day 4 router migration could add a fips→region path via a new
+  // GET /api/region/by-fips/{fips} backend route; until then, require
+  // both params to hydrate. Sparse sentinel `?zip=11111` works as
+  // expected since 11111 is a frontend-only escape hatch.
+  // #about hash routes to the methodology page.
+  const initialParams =
+    typeof window === 'undefined'
+      ? null
+      : new URLSearchParams(window.location.search);
   const initialView: View =
     typeof window === 'undefined'
       ? 'hero'
-      : new URLSearchParams(window.location.search).has('fips')
+      : initialParams?.has('zip')
         ? 'results'
         : window.location.hash === '#about'
           ? 'methodology'
@@ -75,11 +84,10 @@ export default function HomePage() {
 
   const [view, setView] = useState<View>(initialView);
   // submittedZip drives all 3 React Query hooks. Null when no ZIP yet.
-  // Initialized from URL ?zip= for deep-link hydration.
-  const initialZip =
-    typeof window === 'undefined'
-      ? null
-      : new URLSearchParams(window.location.search).get('zip');
+  // Initialized from URL ?zip= for deep-link hydration. (Reuses
+  // initialParams from above — both reads are wallclock-pure so a
+  // single URLSearchParams instance is fine across mounts.)
+  const initialZip = initialParams?.get('zip') ?? null;
   const [submittedZip, setSubmittedZip] = useState<string | null>(initialZip);
 
   const isSparse = submittedZip === SPARSE_SENTINEL_ZIP;
