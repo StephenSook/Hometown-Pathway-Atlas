@@ -9,6 +9,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from config import get_settings
+from routes import analogs, pathway, region, stats
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -40,6 +41,12 @@ app.add_middleware(
     allow_methods=["GET", "POST"],
     allow_headers=["Content-Type"],
 )
+
+
+app.include_router(region.router)
+app.include_router(analogs.router)
+app.include_router(pathway.router)
+app.include_router(stats.router)
 
 
 @app.get("/health")
