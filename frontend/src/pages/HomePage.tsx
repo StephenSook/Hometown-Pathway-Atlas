@@ -38,6 +38,7 @@ import Pillar5Defense from '../components/Pillar5Defense';
 import ResultsSkeleton from '../components/ResultsSkeleton';
 import HeroStat from '../components/HeroStat';
 import MethodologyPage from '../components/MethodologyPage';
+import RegionQA from '../components/RegionQA';
 import { useRegion } from '../hooks/useRegion';
 import { useAnalogs } from '../hooks/useAnalogs';
 import { usePathway } from '../hooks/usePathway';
@@ -347,6 +348,10 @@ export default function HomePage() {
               <TradeoffPanel
                 explanation={activeAnalogs?.tradeoff_explanation ?? ''}
               />
+            </div>
+
+            <div className="mt-12">
+              <RegionQA region={activeRegion} />
             </div>
             </>
             )}
