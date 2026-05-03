@@ -128,30 +128,62 @@ narration audio in 3 takes (pick best per beat). Sync in post-prod.
   immediately on mount — DON'T draw attention yet, narrator covers
   it in Beat 4
 
-### Shot 5 — Results tour (0:45 — 1:35)
+### Shot 5 — Results tour (0:45 — 1:25)
 
 - Continuation of single take
 - Cursor pans across results in this order:
-  1. RegionHeader (Cobb County, GA, population badge) — hover 3s
+  1. RegionHeader (Cobb County, GA, population badge) — hover 2s
   2. CountyMap — hover over source pin (navy) → hover over each of
-     3 analog pins (olympic-blue) → arcs visible — total 8s
+     3 analog pins (olympic-blue) → arcs visible — total 6s
   3. ParityPanel — pan across both Olympic + Paralympic columns,
-     evidence labels visible — 8s
+     evidence labels visible. **Optional: hover over a stat number
+     to flash the SourceTooltip popover (1s)** — the
+     editorial-citation moment lands here in 1 visual beat — 8s
   4. SportMix + ClimateBadge + AdaptiveAccessCard 3-col grid — quick
-     pan, don't dwell — 5s
+     pan, don't dwell — 4s
   5. AnalogList — pan across 3 cards, hover one to show similarity
-     breakdown — 8s
+     breakdown — 6s
   6. PatternGapPanel — pan across 3 categories (observed strength /
      public access signal / opportunity hypothesis), conditional
-     phrasing visible — 10s
+     phrasing visible — 8s
 - Pacing: continuous slow pan, no abrupt jumps, no scroll-jitter
+- **Compression vs original:** trimmed from 50s → 40s to make room
+  for Shot 5.5 RegionQA without breaking 3:00 total
 
-### Shot 6 — ComplianceLog ★ pivot (1:35 — 2:05)
+### Shot 5.5 — RegionQA ★ Layer C (1:25 — 1:45) [OPTIONAL]
+
+- Continuation of single take
+- Scroll past TradeoffPanel to RegionQA panel ("Ask the Atlas")
+- Click the first suggested-question chip (auto-fills textarea)
+- Click Send button — watch reasoning chain animate in:
+  1. "Pulling region parity metrics" lights up
+  2. "Cross-referencing top sports"
+  3. "Reasoning over climate signature"
+  4. "Drafting conditional-phrased response"
+- Final answer fades in on right zone, confidence pill ("medium")
+- **Hold 2s** — judges register the visible Q&A reasoning chain
+- Cursor moves toward right sidebar (transitions to Shot 6)
+
+**OPTIONAL flag rationale:** This is the Layer C "Gemini in new
+ways" judge play. Currently demos against a hand-authored fixture
+(the live Vertex AI Gemini call swap is a one-line change pending
+Vinh task 2.7). If demo recording is tight on time OR Stephen wants
+zero stub-fixture risk in front of judges, **cut this beat cleanly**
+— timing slot collapses back into Shot 5 (extends results tour by
+20s) or Shot 6 (extends ComplianceLog dwell by 20s). Cutting
+preserves the conservative arc; including adds the Layer C
+multimodality judge signal.
+
+### Shot 6 — ComplianceLog ★ pivot (1:45 — 2:05)
 
 - Cursor moves to right sidebar where ComplianceLog lives
-- ComplianceLog has been settled for ~85s — Rules column shows
-  "Awaiting checks…" placeholder, Gemini column shows the green-dotted
-  "fixed" entry with rewrite text visible
+- ComplianceLog has been settled since ~T+5s post-submit — Rules
+  column shows "Awaiting checks…" placeholder, Gemini column shows
+  the green-dotted "fixed" entry with rewrite text visible
+- **Optional: click the ↻ Replay button in the panel header** to
+  re-trigger the cycle on screen if the auditor moment landed before
+  the cursor arrived — restarts Rules pass + Gemini fail→fixed
+  sequence from T+0 (4s total) so judges see it land live
 - Hover over the fixed entry to show the before/after line through
   decoration
 - HOLD for 3 seconds — this is THE differentiation moment
@@ -174,10 +206,13 @@ narration audio in 3 takes (pick best per beat). Sync in post-prod.
 - Recent calls visible (NOT zero usage)
 
 **Cut 7c (5s):** GitHub repo
-- README visible
+- README visible — scroll to "API contract" section showing the
+  4 live endpoints + Pydantic schemas link
 - Apache 2.0 LICENSE in About sidebar
-- Architecture diagram OR `gemini_service.py` showing structured
-  output schema
+- Architecture diagram OR `backend/services/profile_service.py`
+  showing Pydantic-typed business logic (gemini_service.py once
+  Vinh task 2.7 ships, otherwise profile_service is the strongest
+  current proof of structured output)
 
 **Cut 7d (5s):** Quick fade back to live app, scrolled to where
 Pillar5Strip is visible
@@ -394,3 +429,24 @@ anchor sync points.
   montage = emotional resonance, Pillar 5 = business closure. Both
   valid — pitch_script v1 went with Pillar 5 because that's the
   Sookra Methodology Pillar 5 close-the-room beat.
+
+### Added 2026-05-03 (Layer C ship)
+
+- **Shot 5.5 — RegionQA Layer C** added as OPTIONAL beat between
+  results tour (Shot 5) and ComplianceLog pivot (Shot 6). Demo
+  the Gemini Q&A panel (suggested-question chip → reasoning chain
+  → conditional-phrased answer). 20s budget. Stephen decides on
+  recording day whether to include based on dry-run timing + risk
+  appetite (currently demos against hand-authored fixture; live
+  Vertex AI call wires up via 1-line swap when Vinh task 2.7 ships).
+  Shot 5 trimmed from 50s → 40s to make room without breaking
+  3:00 total.
+- **Shot 5 results tour:** added optional SourceTooltip hover beat
+  (1s) on a stat number to flash the editorial-citation popover.
+  Single visual beat that signals the entire 17-tooltip system.
+- **Shot 6 ComplianceLog:** added optional ↻ Replay button click as
+  recovery move if the auto-demo cycle landed before cursor arrived.
+- **Shot 7c GitHub repo:** updated reference from
+  `gemini_service.py` (not yet shipped) to README API contract
+  section + `backend/services/profile_service.py` as current
+  strongest structured-output proof.
