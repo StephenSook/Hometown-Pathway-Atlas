@@ -35,8 +35,26 @@ import { mockRegion, mockAnalogs, mockPathway } from '../lib/mocks';
 
 type View = 'hero' | 'results';
 
+// Per-FIPS document.title format. Mock data only renders Cobb County
+// today; once backend integrates, the actual region.county_name + state
+// from the API response feeds this.
+const DEFAULT_TITLE = 'Hometown Pathway Atlas — Team USA county-level analytics';
+function resultsTitle(countyName: string, state: string): string {
+  return `${countyName}, ${state} — Hometown Pathway Atlas`;
+}
+
 export default function HomePage() {
-  const [view, setView] = useState<View>('hero');
+  // URL-state hydration on first mount: ?fips=13067 in the URL means a
+  // judge clicked a deep-link share — skip the hero view and land
+  // directly on results. window.location used directly (no react-router
+  // dependency yet); Day 4 router migration will swap to useSearchParams.
+  const initialView: View =
+    typeof window !== 'undefined' &&
+    new URLSearchParams(window.location.search).has('fips')
+      ? 'results'
+      : 'hero';
+
+  const [view, setView] = useState<View>(initialView);
   const [loading, setLoading] = useState(false);
   const mainRef = useRef<HTMLElement>(null);
   // Skip the very first paint — only manage focus on user-driven view change.
@@ -53,9 +71,27 @@ export default function HomePage() {
     mainRef.current?.focus();
   }, [view]);
 
+  // Per-FIPS <title> sync. Judges browsing multiple regions across tabs
+  // get navigable browser-tab labels instead of every tab reading
+  // "Hometown Pathway Atlas — Team USA county-level analytics".
+  useEffect(() => {
+    if (view === 'results') {
+      document.title = resultsTitle(mockRegion.county_name, mockRegion.state);
+    } else {
+      document.title = DEFAULT_TITLE;
+    }
+  }, [view]);
+
   const handleSubmit = async (zip: string) => {
     setLoading(true);
     setView('results');
+    // URL state sync — push deep-link with both zip + fips so judges can
+    // share the exact view. Mock data always resolves to mockRegion.fips
+    // until Day 4 backend integrates real ZIP→FIPS resolution.
+    const params = new URLSearchParams();
+    params.set('zip', zip);
+    params.set('fips', mockRegion.fips);
+    window.history.replaceState({}, '', `?${params.toString()}`);
     try {
       // ───────── DAY 4 INTEGRATION POINT ─────────
       // Replace the simulated network below with React Query hook adoption:
@@ -90,7 +126,12 @@ export default function HomePage() {
     }
   };
 
-  const handleBack = () => setView('hero');
+  const handleBack = () => {
+    setView('hero');
+    // Clear URL params on navigation back so the deep-link doesn't
+    // re-trigger results-view hydration if the user refreshes.
+    window.history.replaceState({}, '', window.location.pathname);
+  };
 
   return (
     <div className="min-h-screen bg-warm-neutral">
