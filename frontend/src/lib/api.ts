@@ -7,9 +7,27 @@
  * Backend URL via VITE_API_BASE_URL env var, defaults to localhost:8000 for dev.
  */
 
-const API_BASE_URL =
-  (import.meta.env.VITE_API_BASE_URL as string | undefined) ??
-  'http://localhost:8000';
+// Gate the localhost fallback to dev-only. In production builds with
+// VITE_API_BASE_URL unset, ship empty string + log loudly so the
+// failure surface is visible (every API call → 4xx via fetch on
+// relative URL → QueryCache.onError fires Sonner toast → judges see
+// "Network error" instead of silent broken app pointing at
+// localhost:8000 that doesn't exist on the deployed host).
+//
+// Production deploy via cloud_run_deploy.md uses .env.production
+// temp file to inject the backend URL at build time. If that step
+// gets skipped, this guard is the second-line defense.
+const API_BASE_URL = (() => {
+  const explicit = import.meta.env.VITE_API_BASE_URL as string | undefined;
+  if (explicit) return explicit;
+  if (import.meta.env.DEV) return 'http://localhost:8000';
+  console.error(
+    '[api] VITE_API_BASE_URL not set in production build — all API ' +
+      'calls will fail. Set it via frontend/.env.production before ' +
+      '`gcloud run deploy --source frontend/`. See docs/cloud_run_deploy.md.',
+  );
+  return '';
+})();
 
 // ─────────────────────────────────────────────────────────────────
 // Types — mirror backend/schemas/*.py 1:1.
