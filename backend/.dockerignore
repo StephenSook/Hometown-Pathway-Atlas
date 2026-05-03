@@ -1,0 +1,35 @@
+# Keep image lean — only ship what the runtime needs.
+
+# Python caches
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual envs
+.venv/
+venv/
+env/
+ENV/
+
+# Git
+.git/
+.gitignore
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Test fixtures + ad-hoc data not needed at runtime
+*_test.py
+test_*.py
+tests/
+
+# Raw CSV data — only the processed .parquet files are needed at runtime
+data/raw/
+data/processed/*.csv
