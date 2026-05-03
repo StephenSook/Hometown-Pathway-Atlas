@@ -9,7 +9,17 @@
 
 import type { SimilarityBreakdown as Breakdown } from '../lib/api';
 import { fmtPercent } from '../lib/format';
+import SourceTooltip from './SourceTooltip';
 import { cn } from '../lib/utils';
+
+const DIMENSION_SOURCES = {
+  athlete:
+    '40% weight (CLAUDE.md locked decision #7). County athlete pipeline density: Team USA 2016-2024 roster representation per 100k population, normalized via empirical Bayes shrinkage to dampen small-county noise.',
+  sport_mix:
+    '35% weight (CLAUDE.md locked decision #7). Top-N sport over-indexing pattern: NFHS Athletics Participation 2023-24 z-scores cross-joined with Team USA roster sport assignments by county FIPS.',
+  climate:
+    '25% weight (CLAUDE.md locked decision #7). NOAA nClimGrid 5km 30-year climate normals + Köppen-Geiger zone match. Tie-break enforces MSA diversity constraint per locked decision #10 — top 3 analogs must span ≥2 different MSAs.',
+} as const;
 
 interface SimilarityBreakdownProps {
   breakdown: Breakdown;
@@ -21,6 +31,8 @@ interface DimensionRow {
   value: number;
   /** Tailwind bg utility — large-area bar fill, AA-safe at any score */
   fillClass: string;
+  /** Per-dimension methodology citation surfaced via SourceTooltip on label. */
+  source: string;
 }
 
 export default function SimilarityBreakdown({
@@ -32,16 +44,19 @@ export default function SimilarityBreakdown({
       label: 'Athlete profile',
       value: breakdown.athlete_score,
       fillClass: 'bg-olympic-blue',
+      source: DIMENSION_SOURCES.athlete,
     },
     {
       label: 'Sport mix',
       value: breakdown.sport_mix_score,
       fillClass: 'bg-paralympic-clay',
+      source: DIMENSION_SOURCES.sport_mix,
     },
     {
       label: 'Climate',
       value: breakdown.climate_score,
       fillClass: 'bg-accent-teal',
+      source: DIMENSION_SOURCES.climate,
     },
   ];
 
@@ -56,7 +71,7 @@ export default function SimilarityBreakdown({
         return (
           <li key={row.label} className="flex items-center gap-3">
             <span className="w-32 shrink-0 font-mono uppercase tracking-wider text-eyebrow text-muted-text">
-              {row.label}
+              <SourceTooltip source={row.source}>{row.label}</SourceTooltip>
             </span>
 
             <span
