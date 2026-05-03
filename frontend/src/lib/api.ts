@@ -176,12 +176,21 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     // Read body once as text, then attempt JSON.parse on the string —
     // calling response.json() then response.text() in catch fails
     // because the stream was already consumed by the failed JSON read.
-    let body: unknown;
-    const text = await response.text();
+    // Wrap response.text() in try too — gzip/encoding errors at the
+    // stream layer would otherwise throw past the ApiError, leaving
+    // the caller without an HTTP status to act on.
+    let body: unknown = '';
     try {
-      body = JSON.parse(text);
+      const text = await response.text();
+      try {
+        body = JSON.parse(text);
+      } catch {
+        body = text;
+      }
     } catch {
-      body = text;
+      // Stream-level failure (gzip / network mid-body) — drop body,
+      // keep going so caller still gets the HTTP status via ApiError.
+      body = '';
     }
     throw new ApiError(response.status, `Request failed: ${response.status}`, body);
   }
