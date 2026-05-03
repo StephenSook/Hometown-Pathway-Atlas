@@ -6,14 +6,18 @@
  * because `api.region` is the only thing that throws on non-2xx responses
  * (see `lib/api.ts:122`).
  *
+ * Errors auto-toast via `QueryCache.onError` in `lib/queryClient.ts` —
+ * the consumer doesn't need to call toast.error itself, the user always
+ * sees the toast even if the consumer forgets to render an error UI.
+ *
  * Caller pattern (HomePage Day 4 swap):
  *
  * ```tsx
  * const [submittedZip, setSubmittedZip] = useState<string | null>(null);
  * const region = useRegion(submittedZip);
- * if (region.isLoading) return <ResultsSkeleton />;
- * if (region.error) toast.error(region.error.message);
+ * if (region.isPending) return <ResultsSkeleton />;
  * if (region.data) return <RegionHeader {...region.data} />;
+ * // error case: toast already fired via QueryCache.onError, render fallback
  * ```
  */
 
