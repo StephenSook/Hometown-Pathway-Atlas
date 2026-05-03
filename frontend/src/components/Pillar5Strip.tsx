@@ -22,34 +22,17 @@
  */
 
 import { useId } from 'react';
+import {
+  PILLAR5_TAM as TAM,
+  PILLAR5_COST as COST_FRAMING,
+  PILLAR5_REVENUE_PILLS as REVENUE_PILLS,
+  PILLAR5_FOOTER as FOOTER_CALLOUT,
+} from '../lib/pillar5';
 import { cn } from '../lib/utils';
 
 interface Pillar5StripProps {
   className?: string;
 }
-
-// LOCKED 2026-05-02. Source: docs/pitch_pillar5.md §"TAM"
-const TAM = {
-  number: '~50M',
-  label: 'US households with youth in organized athletics',
-  source: 'Aspen Institute Project Play, State of Play 2024',
-} as const;
-
-// LOCKED 2026-05-02. Source: docs/pitch_pillar5.md §"Cost framing"
-const COST_FRAMING = {
-  number: 'Zero',
-  label: 'Existing public county-level Olympic + Paralympic Atlas tools',
-  source: 'Independent gap analysis 2026',
-} as const;
-
-// LOCKED 2026-05-02. Source: docs/pitch_pillar5.md §"Revenue model"
-const REVENUE_PILLS = [
-  'B2B licensing → NGBs (~6,000 recruitment positions / year)',
-  'B2G partnerships → ~13,000 high schools via state recreation depts',
-] as const;
-
-const FOOTER_CALLOUT =
-  'Surfaces signals relevant to fans, parents, NGB recruiters, and state recreation programs.';
 
 export default function Pillar5Strip({ className }: Pillar5StripProps) {
   const eyebrowId = useId();
