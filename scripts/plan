@@ -1,0 +1,115 @@
+#!/usr/bin/env bash
+# CLI helper for PLAN.md — avoids manual table editing errors.
+# Usage:
+#   ./scripts/plan claim   1.1                  → mark 1.1 🟡 + commit + push
+#   ./scripts/plan done    1.1                  → mark 1.1 ✅ + commit + push
+#   ./scripts/plan block   1.1 "reason here"    → mark 1.1 ⛔ + commit
+#   ./scripts/plan cut     4.E                  → mark 4.E ✂️ + commit (Maximum Scope cuts)
+#   ./scripts/plan handoff 4.C-fe Stephen       → annotate handoff in Notes
+#   ./scripts/plan ls                           → list all unfinished
+#   ./scripts/plan ls --mine                    → list MY active tasks
+#   ./scripts/plan ls --active                  → list all 🟡
+#   ./scripts/plan ls --blocked                 → list all ⛔
+#   ./scripts/plan ls --gate                    → show Day 6 Gate status
+#
+# Hackathon TTL = 4 hours on a 🟡 lock.
+
+set -e
+
+PLAN="PLAN.md"
+[ ! -f "$PLAN" ] && echo "❌ No PLAN.md found in $(pwd). Run from repo root." && exit 1
+
+COMMITTER=$(git config user.name 2>/dev/null || echo "unknown")
+TIMESTAMP=$(date "+%b %-d %-I%p" | tr 'A-Z' 'a-z' | sed 's/ \(.*\)/ \1/' | awk '{$1=toupper(substr($1,1,1)) substr($1,2); print}')
+
+cmd="${1:-help}"
+task="${2:-}"
+
+# Robust sed in-place for macOS
+sedi() { sed -i '' "$@"; }
+
+case "$cmd" in
+  claim)
+    [ -z "$task" ] && echo "Usage: plan claim <task#>" && exit 1
+    # Replace ⬜ with 🟡 on the task row, append timestamp
+    sedi "/^| $task |/s/⬜/🟡/" "$PLAN"
+    sedi "/^| $task |/s/| *$/| 🟡 $COMMITTER $TIMESTAMP |/" "$PLAN"
+    git add "$PLAN"
+    git commit -m "chore(plan): claim $task 🟡 $COMMITTER"
+    git push 2>/dev/null || echo "(no remote or push failed — commit kept local)"
+    echo "✅ Claimed $task at $TIMESTAMP"
+    ;;
+
+  done)
+    [ -z "$task" ] && echo "Usage: plan done <task#>" && exit 1
+    sedi "/^| $task |/s/🟡/✅/" "$PLAN"
+    git add "$PLAN"
+    git commit -m "chore(plan): complete $task ✅ $COMMITTER"
+    git push 2>/dev/null || echo "(no remote or push failed — commit kept local)"
+    echo "✅ Completed $task"
+    ;;
+
+  block)
+    [ -z "$task" ] && echo "Usage: plan block <task#> \"reason\"" && exit 1
+    note="${3:-blocked}"
+    sedi "/^| $task |/s/🟡/⛔/" "$PLAN"
+    sedi "/^| $task |/s/| *$/| ⛔ $note |/" "$PLAN"
+    git add "$PLAN"
+    git commit -m "chore(plan): block $task ⛔ — $note"
+    git push 2>/dev/null || true
+    echo "⛔ Blocked $task: $note"
+    ;;
+
+  cut)
+    [ -z "$task" ] && echo "Usage: plan cut <task#>  (e.g. plan cut 4.E)" && exit 1
+    reason="${3:-Maximum Scope cut trigger}"
+    sedi "/^| $task |/s/⬜\|🟡/✂️/" "$PLAN"
+    sedi "/^| $task |/s/| *$/| ✂️ CUT — $reason |/" "$PLAN"
+    git add "$PLAN"
+    git commit -m "chore(plan): cut $task ✂️ — $reason"
+    git push 2>/dev/null || true
+    echo "✂️ Cut $task: $reason"
+    ;;
+
+  handoff)
+    [ -z "$task" ] && echo "Usage: plan handoff <task#> <name>" && exit 1
+    target="${3:-?}"
+    sedi "/^| $task |/s/| *$/| → $target $TIMESTAMP |/" "$PLAN"
+    git add "$PLAN"
+    git commit -m "chore(plan): handoff $task → $target"
+    git push 2>/dev/null || true
+    echo "➡️  Handed off $task to $target"
+    ;;
+
+  ls)
+    filter="${2:-}"
+    case "$filter" in
+      --mine)    grep '^|' "$PLAN" | grep '🟡' | grep -i "$COMMITTER" ;;
+      --active)  grep '^|' "$PLAN" | grep '🟡' ;;
+      --blocked) grep '^|' "$PLAN" | grep '⛔' ;;
+      --cut)     grep '^|' "$PLAN" | grep '✂️' ;;
+      --gate)    awk '/## Day 6 Gate/,/^---/' "$PLAN" ;;
+      *)         grep '^|' "$PLAN" | grep -E '⬜|🟡|⛔' ;;
+    esac
+    ;;
+
+  *)
+    cat <<EOF
+plan — Hometown Pathway Atlas coordination CLI
+
+Commands:
+  claim   <task#>            mark task 🟡 + commit + push
+  done    <task#>            mark task ✅ + commit + push
+  block   <task#> "reason"   mark task ⛔ + commit
+  cut     <task#> "reason"   mark task ✂️ (Maximum Scope cuts)
+  handoff <task#> <name>     annotate handoff in Notes
+  ls                         list all unfinished
+  ls --mine                  list YOUR active 🟡 tasks
+  ls --active                list all 🟡 tasks
+  ls --blocked               list all ⛔ tasks
+  ls --gate                  show Day 6 Gate checklist
+
+Hackathon TTL: 4-hour lock on 🟡 tasks. After 4hr, the other person can claim.
+EOF
+    ;;
+esac
