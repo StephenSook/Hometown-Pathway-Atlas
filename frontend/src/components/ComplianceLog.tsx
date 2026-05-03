@@ -34,12 +34,22 @@
  *   stability is what keeps live-mode collapse working across parent
  *   re-renders
  *
- * Production safety: `demoMode` only takes effect on a dev build OR a
- * loopback host (`localhost` / `127.0.0.1`). Cloud Run hosts (`*.run.app`)
- * are intentionally NOT in the allow-list so a production deploy never
- * leaks the scripted "Cobb County produces Olympic athletes" causal-verb
- * fixture. A dev console.warn surfaces when demoMode was requested but
- * env-disabled (e.g. demo rehearsal on a preview URL).
+ * Demo environment safety: `demoMode` takes effect on a dev build,
+ * loopback hosts (`localhost` / `127.0.0.1`), or `*.run.app` Cloud Run
+ * hosts. The Cloud Run allow originally OPT-OUT (gate kept this fixture
+ * off prod), but the hackathon deploy IS the production demo for judges,
+ * so we open the gate for the hackathon period.
+ *
+ * Two-layer protection against the fixture leaking when not wanted:
+ *   1. The hostname allow-list above (this gate) — hard floor against
+ *      arbitrary domain deploys (custom domain, fork to your own site)
+ *   2. HomePage passes `demoMode={!compliance_log?.length}` so the demo
+ *      auto-disables the moment Vinh task 2.9 (HybridAuditor) ships
+ *      real compliance_log entries. Real audit replaces fixture with
+ *      zero code change.
+ *
+ * A dev console.warn surfaces when demoMode was requested but env-
+ * disabled (e.g. demo rehearsal on a non-allow-listed domain).
  *
  * `prefers-reduced-motion` honored via Framer's useReducedMotion in
  * LogEntry — CSS clamp in index.css does not affect Framer's JS-driven
@@ -72,7 +82,11 @@ function isDemoEnvironmentSafe(): boolean {
   if (import.meta.env.DEV) return true;
   if (typeof window === 'undefined') return false;
   const host = window.location.hostname;
-  return host === 'localhost' || host === '127.0.0.1';
+  return (
+    host === 'localhost' ||
+    host === '127.0.0.1' ||
+    host.endsWith('.run.app')
+  );
 }
 
 function entryKey(e: ComplianceLogEntry): string {
