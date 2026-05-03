@@ -159,7 +159,7 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started · ⛔ blocked · ✂️
 
 | # | Component | File(s) | Owner | Status | Deps | Notes |
 |---|---|---|---|---|---|---|
-| 4.A | **Layer A — Shocking stat hunt** | tracked as 1.11 above | Vinh | ⬜ | — | Day 3. Always do. No cut trigger. |
+| 4.A | **Layer A — Shocking stat hunt** | tracked as 1.11 above + `frontend/src/{lib,components}/{heroStat.ts,HeroStat.tsx}` | Vinh + Stephen | 🟡 | — | Day 3. Always do. No cut trigger. **Frontend renderer scaffolded** (commits a9fad45 + 24de92f + d8f654b) — `HeroStat.tsx` displays above hero h1 with placeholder data per CLAUDE.md Layer A example #3 ("1 in 2"). Vinh's task 1.11 ships actual stat → swap `HERO_STAT` constant in `lib/heroStat.ts` → component picks up. axe-clean across hero+results+mobile. |
 | 4.B | **Layer B — NYT/Pudding-grade frontend** | woven into 3.* | Stephen | ⬜ | — | Days 1–8. Custom illustrations, Framer Motion transitions, micro-interactions, sound design. Built INTO conservative components from Day 2 forward. Polish degrades gracefully. |
 | 4.C-back | **Layer C — Gemini Live spike** | `backend/services/gemini_live.py` | Vinh | ⬜ | 2.7 | Day 5 AM. **4-hour spike rule.** If hello-world doesn't work in 4hr, CUT and continue conservative. |
 | 4.C-api | Layer C — `/api/region/qa` endpoint | `backend/routes/qa.py`, `backend/services/gemini_live.py` | Vinh | ⬜ | 4.C-back | Day 5 PM (only if spike succeeds). Multimodal: current view + question → structured JSON answer. Auditor-reviewed. |
