@@ -54,9 +54,19 @@ export default function HomePage() {
     setLoading(true);
     setView('results');
     try {
-      // Day 4 swap: replace setTimeout with `await api.region(zip)` etc.
-      // For now the simulated network keeps the loading skeleton visible
-      // long enough to perceive on a fast connection.
+      // ───────── DAY 4 INTEGRATION POINT ─────────
+      // Replace the setTimeout below with React Query hook adoption:
+      //   1. Lift `setSubmittedZip(zip)` to component state
+      //   2. Read `useRegion(submittedZip)` + `useAnalogs(region.data?.fips)`
+      //      + `usePathway(region.data?.fips)` at the top of HomePage
+      //   3. Derive `loading` from `region.isLoading || analogs.isFetching
+      //      || pathway.isFetching` and `error` from union of `.error` props
+      //   4. Pass `region.data`, `mockAnalogs.analogs`→`analogs.data?.analogs`,
+      //      `mockPathway.gaps`→`pathway.data?.gaps` into the existing JSX
+      //   5. Delete this manual setTimeout — React Query owns the lifecycle
+      // Hooks scaffolded in src/hooks/{useRegion,useAnalogs,usePathway}.ts
+      // and the QueryClientProvider is already mounted in App.tsx, so the
+      // swap is purely substitution at the data-source sites.
       void zip;
       await new Promise((resolve) => setTimeout(resolve, 600));
       setLoading(false);
