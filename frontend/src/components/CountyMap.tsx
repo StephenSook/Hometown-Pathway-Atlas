@@ -185,6 +185,17 @@ export default function CountyMap({
         'relative rounded-2xl bg-card-white border border-soft-border shadow-card-resting p-4',
         className,
       )}
+      style={{
+        // Hairline editorial grid — Reuters/Pudding scenery move. Grid sits on
+        // the figure container BEHIND the SVG (which uses bg-card-white and
+        // warm-neutral county fills, both opaque, so the grid is only visible
+        // in the figure margin around the map). Subtle navy at ~3% opacity —
+        // does not compete with the choropleth, signals editorial precision.
+        backgroundImage:
+          'linear-gradient(to right, rgba(31,58,95,0.04) 1px, transparent 1px), ' +
+          'linear-gradient(to bottom, rgba(31,58,95,0.04) 1px, transparent 1px)',
+        backgroundSize: '24px 24px',
+      }}
     >
       {/* Wrapper carries onMouseLeave so the tooltip clears even when the
        * pointer exits the SVG into the figure padding gap (figure-level
@@ -210,6 +221,32 @@ export default function CountyMap({
             >
               <path d="M 0 0 L 10 5 L 0 10 z" fill="#B96B5C" />
             </marker>
+            {/* Hatch pattern reserved for counties with confidence below
+             * empirical-Bayes threshold, OR counties truly missing source
+             * data. Backend Phase 2 (Vinh tasks 2.1-2.10) will expose a
+             * `data_confidence` flag per FIPS — once that lands, switch
+             * affected county Geographies to fill="url(#missing-data-hatch)"
+             * instead of warm-neutral. Scoped to defs-only today so the
+             * pattern is ready when backend signal arrives without
+             * requiring a CountyMap structural change. */}
+            <pattern
+              id="missing-data-hatch"
+              patternUnits="userSpaceOnUse"
+              width="6"
+              height="6"
+              patternTransform="rotate(45)"
+            >
+              <rect width="6" height="6" fill="#F5F1EB" />
+              <line
+                x1="0"
+                y1="0"
+                x2="0"
+                y2="6"
+                stroke="#1F3A5F"
+                strokeOpacity="0.18"
+                strokeWidth="1"
+              />
+            </pattern>
           </defs>
 
           <Geographies geography={countiesTopo}>
@@ -294,6 +331,8 @@ export default function CountyMap({
       </div>
 
       <Legend />
+
+      <ProvenanceFooter />
 
       {missingCount > 0 && (
         <div
@@ -394,6 +433,37 @@ function Legend() {
       <LegendRow swatch="navy" label="Source county" />
       <LegendRow swatch="olympic" label="Peer counties" />
       <LegendRow swatch="clay" label="Similarity link" />
+    </div>
+  );
+}
+
+/**
+ * ProvenanceFooter — names the four-source data join behind the map.
+ * Per 2026-05-03 Sookra Council: structural-gap claim ("zero public products
+ * aggregate at county-FIPS with parity") MUST show its receipts on screen.
+ * Without provenance visible within ~10s of the map appearing, the gap claim
+ * reads as marketing rather than analytical work.
+ *
+ * Sources named: USOPC (Team USA roster + NGB list), NFHS (high-school
+ * athletic participation), BLS (county economic context), NWS (climate).
+ * Update date is hand-set — when backend ingest pipelines refresh on Day 8
+ * deploy, bump the date here.
+ */
+function ProvenanceFooter() {
+  return (
+    <div
+      aria-label="Data sources"
+      className="absolute bottom-6 left-6 rounded-xl bg-card-white border border-soft-border shadow-md p-3 max-w-[260px]"
+    >
+      <p className="font-mono uppercase tracking-wider text-eyebrow text-navy mb-1">
+        Sources
+      </p>
+      <p className="font-serif italic text-caption text-muted-text leading-snug">
+        USOPC roster · NFHS participation · BLS county economics · NWS climate
+      </p>
+      <p className="font-mono text-eyebrow text-muted-text mt-1">
+        Joined at county FIPS · Updated 2026-05
+      </p>
     </div>
   );
 }

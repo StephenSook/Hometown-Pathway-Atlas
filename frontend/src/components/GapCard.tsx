@@ -60,7 +60,7 @@ const FALLBACK_BADGE_STYLES =
 // defense for conditional phrasing. This regex catches obvious causal verbs
 // that slip past it and surfaces an [unhedged] badge in dev builds only.
 const CAUSAL_VERBS =
-  /\b(produces?|creates?|guarantees?|causes?|makes?|leads?\s+to|results?\s+in)\b/i;
+  /\b(produces?|creates?|guarantees?|causes?|makes?|leads?\s+to|results?\s+in)\b/i; // atlas-phrasing-allow
 
 export default function GapCard({ gap, className }: GapCardProps) {
   const badgeId = useId();
