@@ -127,6 +127,192 @@ ships with task 5.8 — replaces this Mermaid placeholder.*
 
 ---
 
+## API contract — Pydantic + Vertex AI structured output
+
+The frontend's `frontend/src/lib/api.ts` is the locked TypeScript surface;
+the Pydantic v2 models below are the 1:1 backend mirror Vinh's FastAPI
+service implements. Schema drift = build break — when either side changes,
+the other follows in the same commit.
+
+Three endpoints, three response models, plus two Vertex AI structured-output
+JSON schemas for Gemini narrative + the hybrid auditor self-review.
+
+### 1. Pydantic v2 response models
+
+```python
+# backend/schemas.py — derived 1:1 from frontend/src/lib/api.ts
+from typing import Literal
+from pydantic import BaseModel, Field
+
+EvidenceLevel = Literal["high", "medium", "low"]
+ComplianceStatus = Literal["pass", "fail", "fixed"]
+ComplianceLayer = Literal["rules", "gemini"]
+GapCategory = Literal[
+    "observed_strength", "public_access_signal", "opportunity_hypothesis"
+]
+MatchQuality = Literal["strong", "partial"]
+
+class ComplianceLogEntry(BaseModel):
+    layer: ComplianceLayer
+    check: str
+    status: ComplianceStatus
+    details: str | None = None
+    ts: str  # ISO8601 — set in service layer, validated client-side
+    before: str | None = None
+    after: str | None = None
+
+class ParityMetric(BaseModel):
+    count: int = Field(ge=0)
+    per_100k: float = Field(ge=0)
+    percentile: float = Field(ge=0, le=100)
+    evidence: EvidenceLevel
+
+class SportEntry(BaseModel):
+    sport: str
+    z_score: float
+
+class ClimateProfile(BaseModel):
+    zone: str
+    avg_temp_f: float
+    annual_precip_in: float
+    elevation_ft: float
+
+class AdaptiveAccess(BaseModel):
+    move_united_chapters_50mi: int = Field(ge=0)
+    confidence: EvidenceLevel
+
+class RegionMetrics(BaseModel):
+    olympic: ParityMetric
+    paralympic: ParityMetric
+
+class RegionRequest(BaseModel):
+    zip: str = Field(pattern=r"^\d{5}$")
+
+class RegionResponse(BaseModel):
+    fips: str = Field(pattern=r"^\d{5}$")
+    county_name: str
+    state: str = Field(min_length=2, max_length=2)
+    msa_label: str
+    population: int = Field(ge=0)
+    metrics: RegionMetrics
+    top_sports: list[SportEntry] = Field(max_length=10)
+    climate: ClimateProfile
+    adaptive_access: AdaptiveAccess
+    narrative: str  # Gemini-generated, audited
+    compliance_log: list[ComplianceLogEntry]
+
+class SimilarityBreakdown(BaseModel):
+    athlete_score: float = Field(ge=0, le=1)
+    sport_mix_score: float = Field(ge=0, le=1)
+    climate_score: float = Field(ge=0, le=1)
+
+class AnalogEntry(BaseModel):
+    rank: int = Field(ge=1, le=3)
+    fips: str = Field(pattern=r"^\d{5}$")
+    county_name: str
+    state: str = Field(min_length=2, max_length=2)
+    overall_score: float = Field(ge=0, le=1)
+    breakdown: SimilarityBreakdown
+    match_quality: MatchQuality
+    metrics: RegionMetrics
+    narrative: str
+    compliance_log: list[ComplianceLogEntry]
+
+class AnalogsResponse(BaseModel):
+    source_fips: str = Field(pattern=r"^\d{5}$")
+    analogs: list[AnalogEntry] = Field(min_length=3, max_length=3)
+    tradeoff_explanation: str
+
+class PatternGap(BaseModel):
+    category: GapCategory
+    claim: str
+    evidence: dict
+    confidence: EvidenceLevel
+
+class PathwayResponse(BaseModel):
+    source_fips: str = Field(pattern=r"^\d{5}$")
+    gaps: list[PatternGap] = Field(min_length=3, max_length=3)
+```
+
+### 2. Vertex AI Gemini narrative schema
+
+Gemini 2.5 Flash is called with `response_mime_type="application/json"` +
+`response_schema` — the model is **constrained** to return JSON matching
+the schema, eliminating prose drift before the auditor sees the output.
+
+```python
+# backend/services/gemini.py
+from vertexai.generative_models import GenerativeModel, GenerationConfig
+
+NARRATIVE_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "narrative": {
+            "type": "string",
+            "description": (
+                "2-3 sentence county description. MUST use conditional "
+                "phrasing: 'could be associated with', 'may correlate with', "
+                "'shows representation patterns of', 'originates from'. "
+                "NEVER use causal verbs: produces, creates, guarantees, "
+                "leads to, causes, results in. Drop any athlete name. "
+                "Reference county at FIPS level only, never ZIP."
+            ),
+        },
+        "confidence": {"type": "string", "enum": ["high", "medium", "low"]},
+    },
+    "required": ["narrative", "confidence"],
+}
+
+config = GenerationConfig(
+    response_mime_type="application/json",
+    response_schema=NARRATIVE_SCHEMA,
+    temperature=0.2,  # low — narrative is interpretive but disciplined
+    max_output_tokens=512,
+)
+model = GenerativeModel("gemini-2.5-flash", generation_config=config)
+```
+
+### 3. Hybrid auditor self-review schema
+
+After narrative generation, the same model is called a second time in
+**self-review mode** with the auditor schema. Combined with the
+deterministic regex layer (`frontend/src/components/GapCard.tsx`
+`CAUSAL_VERBS` constant on the frontend; mirrored in `backend/services/
+auditor.py` regex), this is the hybrid auditor that powers the
+`compliance_log` stream visible in the UI.
+
+```python
+AUDITOR_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "verdict": {"type": "string", "enum": ["pass", "fail"]},
+        "violations": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "List of banned-tone phrases detected, if any.",
+        },
+        "rewritten": {
+            "type": "string",
+            "description": (
+                "Conditional-phrased rewrite of the input narrative. "
+                "Required when verdict=fail; empty string otherwise."
+            ),
+        },
+    },
+    "required": ["verdict", "violations", "rewritten"],
+}
+```
+
+### Why this matters for judging
+
+The Pillar 4 demo moment (auditor catches `"PRODUCES Olympic athletes"` →
+rewrites to `"could be associated with Olympic representation patterns"`)
+isn't a hand-coded heuristic — it's deterministic regex + Gemini-as-judge
+under structured-output constraints, both auditable in the live
+`compliance_log` stream. The schemas above are the contract. No magic.
+
+---
+
 ## Run locally
 
 ### Prerequisites
