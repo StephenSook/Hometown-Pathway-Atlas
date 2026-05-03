@@ -539,6 +539,51 @@ Detailed in 4.16. Single audit log row.
 
 ---
 
+### 4.21 Footer (persistent shell — editorial finish)
+
+**Why it exists:** Added 2026-05-03 PM during Tier 1+2+3 saturation sweep. Editorial sites expect a footer; absence read as unfinished. Mirror Navbar's role as a persistent shell element (not per-view) so all 3 views (hero / results / methodology) close cleanly.
+
+**Anatomy:**
+- Persistent footer rendered after `<main>` on every view; sits below ComplianceLog overlay sidebar so it doesn't collide with the audit panel
+- Top: `border-t border-soft-border bg-warm-neutral` separator divider
+- Three-column grid (mobile: stack), `mx-auto max-w-7xl px-6 py-8`:
+  - **Left — Atlas wordmark + tagline:** Eyebrow JetBrains Mono uppercase navy `Hometown Pathway Atlas` + Instrument Serif italic caption muted `Per-capita parity. County granularity. Audit-grade.`
+  - **Center — Quick links:** `<nav>` with 3 links — Methodology (`#about` hash route), GitHub (external `target="_blank" rel="noopener noreferrer"`, Code2 icon prefix as proxy for GitHub since lucide-react in this build doesn't ship a GitHub icon), Apache 2.0 (external link to LICENSE on GitHub). Hover: `text-olympic-blue` transition.
+  - **Right — Data-as-of date stamp:** Eyebrow `Data as of` + JetBrains Mono `<time dateTime="YYYY-MM-DD">` value. NYT/Bloomberg editorial pattern making freshness visible.
+- Bottom strip: `border-t border-soft-border` with single Instrument Serif italic eyebrow muted footnote covering build context + conditional-phrasing claim + NIL-safe athlete handling. Reads as the page's epistemic disclosure.
+
+**Locked rule:** `DATA_AS_OF` constant is module-scope at top of `Footer.tsx` — bump it when underlying parquet data refreshes (Vinh's ingest re-run). Single source of truth; do not fan out across components.
+
+**ARIA:** `<footer role="contentinfo">` landmark. Internal links use real `<a href>`. External links use `rel="noopener noreferrer" target="_blank"`. Date wrapped in `<time dateTime>` for AT date-format pickup.
+
+**Motion:** None. Footer renders inert below scroll fold; no entrance animation.
+
+---
+
+### 4.22 SectionNav (sticky in-page jump-to nav for results)
+
+**Why it exists:** Added 2026-05-03 PM. Results view has 6 distinct sections (Region / Map / Parity / Analogs / Q&A / Pillar 5); long scroll without nav means judges either skip or get lost. Floating right-edge mini-nav surfaces section anchors as vertical pills.
+
+**Anatomy:**
+- Desktop only — `hidden xl:flex` (≥1280px viewport). md/lg viewports keep clean scroll experience without competing chrome.
+- `fixed right-6 top-1/2 -translate-y-1/2 z-20` — vertically centered floating element at right edge
+- Vertical column of chip buttons (one per section), `flex-col gap-1.5`
+- Each chip:
+  - **Active state:** dot fills `bg-navy scale-100` + label visible navy
+  - **Inactive state:** dot muted `bg-muted-text/40 scale-75` + label hidden until hover/focus (`group-hover:opacity-100`, `group-focus-visible:opacity-100`)
+- Each section in HomePage gets `id="section-X"` + `scroll-mt-32` (offset for fixed Navbar so anchor jumps don't hide section heading behind navbar)
+- Section ids passed as `RESULTS_SECTIONS` const in HomePage; SectionNav consumes via `sections` prop
+
+**Locked rule:** Section ids must match the `RESULTS_SECTIONS` array exactly. If you add a new section to results view, update the const + add `id="section-X"` wrapper, otherwise the chip points to nothing.
+
+**Active section detection:** IntersectionObserver per section anchor. `rootMargin: '-30% 0px -50% 0px'` — section becomes "active" when its top crosses past 30% of the viewport (not the moment it enters at the bottom). Multiple sections intersecting: pick the one whose top is highest in viewport (sorted by `boundingClientRect.top`).
+
+**ARIA:** `<nav role="navigation" aria-label="Page sections">`, `aria-current="true"` on active chip, real `<a href="#id">` for keyboard tab pathway + URL-fragment behavior matches user expectation.
+
+**Motion:** Native browser smooth scroll via `<a href>` + `scroll-mt-32` offset (browser auto-converts smooth → instant when user has prefers-reduced-motion set). Chip transitions use Tailwind `transition-colors` + `transition-all` on the dot (scale + bg color). No bespoke Framer Motion variants.
+
+---
+
 ## 5. Motion choreography
 
 All Framer Motion. Reference `frontend/src/lib/motion.ts` (to be created).
