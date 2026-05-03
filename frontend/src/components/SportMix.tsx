@@ -1,33 +1,42 @@
 /**
- * SportMix — top sports the region over-indexes on.
+ * SportMix — top sports the region could be associated with.
  * Anatomy per DESIGN_SYSTEM §4.5.
  *
- * 3-5 horizontal bars stacked. Width encodes z-score (sequential, not categorical).
- * Color stays single navy — opacity stays solid. Bar fills are large-area, AA-safe.
+ * 3-5 horizontal bars stacked. Width encodes share (0-1, sum across the
+ * top sports = 1). Color stays single navy — opacity stays solid. Bar
+ * fills are large-area, AA-safe.
+ *
+ * Backend Phase 2 (Vinh task 2.3) currently returns share = 1/N for N
+ * top sports — every bar is identical width until the parquet refines to
+ * include per-sport z-scores or counts. This is honest reflection of
+ * current data; weight visualization will gain meaning as upstream math
+ * sharpens.
  */
 
 import type { SportEntry } from '../lib/api';
-import { fmtZScore } from '../lib/format';
 import SourceTooltip from './SourceTooltip';
 import { cn } from '../lib/utils';
 
 const SPORT_MIX_SOURCE =
-  'NFHS Athletics Participation Survey 2023-24 (8,062,302 student-athletes across 19,983 schools) cross-joined with USOPC Team USA roster 2016-2024 by county FIPS. Z-score is the per-sport county participation rate normalized vs national county distribution — positive z = over-indexed.';
+  'NFHS Athletics Participation Survey 2023-24 (8,062,302 student-athletes across 19,983 schools) cross-joined with USOPC Team USA roster 2016-2024 by county FIPS. Bar width encodes per-sport share of region top-sports list (0-1).';
+
+function fmtShare(share: number): string {
+  return `${Math.round(share * 100)}%`;
+}
 
 interface SportMixProps {
   sports: SportEntry[];
   className?: string;
 }
 
-// z-score expected in the 0–3 range for over-indexed sports. Cap at 3 for width math.
-const Z_SCORE_MAX = 3;
-
-function clampZ(z: number): number {
-  return Math.min(Z_SCORE_MAX, Math.max(0, z));
+// Share is a fraction (0-1). Sum across top sports should equal 1 in
+// principle; clamping defensively for any individual entry.
+function clampShare(s: number): number {
+  return Math.min(1, Math.max(0, s));
 }
 
-function widthPercent(z: number): number {
-  return (clampZ(z) / Z_SCORE_MAX) * 100;
+function widthPercent(share: number): number {
+  return clampShare(share) * 100;
 }
 
 export default function SportMix({ sports, className }: SportMixProps) {
@@ -71,7 +80,7 @@ export default function SportMix({ sports, className }: SportMixProps) {
 
       <ul className="flex flex-col gap-3">
         {sports.map((entry) => {
-          const clamped = clampZ(entry.z_score);
+          const clamped = clampShare(entry.share);
           return (
             <li key={entry.sport} className="flex items-center gap-3">
               <span className="w-32 shrink-0 text-body text-body-text capitalize">
@@ -81,19 +90,19 @@ export default function SportMix({ sports, className }: SportMixProps) {
               <span
                 role="meter"
                 aria-valuemin={0}
-                aria-valuemax={Z_SCORE_MAX}
+                aria-valuemax={1}
                 aria-valuenow={clamped}
-                aria-label={`${entry.sport} z-score ${fmtZScore(entry.z_score)}`}
+                aria-label={`${entry.sport} share ${fmtShare(entry.share)}`}
                 className="relative flex-1 h-2 rounded bg-soft-border overflow-hidden"
               >
                 <span
                   className="absolute inset-y-0 left-0 bg-navy rounded"
-                  style={{ width: `${widthPercent(entry.z_score)}%` }}
+                  style={{ width: `${widthPercent(entry.share)}%` }}
                 />
               </span>
 
               <span className="w-12 shrink-0 text-right font-mono text-caption tabular text-muted-text">
-                {fmtZScore(entry.z_score)}
+                {fmtShare(entry.share)}
               </span>
             </li>
           );
@@ -101,8 +110,9 @@ export default function SportMix({ sports, className }: SportMixProps) {
       </ul>
 
       <p className="mt-4 font-serif italic text-eyebrow text-muted-text">
-        Z-score vs national county distribution. Higher could be associated with
-        regional over-indexing patterns in our indexed sources.
+        Share of region top-sports list. Visualization gains weight as
+        upstream parquet refines from per-sport names to per-sport
+        counts in our indexed sources.
       </p>
     </article>
   );

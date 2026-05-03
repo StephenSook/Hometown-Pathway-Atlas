@@ -48,7 +48,7 @@ export default function AnalogCard({
         </span>
 
         <EvidenceLabel
-          level={analog.match_quality === 'strong' ? 'high' : 'medium'}
+          level={analog.match_quality}
           label={`${analog.match_quality} match`}
         />
       </div>

@@ -42,19 +42,19 @@ export default function SimilarityBreakdown({
   const rows: DimensionRow[] = [
     {
       label: 'Athlete profile',
-      value: breakdown.athlete_score,
+      value: breakdown.athlete,
       fillClass: 'bg-olympic-blue',
       source: DIMENSION_SOURCES.athlete,
     },
     {
       label: 'Sport mix',
-      value: breakdown.sport_mix_score,
+      value: breakdown.sport_mix,
       fillClass: 'bg-paralympic-clay',
       source: DIMENSION_SOURCES.sport_mix,
     },
     {
       label: 'Climate',
-      value: breakdown.climate_score,
+      value: breakdown.climate,
       fillClass: 'bg-accent-teal',
       source: DIMENSION_SOURCES.climate,
     },

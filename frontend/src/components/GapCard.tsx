@@ -62,6 +62,10 @@ const FALLBACK_BADGE_STYLES =
 const CAUSAL_VERBS =
   /\b(produces?|creates?|guarantees?|causes?|makes?|leads?\s+to|results?\s+in)\b/i; // atlas-phrasing-allow
 
+// Coerce typed PatternGapEvidence (backend) to free-form record so the
+// existing key-value rendering loop in <EvidenceBlock> works unchanged.
+type EvidenceRecord = Record<string, unknown>;
+
 export default function GapCard({ gap, className }: GapCardProps) {
   const badgeId = useId();
   const causalViolation =
@@ -96,7 +100,7 @@ export default function GapCard({ gap, className }: GapCardProps) {
         )}
       </p>
 
-      <EvidenceBlock evidence={gap.evidence} />
+      <EvidenceBlock evidence={gap.evidence as EvidenceRecord} />
 
       <div className="flex justify-end mt-auto">
         <EvidenceLabel level={gap.confidence} />

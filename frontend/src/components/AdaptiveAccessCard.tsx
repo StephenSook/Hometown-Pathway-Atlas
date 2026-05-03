@@ -22,7 +22,11 @@ export default function AdaptiveAccessCard({
   access,
   className,
 }: AdaptiveAccessCardProps) {
-  const chapters = access.move_united_chapters_50mi;
+  const chapters = access.chapters_within_50mi;
+  // Backend AdaptiveConfidence is "high" | "medium" | "none". EvidenceLabel
+  // accepts "high" | "medium" | "low". Map "none" → "low" — visually identical
+  // (sparse-data tier per §1.1 — "low ≠ danger, sparse data is data quality").
+  const evidenceLevel = access.confidence === 'none' ? 'low' : access.confidence;
 
   return (
     <article
@@ -48,7 +52,7 @@ export default function AdaptiveAccessCard({
         </p>
       </div>
 
-      <EvidenceLabel level={access.confidence} className="self-start" />
+      <EvidenceLabel level={evidenceLevel} className="self-start" />
 
       {chapters === 0 ? (
         <p className="font-serif italic text-eyebrow text-muted-text leading-relaxed">

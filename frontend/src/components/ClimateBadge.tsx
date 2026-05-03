@@ -16,12 +16,13 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import type { ClimateProfile } from '../lib/api';
-import { fmtPopulation } from '../lib/format';
 import SourceTooltip from './SourceTooltip';
 import { cn } from '../lib/utils';
 
+const DASH = '—';
+
 const CLIMATE_SOURCE =
-  'NOAA nClimGrid 5km gridded climate dataset, county-FIPS aggregated 30-year normals. Zone classification per Köppen-Geiger system. Avg temp / precip / elevation are county centroid values.';
+  'NOAA nClimGrid 5km gridded climate dataset, county-FIPS aggregated 30-year normals. Zone classification per Köppen-Geiger system. Avg temp / precip are county centroid values; null when nClimGrid coverage is unavailable for the county polygon.';
 
 interface ClimateBadgeProps {
   climate: ClimateProfile;
@@ -71,19 +72,17 @@ export default function ClimateBadge({ climate, className }: ClimateBadgeProps) 
         <div className="flex items-baseline justify-between">
           <dt className="text-muted-text uppercase tracking-wider">Avg temp</dt>
           <dd className="text-body-text tabular">
-            {climate.avg_temp_f.toFixed(1)}°F
+            {climate.avg_temp_f === null
+              ? DASH
+              : `${climate.avg_temp_f.toFixed(1)}°F`}
           </dd>
         </div>
         <div className="flex items-baseline justify-between">
           <dt className="text-muted-text uppercase tracking-wider">Precip</dt>
           <dd className="text-body-text tabular">
-            {climate.annual_precip_in.toFixed(1)} in
-          </dd>
-        </div>
-        <div className="flex items-baseline justify-between">
-          <dt className="text-muted-text uppercase tracking-wider">Elevation</dt>
-          <dd className="text-body-text tabular">
-            {fmtPopulation(climate.elevation_ft)} ft
+            {climate.annual_precip_in === null
+              ? DASH
+              : `${climate.annual_precip_in.toFixed(1)} in`}
           </dd>
         </div>
       </dl>
