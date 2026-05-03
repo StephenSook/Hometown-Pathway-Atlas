@@ -21,7 +21,8 @@
  * Reference: docs/moodboard/02_parity_panel.png (LOCKED visual anchor)
  */
 
-import { useId } from 'react';
+import { useEffect, useId, useState } from 'react';
+import { animate, useReducedMotion } from 'framer-motion';
 import type { ParityMetric } from '../lib/api';
 import { fmtPerCapita, fmtPercentile } from '../lib/format';
 import EvidenceLabel from './EvidenceLabel';
@@ -46,6 +47,29 @@ interface ParityPanelProps {
 // 5-segment percentile bar per moodboard 02_parity_panel.png
 const SEGMENT_COUNT = 5;
 
+// DESIGN_SYSTEM §5.2 motion spec: ParityPanel numbers count up from
+// 0 → value over 800ms ease-out on first mount. Editorial polish
+// moment that lands when the results section reveals.
+const COUNT_UP_DURATION = 0.8;
+
+function useCountUp(target: number): number {
+  const [display, setDisplay] = useState(0);
+  const reducedMotion = useReducedMotion();
+  useEffect(() => {
+    if (reducedMotion) {
+      setDisplay(target);
+      return;
+    }
+    const controls = animate(0, target, {
+      duration: COUNT_UP_DURATION,
+      ease: 'easeOut',
+      onUpdate: (latest) => setDisplay(latest),
+    });
+    return () => controls.stop();
+  }, [target, reducedMotion]);
+  return display;
+}
+
 interface ColumnProps {
   side: 'olympic' | 'paralympic';
   metric: ParityMetric;
@@ -60,6 +84,10 @@ function ParityColumn({ side, metric }: ColumnProps) {
   const headerColor = 'text-navy';
   const statColor = isOlympic ? 'text-olympic-blue' : 'text-paralympic-clay';
   const fillColor = isOlympic ? 'bg-olympic-blue' : 'bg-paralympic-clay';
+
+  // Counter-up animation per DESIGN_SYSTEM §5.2. Honors
+  // prefers-reduced-motion (jumps straight to target value when set).
+  const animatedPerCapita = useCountUp(metric.per_100k);
 
   // Compute filled segments — round to nearest segment
   const filledSegments = Math.min(
@@ -76,9 +104,12 @@ function ParityColumn({ side, metric }: ColumnProps) {
         {heading}
       </p>
 
-      <p className={cn('font-sans font-bold text-stat-md md:text-stat-lg leading-none tabular', statColor)}>
+      <p
+        className={cn('font-sans font-bold text-stat-md md:text-stat-lg leading-none tabular', statColor)}
+        aria-label={`${heading} per 100k: ${fmtPerCapita(metric.per_100k)}`}
+      >
         <SourceTooltip source={isOlympic ? PARITY_SOURCES.olympic : PARITY_SOURCES.paralympic}>
-          {fmtPerCapita(metric.per_100k)}
+          <span aria-hidden="true">{fmtPerCapita(animatedPerCapita)}</span>
         </SourceTooltip>
       </p>
 
