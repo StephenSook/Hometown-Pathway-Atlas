@@ -8,6 +8,7 @@
 
 import { QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
+import ErrorBoundary from './components/ErrorBoundary';
 import HomePage from './pages/HomePage';
 import { queryClient } from './lib/queryClient';
 
@@ -20,7 +21,9 @@ export default function App() {
       >
         Skip to main content
       </a>
-      <HomePage />
+      <ErrorBoundary>
+        <HomePage />
+      </ErrorBoundary>
       <Toaster
         position="top-center"
         closeButton
