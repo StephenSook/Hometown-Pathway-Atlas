@@ -7,7 +7,11 @@
 
 import type { AdaptiveAccess } from '../lib/api';
 import EvidenceLabel from './EvidenceLabel';
+import SourceTooltip from './SourceTooltip';
 import { cn } from '../lib/utils';
+
+const ADAPTIVE_SOURCE =
+  'Move United 2024 chapter directory, geocoded to county centroid + 50-mile radius search. Display only — never load-bearing in similarity matching per CLAUDE.md locked decision #2. Chapter density is a proxy and may underrepresent regional adaptive sports access.';
 
 interface AdaptiveAccessCardProps {
   access: AdaptiveAccess;
@@ -37,7 +41,7 @@ export default function AdaptiveAccessCard({
           className="font-sans font-bold text-stat-md leading-none tabular text-navy"
           aria-label={`${chapters} Move United chapters within 50 miles`}
         >
-          {chapters}
+          <SourceTooltip source={ADAPTIVE_SOURCE}>{chapters}</SourceTooltip>
         </p>
         <p className="text-caption text-muted-text mt-1">
           Move United chapters within 50 mi

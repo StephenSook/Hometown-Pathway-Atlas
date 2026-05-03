@@ -8,7 +8,11 @@
 
 import type { SportEntry } from '../lib/api';
 import { fmtZScore } from '../lib/format';
+import SourceTooltip from './SourceTooltip';
 import { cn } from '../lib/utils';
+
+const SPORT_MIX_SOURCE =
+  'NFHS Athletics Participation Survey 2023-24 (8,062,302 student-athletes across 19,983 schools) cross-joined with USOPC Team USA roster 2016-2024 by county FIPS. Z-score is the per-sport county participation rate normalized vs national county distribution — positive z = over-indexed.';
 
 interface SportMixProps {
   sports: SportEntry[];
@@ -36,7 +40,7 @@ export default function SportMix({ sports, className }: SportMixProps) {
       )}
     >
       <p className="font-mono uppercase tracking-wider text-eyebrow text-navy mb-4">
-        Top sports
+        <SourceTooltip source={SPORT_MIX_SOURCE}>Top sports</SourceTooltip>
       </p>
 
       <ul className="flex flex-col gap-3">

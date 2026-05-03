@@ -17,7 +17,11 @@ import {
 } from 'lucide-react';
 import type { ClimateProfile } from '../lib/api';
 import { fmtPopulation } from '../lib/format';
+import SourceTooltip from './SourceTooltip';
 import { cn } from '../lib/utils';
+
+const CLIMATE_SOURCE =
+  'NOAA nClimGrid 5km gridded climate dataset, county-FIPS aggregated 30-year normals. Zone classification per Köppen-Geiger system. Avg temp / precip / elevation are county centroid values.';
 
 interface ClimateBadgeProps {
   climate: ClimateProfile;
@@ -53,7 +57,7 @@ export default function ClimateBadge({ climate, className }: ClimateBadgeProps) 
       )}
     >
       <p className="font-mono uppercase tracking-wider text-eyebrow text-navy mb-4">
-        Climate
+        <SourceTooltip source={CLIMATE_SOURCE}>Climate</SourceTooltip>
       </p>
 
       <div className="flex items-center gap-3 mb-4">
