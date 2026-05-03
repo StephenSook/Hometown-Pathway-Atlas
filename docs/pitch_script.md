@@ -24,16 +24,23 @@ presenter, not spoken aloud.
 
 ## Beat 1 — Problem hook (0:00 — 0:20)
 
-**Word count: ~50 words → ~20s spoken at 2.5 wps.**
+**Word count: ~55 words → ~22s spoken at 2.5 wps.**
 
-*Screen: Hero view. ZIP input + "Show me" button visible.*
+*Screen: editorial-style title card with bold typography on navy
+background. Stat fades in over first 8s. Then transition to hero view.*
 
-> "Imagine a kid in Cobb County, Georgia. She wants to know where Team
-> USA actually comes from. Today's maps tell her 'Texas leads, California
-> leads.' At county granularity? Silence. Olympic and Paralympic side by
-> side? Never. Atlas changes that."
+> "63 percent of 2024 U.S. Paralympic athletes came through one national
+> network of community-based adaptive sports chapters. That network
+> reaches only a fraction of U.S. counties. A kid in Cobb County wanting
+> to know if anyone from a place like hers ever made Team USA — has no
+> way to find out."
 
-*(Pause 1s. Hand to keyboard.)*
+*Cuts to live URL. (Pause 1s. Hand to keyboard.)*
+
+*Why this opener: Move United 2024 Impact Report — 141 of 225
+Paralympic athletes ≈ 63%. Strongest sourced stat in our research
+corpus. Paralympic-native — establishes parity priority before anyone
+hears "Olympic." No NIL, no IOC branding.*
 
 ---
 
@@ -110,7 +117,33 @@ with rewrite text visible.*
 
 ---
 
-## Beat 5 — Pillar 5 numbers (2:05 — 2:30)
+## Beat 4.5 — Tech proof (1:55 — 2:15) ★ hackathon FAQ requirement
+
+**Word count: ~50 words → ~20s spoken.**
+
+*Cut sequence (3 quick cuts, no narration over each — narrator covers
+the whole 20s in one sustained line):*
+
+*Cut 1 (5s): GCP Console → Cloud Run service detail page. Service name
+visible, region us-central1, recent revisions, public URL, green
+"Serving traffic" indicator.*
+
+*Cut 2 (5s): Vertex AI quota/usage page. Model = gemini-2.5-flash,
+recent calls visible (NOT zero usage).*
+
+*Cut 3 (5s): GitHub repo → Apache 2.0 LICENSE in About sidebar +
+gemini_service.py file showing structured output schema.*
+
+*Cut 4 (5s): Quick fade back to live app, scroll already at
+Pillar5Strip.*
+
+> "Cloud Run on Google Cloud. FastAPI backend, React frontend. Vertex
+> AI Gemini with structured output schemas. Apache 2.0 repo. The full
+> stack — including the hybrid auditor — is documented and reproducible."
+
+---
+
+## Beat 5 — Pillar 5 numbers (2:15 — 2:40)
 
 **Word count: ~60 words → ~24s spoken.**
 
@@ -127,7 +160,7 @@ columns visible: TAM / Cost framing / Revenue model.*
 
 ---
 
-## Beat 6 — Close (2:30 — 2:45)
+## Beat 6 — Close (2:40 — 2:55)
 
 **Word count: ~40 words → ~16s spoken.**
 
@@ -142,19 +175,25 @@ columns visible: TAM / Cost framing / Revenue model.*
 
 ## Total timing
 
-- Beat 1: 20s
-- Beat 2: 24s
-- Beat 3: 48s
-- Beat 4: 30s
-- Beat 5: 24s
-- Beat 6: 16s
-- **Total: 162s = 2:42**
+- Beat 1: 22s (Move United 63% opener + person hook)
+- Beat 2: 24s (solution + ZIP submit, kicks off ComplianceLog auto-demo)
+- Beat 3: 48s (results tour)
+- Beat 4: 30s (Compliance Log ★ — Pillar 4 demo moment)
+- Beat 4.5: 20s (Tech Proof — GCP Console + Vertex AI + Apache 2.0)
+- Beat 5: 24s (Pillar 5 numbers)
+- Beat 6: 16s (close)
+- **Total: 184s = 3:04**
 
-Drift over the 2:30 target by 12s. Acceptable for hackathon (typical
-budget is 3:00 with a 30s buffer for breath / emphasis pauses /
-judge attention). If a judge calls strict 2:30, trim Beat 3's
-PatternGapPanel narration to 90 words (drop "Locked rule, not
-aspiration").
+Over hackathon 3:00 target by 4s. Trim options if recording overshoots:
+- Drop Beat 3's "Locked rule, not aspiration." line (-2s)
+- Trim Beat 6 close to "Built in 10 days. React, FastAPI, Vertex AI,
+  Cloud Run. The single per-county lens nobody else has." (-4s)
+
+If both trims applied: 178s = 2:58 — clears 3:00 with 2s buffer.
+
+Per CLAUDE.md task 5.4 target was 2:30 but Tech Proof is a hackathon
+FAQ requirement that wasn't in the original budget. 3:00 is the real
+ceiling, 2:58 trimmed delivery is honest.
 
 ---
 
