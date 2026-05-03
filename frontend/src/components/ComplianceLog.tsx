@@ -106,10 +106,22 @@ export default function ComplianceLog({
   // Demo-mode scheduled sequence with cancelled-flag pattern. The flag
   // catches callbacks already running when the component unmounts mid-
   // sequence (e.g. user navigates home between fail T+1s and fixed T+4s).
+  //
+  // Performance instrumentation in DEV only — `compliance-cycle-start` mark
+  // fires when the demo sequence kicks off, `compliance-cycle-settle` fires
+  // when the last entry (gemini fixed at T+4000ms) lands. Console-logs the
+  // measured duration so pitch rehearsal can verify the cycle settles
+  // before Beat 4 narration. Pitch beat math (verified 2026-05-03):
+  // submit during Beat 2 (0:20-0:45 window) → Beat 4 narration starts 1:35.
+  // Worst case: submit at end of Beat 2 → Beat 4 lands T+50s → 46s buffer
+  // post-settle. Best case: submit at start → 75s buffer post-settle.
   useEffect(() => {
     if (!effectiveDemoMode) return;
     let cancelled = false;
     setDisplayed([]);
+    if (import.meta.env.DEV && typeof performance !== 'undefined') {
+      performance.mark('compliance-cycle-start');
+    }
     const timeouts = demoComplianceScript.map((entry, i) =>
       setTimeout(
         () => {
@@ -118,6 +130,28 @@ export default function ComplianceLog({
             const filtered = prev.filter((e) => entryKey(e) !== entryKey(entry));
             return [...filtered, entry];
           });
+          const isLast = i === demoComplianceScript.length - 1;
+          if (isLast && import.meta.env.DEV && typeof performance !== 'undefined') {
+            performance.mark('compliance-cycle-settle');
+            try {
+              performance.measure(
+                'compliance-cycle',
+                'compliance-cycle-start',
+                'compliance-cycle-settle',
+              );
+              const m = performance.getEntriesByName('compliance-cycle').at(-1);
+              if (m) {
+                console.info(
+                  `[ComplianceLog] demo cycle settled in ${Math.round(m.duration)}ms ` +
+                    `(target ≤5000ms; pitch Beat 4 narration starts T+50-75s post-submit, ` +
+                    `so settled state visible ${Math.round(50000 - m.duration)}ms+ before Beat 4)`,
+                );
+              }
+            } catch {
+              // performance.measure throws if marks were cleared mid-cycle
+              // by an unmount; safe to swallow — instrumentation only.
+            }
+          }
         },
         DEMO_DELAYS_MS[i] ?? 0,
       ),
@@ -125,6 +159,11 @@ export default function ComplianceLog({
     return () => {
       cancelled = true;
       timeouts.forEach(clearTimeout);
+      if (import.meta.env.DEV && typeof performance !== 'undefined') {
+        performance.clearMarks('compliance-cycle-start');
+        performance.clearMarks('compliance-cycle-settle');
+        performance.clearMeasures('compliance-cycle');
+      }
     };
   }, [effectiveDemoMode]);
 

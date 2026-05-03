@@ -211,9 +211,20 @@ results-view mount:
 | 2000 | rules pass 2 auto-collapse | Rules column → "Awaiting checks…" |
 | 4000 | gemini fail replaced by fixed | Green dot + rewrite text |
 
-By T+5s post-submit, the cycle is complete. Beat 3 narration takes
-~48s. Beat 4 lands ~95s after submit. ComplianceLog has been settled
-for ~90s, so the "while you were looking at data" framing is honest.
+By T+5s post-submit, the cycle is complete (verified via
+`performance.mark` instrumentation in `ComplianceLog.tsx` — DEV-only
+console output reports actual settle duration on every demo run).
+
+Beat 4 narration starts at pitch-elapsed 1:35. Submit happens
+mid-Beat-2, realistically around pitch-elapsed 0:35–0:45. Time from
+submit to Beat 4 narration = ~50–60 seconds. Cycle settled at T+5s,
+so settled state has been visible for ~45–55 seconds before Beat 4 —
+the "while you were looking at data" framing is honest.
+
+(Earlier draft of this doc claimed ~95s post-submit / ~90s settled
+— that conflated pitch-elapsed clock with submit-relative clock.
+Corrected 2026-05-03 after `performance.mark` instrumentation was
+added to ComplianceLog.tsx demo-mode useEffect.)
 
 ---
 
