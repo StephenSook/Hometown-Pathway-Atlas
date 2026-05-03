@@ -1,5 +1,5 @@
 fastapi
-uvicorn
+uvicorn[standard]
 google-cloud-aiplatform
 pandas
 pyarrow
@@ -7,3 +7,4 @@ requests
 beautifulsoup4
 lxml
 openpyxl
+pydantic-settings

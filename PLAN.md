@@ -112,17 +112,17 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started · ⛔ blocked · ✂️
 | 1.4 | ACS 5-year population | `backend/ingest/05_population.py` | Vinh | ✅ | — | Done 2026-05-02. Census ACS 5-year API. 3,222 counties, 0% missing. Saved to `county_population.parquet`. |
 | 1.5 | HUD ZIP-County crosswalk | `backend/ingest/03_zip_crosswalk.py` | Vinh | ✅ | — | Done 2026-05-02. Max RES_RATIO tiebreak, tot_ratio fallback for PO-box ZIPs. All helpers unit-tested. Requires HUD CSV download before first run (see script header). |
 | 1.6 | Day 2 validation test | `backend/ingest/validate.py` | Vinh+Stephen | ✅ | 1.1–1.5 | **GO/NO-GO checkpoint EOD Day 2.** 8/8 automated checks PASS. VERDICT: GO. 809 geocoded rows, 96.9% FIPS coverage, 350 unique counties, NIL compliant, no geocode collapse. Proceed to 1.7. |
-| 1.7 | 2016–2024 full athlete scrape | `backend/ingest/01_athletes.py` | Vinh | ⬜ | 1.6 | Day 3 AM. Rio 2016 + PyeongChang 2018 + Tokyo 2020/2021 + Beijing 2022 + Paris 2024, both O+P. ~3-4K records. |
-| 1.8 | County profiles aggregation | `backend/ingest/07_aggregate.py` | Vinh | ⬜ | 1.7, 1.3, 1.4 | Day 3 AM. Per-capita + Bayesian shrinkage (alpha=50K) + percentile rank + evidence labels. Output `county_profiles.parquet`. **+ bake Census FIPS centroid (lng, lat) into parquet for CountyMap pins (task 0.9 contract).** |
-| 1.9 | Similarity matrix precompute | `backend/ingest/08_similarity.py` | Vinh | ⬜ | 1.8 | Day 3 PM. ~9.8M pairs. Athlete 40 / sport mix 35 / climate 25. Top 50 per source. MSA diversity constraint. Output `similarity_matrix.parquet`. |
-| 1.10 | Move United chapter scrape | `backend/ingest/06_move_united.py` | Vinh | ⬜ | 1.5 | Day 3 PM. ~252 chapters. 50-mile county radius count. Display-only column. **NOT in similarity matching.** |
+| 1.7 | 2016–2024 full athlete scrape | `backend/ingest/01_athletes.py` | Vinh | ✅ | 1.6 | Done 2026-05-03. 2476 rows across 2016–2024 (Olympic + Paralympic). Geocoded via 02_geocode.py → `athletes_allgames_geocoded.parquet`. |
+| 1.8 | County profiles aggregation | `backend/ingest/07_aggregate.py` | Vinh | ✅ | 1.7, 1.3, 1.4 | Done 2026-05-03 (re-run with allgames). 3222 county profiles. 555 athlete counties (was 350 on 2024-only). Olympic total 2024, Paralympic 452. Centroids 100% coverage. Output `county_profiles.parquet`. |
+| 1.9 | Similarity matrix precompute | `backend/ingest/08_similarity.py` | Vinh | ✅ | 1.8 | Done 2026-05-03 (re-run with allgames). 555 athlete counties × 50 top analogs = 27,750 rows. Athlete 40 / sport mix 35 / climate 25. Validation passed. Output `similarity_matrix.parquet`. |
+| 1.10 | Move United chapter scrape | `backend/ingest/06_move_united.py` | Vinh | ✅ | 1.5 | Done 2026-05-03. 260 chapters scraped from SSR listing page, 46 states. Nominatim geocoded (260/260, 100%). Haversine 50mi radius: 1154/3222 counties with >=1 chapter. Confidence: high=321 / medium=833 / none=2068. Patched county_profiles.parquet. Display-only. **NOT in similarity matching.** |
 | 1.11 | **Layer A — Shocking stat hunt** | `backend/ingest/09_stat_hunt.py` | **Vinh** | ⬜ | 1.8 | Day 3 EOD ~2hr. 4 hypothesis classes. Pick 1-2 strongest by emotional resonance. Ship to Stephen for pitch. |
 
 ### Phase 2 — Backend services (Days 4–6, Vinh)
 
 | # | Component | File(s) | Owner | Status | Deps | Notes |
 |---|---|---|---|---|---|---|
-| 2.1 | FastAPI scaffold + config | `backend/main.py`, `backend/config.py` | Vinh | ⬜ | 0.7 | Day 4 AM. CORS for localhost:5173. Vertex AI init. |
+| 2.1 | FastAPI scaffold + config | `backend/main.py`, `backend/config.py` | Vinh | ✅ | 0.7 | Done 2026-05-03. CORS for localhost:5173. Vertex AI init on lifespan startup. `/health` returns 200. `pydantic-settings` added to requirements.txt. |
 | 2.2 | Pydantic schemas | `backend/schemas/{region,analog,pathway}.py` | Vinh | ⬜ | — | Day 4 AM. Match API contracts in spec §5.2 EXACTLY (camelCase output, snake_case envelope). |
 | 2.3 | ProfileService | `backend/services/profile_service.py` | Vinh | ⬜ | 1.8, 2.2 | Day 4 PM. ZIP→FIPS lookup. Returns region profile from parquet. |
 | 2.4 | AnalogService | `backend/services/analog_service.py` | Vinh | ⬜ | 1.9, 2.2 | Day 4 PM. Top 3 from similarity matrix. Apply MSA diversity constraint at request time. |
@@ -400,4 +400,4 @@ git commit -m "chore(plan): cut 4.E ✂️ — Day 7 not clean enough"
 
 ---
 
-_Last updated: 2026-05-02 by Vinh (task 0.5–0.7 ✅, task 1.1 ✅, task 1.2 ✅, task 1.3 ✅, task 1.4 ✅, task 1.5 ✅, task 1.6 ✅)._
+_Last updated: 2026-05-03 by Vinh (task 2.1 ✅)._
