@@ -325,7 +325,18 @@ export default function HomePage() {
             <div className="mt-8">
               <TradeoffPanel explanation={mockAnalogs.tradeoff_explanation} />
             </div>
+            </>
+            )}
 
+            {/* Pillar5Strip + Pillar5Defense are region-agnostic (data
+                lifted from PILLAR5_* constants in lib/pillar5.ts), so
+                they render OUTSIDE the loading conditional. Per §4.18
+                lock — Pillar 5 numbers must always be visible — and
+                ResultsSkeleton intentionally excludes them. Keeping
+                them outside the conditional eliminates the layout
+                pop-in when data lands; skeleton + Pillar 5 are visible
+                together during load, then the data section swaps in
+                place above them with zero reflow. */}
             <div className="mt-16">
               <Pillar5Strip />
             </div>
@@ -338,8 +349,6 @@ export default function HomePage() {
               Showing mock data while the backend pipeline is in build (Day 4
               integrates real /api/region + /api/analogs responses).
             </p>
-            </>
-            )}
           </section>
         )}
       </main>
