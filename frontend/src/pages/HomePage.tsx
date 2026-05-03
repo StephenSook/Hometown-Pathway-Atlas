@@ -22,6 +22,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
 import ZipInput from '../components/ZipInput';
 import RegionHeader from '../components/RegionHeader';
 import ParityPanel from '../components/ParityPanel';
@@ -392,6 +393,8 @@ export default function HomePage() {
           demoMode={!activeRegion?.compliance_log?.length}
         />
       )}
+
+      <Footer />
     </div>
   );
 }
