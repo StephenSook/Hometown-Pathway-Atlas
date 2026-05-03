@@ -99,10 +99,12 @@ export default function HomePage() {
   const activePathway = isSparse ? mockPathway : pathway.data;
 
   // Loading: sparse never loads (instant from mock), real path waits for
-  // all 3 queries. analogs.isFetching covers refetches too; the dependent
-  // chain means analogs/pathway naturally idle when region hasn't resolved.
+  // any of the 3 queries to be actively fetching. Use isFetching (not
+  // isPending) — RQ v5 reports isPending=true for disabled queries that
+  // have no data yet, which would stick `loading` on TRUE on initial
+  // landing-view paint and disable the entire form.
   const loading = !isSparse &&
-    (region.isPending || analogs.isFetching || pathway.isFetching);
+    (region.isFetching || analogs.isFetching || pathway.isFetching);
 
   const mainRef = useRef<HTMLElement>(null);
   // Skip the very first paint — only manage focus on user-driven view change.
