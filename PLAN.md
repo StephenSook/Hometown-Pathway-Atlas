@@ -174,7 +174,7 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started · ⛔ blocked · ✂️
 | # | Component | File(s) | Owner | Status | Deps | Notes |
 |---|---|---|---|---|---|---|
 | 5.1 | Backend Dockerfile + Cloud Run deploy | `backend/Dockerfile` | Vinh | ⬜ | 2.11 | Day 8 AM. `--memory 1Gi --cpu 1 --min-instances 1 --max-instances 5`. Smoke test from prod URL. |
-| 5.2 | Frontend Dockerfile + Cloud Run deploy | `frontend/Dockerfile` | Stephen | ⬜ | 3.15 | Day 8 PM. Vite build + nginx serve. Configure CORS to backend URL. |
+| 5.2 | Frontend Dockerfile + Cloud Run deploy | `frontend/Dockerfile` + `frontend/nginx.conf` + `docs/cloud_run_deploy.md` | Stephen | 🟡 | 3.15 | **Image + runbook ready** (commits 8861b6e + 8483089). Multi-stage Dockerfile (node:22-alpine builder → nginx:alpine runtime, 93.7MB image). nginx.conf serves SPA on port 8080 with gzip, asset cache headers, /healthz, deep-link fallback. ARG VITE_API_BASE_URL for build-time backend URL injection. **Verified locally**: docker build + run + Playwright + axe — 0 violations, all components render. **Day 8 deploy**: `gcloud run deploy atlas-frontend --source frontend/` per runbook. ✅ flips after live deploy + URL captured. |
 | 5.3 | End-to-end production test | prod URLs | Stephen+Vinh | ⬜ | 5.1, 5.2 | Day 8 EOD. 20 sample ZIPs urban/rural/coastal/mountain. |
 | 5.4 | Pitch script v2 with timing | `docs/pitch_script.md` | Stephen | ⬜ | 3.16 | Day 8. 2:30 target. Practice 3x. |
 | 5.5 | Pick demo hero ZIPs (3 regions) | `docs/demo_zips.md` | Stephen+Vinh | ⬜ | 5.3 | Day 7. Criteria in demo outline §Scene 2. Pre-warm cache. |
