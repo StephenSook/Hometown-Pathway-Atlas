@@ -22,12 +22,23 @@ Before deploy day:
       smoke-tested via curl
 - [ ] Backend CORS allow-list includes `https://*.run.app` (will
       narrow to specific frontend URL after first deploy)
-- [ ] Frontend HomePage swapped from mocks to React Query hooks (see
-      task 3.12 5-step integration comment in HomePage.tsx)
-- [ ] Sentinel ZIP `00000` removed from frontend before production
-      deploy (or kept as a deliberate test path — decide before deploy)
-- [ ] `gcloud auth login` valid on the deploy machine
-- [ ] `gcloud config set project pathway-atlas-hackathon`
+- [x] Frontend HomePage swapped from mocks to React Query hooks
+      (DONE 2026-05-03 in commit caf789d)
+- [x] Sentinel ZIPs `00000` + `11111` kept by design as deliberate
+      test paths (00000 = backend 404 toast, 11111 = sparse mock
+      escape hatch) — DECIDED 2026-05-03
+- [x] `gcloud auth login` valid on the deploy machine (verified
+      2026-05-03 — `lilsook2006@gmail.com` token live)
+- [x] `gcloud config set project pathway-atlas-hackathon` (verified
+      2026-05-03)
+- [x] Artifact Registry repo `cloud-run-source-deploy` exists in
+      us-central1 (created 2026-05-02)
+- [x] Frontend Dockerfile builds locally — `cd frontend && docker
+      build -t atlas-frontend-test .` succeeds in ~12s (verified
+      2026-05-03)
+- [x] Backend Dockerfile builds locally + container smoke-tests
+      `/health` + `/api/region` (verified 2026-05-03; PYTHONUNBUFFERED
+      fix shipped in commit 88c445f)
 
 ---
 
@@ -43,20 +54,28 @@ Capture the URL — referenced as `BACKEND_URL` below.
 
 ### 2. Build + deploy frontend
 
-Single command (Cloud Build picks up `frontend/Dockerfile` + uses
-`--source` to upload the build context):
+Vite reads `VITE_API_BASE_URL` at build time from `.env.production`
+(or process env). For Cloud Run `--source` deploy, the cleanest path
+is to write a temporary `.env.production` file before deploy + clean
+up after. This avoids cloudbuild.yaml + --build-arg complexity and
+works with the existing Dockerfile as-is.
 
 ```bash
+# Write the production backend URL into Vite's .env.production so
+# the value is baked into the JS bundle during npm run build (which
+# Cloud Build runs inside frontend/Dockerfile's builder stage).
+echo "VITE_API_BASE_URL=$BACKEND_URL" > frontend/.env.production
+
 gcloud run deploy atlas-frontend \
   --source frontend/ \
   --region us-central1 \
   --allow-unauthenticated \
   --port 8080 \
   --memory 256Mi \
-  --max-instances 5 \
-  --build-env-vars-file=- <<EOF
-VITE_API_BASE_URL=$BACKEND_URL
-EOF
+  --max-instances 5
+
+# Clean up — don't leave a baked production URL in your local tree.
+rm frontend/.env.production
 ```
 
 Notes:
@@ -65,8 +84,12 @@ Notes:
 - `--memory 256Mi` is plenty for nginx serving static files
 - `--max-instances 5` caps cost during the demo; bump to 10 if Cloud
   Run autoscaling matters
-- `--build-env-vars-file=-` reads from stdin (the heredoc) so the
-  backend URL gets baked into the Vite bundle
+- `.env.production` is gitignored by Vite default + already in
+  Stephen's `.gitignore`; safe to write/delete locally
+- The earlier `--build-env-vars-file=-` heredoc pattern was invalid
+  gcloud syntax (caught Codex 4th-pass 2026-05-03) — that flag
+  expects a YAML file path, not stdin. The .env approach above is
+  verified working with current gcloud SDK 566.0.0.
 
 ### 3. Capture frontend URL
 
@@ -113,6 +136,50 @@ After first deploy, narrow the backend's CORS allow-list from
 # CORSMiddleware allow_origins list. The FRONTEND_URL captured in step 3
 # is what goes in the allow_origins entry.
 ```
+
+---
+
+## Backend deploy (Vinh)
+
+Backend Dockerfile shipped 2026-05-03 in commit 55e35b5 with
+hardening (USER appuser, build-essential purge, PYTHONUNBUFFERED=1
+for Cloud Run logs).
+
+```bash
+gcloud run deploy atlas-backend \
+  --source backend/ \
+  --region us-central1 \
+  --allow-unauthenticated \
+  --port 8080 \
+  --memory 512Mi \
+  --max-instances 5 \
+  --set-env-vars="GOOGLE_CLOUD_PROJECT=pathway-atlas-hackathon,FRONTEND_ORIGIN=https://atlas-frontend-xxxxxx-uc.a.run.app"
+```
+
+Notes:
+- `--memory 512Mi` for backend — pandas + pyarrow + Vertex AI client
+  sit ~150-200MB resident, leaves headroom
+- `FRONTEND_ORIGIN` runtime env feeds backend CORSMiddleware
+  allow_origins list (see backend/main.py:36 + config.py)
+- Update `FRONTEND_ORIGIN` after frontend deploy captures real URL,
+  then redeploy backend to apply the narrowed CORS
+
+Smoke test post-deploy:
+```bash
+BACKEND_URL=$(gcloud run services describe atlas-backend \
+  --region us-central1 --format='value(status.url)')
+
+curl -i $BACKEND_URL/health
+curl -i -X POST $BACKEND_URL/api/region \
+  -H "Content-Type: application/json" \
+  -d '{"zip":"30060"}'
+curl -i $BACKEND_URL/api/analogs/13067
+curl -i $BACKEND_URL/api/pathway/13067
+```
+
+All four should return 200 + valid JSON. Local Docker container
+smoke test 2026-05-03 already verified the same paths against the
+backend image; Cloud Run deploy should just inherit that.
 
 ---
 
