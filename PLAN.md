@@ -10,6 +10,66 @@
 
 ---
 
+## ⏱️ Status snapshot (last sync 2026-05-03 PM Day 3)
+
+The detailed Phase 0–5 task tables below remain the historical record.
+This snapshot is the at-a-glance reality check for anyone reading
+PLAN.md fresh.
+
+**Phase 0 — Setup:** ✓ DONE (repo, GCP, hello-gemini Cloud Run smoke).
+
+**Phase 1 — Data ingest pipeline (Vinh):** ✓ DONE (tasks 1.7–1.10 in
+commit `fc0253a`). Outstanding: task **1.11** Layer A shocking-stat
+hunt — gates HeroStat real number swap + Layer D scrollytelling.
+
+**Phase 2 — Backend services (Vinh):** ✓ MOSTLY DONE (tasks 2.2–2.6
+in commits `8a36c91`, `cac8540`, `ecbb9b8`, `a617346`). Pydantic
+schemas + ProfileService + AnalogService + PathwayService + 4 routes
+live. Outstanding: task **2.7** GeminiService → unblocks RegionQA
+real backend; task **2.9** HybridAuditor → ComplianceLog auto-flips
+to live mode (frontend ready, demoMode prop is data-aware).
+
+**Phase 3 — Frontend conservative (Stephen):** ✓ DONE. All
+components shipped + wired against real Phase 2 backend. End-to-end
+smoke verified 30060 / 00000 / 11111 sentinels.
+
+**Phase 4 — Maximum Scope ambitious layers:**
+- Layer A — PENDING Vinh task 1.11
+- Layer B — ✓ SHIPPED 2026-05-03 PM (SourceTooltip system + favicon
+  + OG image + per-FIPS title + deep-link URLs + tour CTA + replay
+  button + sparse-state demo + Pillar5Defense + sound-design recipe
+  + counter-up animation + Footer + SectionNav)
+- Layer C — ✓ SHIPPED VIA STUB 2026-05-03 PM (RegionQA panel +
+  loading skeleton; one-line swap to live Gemini when 2.7 ships)
+- Layer D — PENDING (depends on Layer A)
+- Layer E — CUT 2026-05-02 (re-architects similarity matrix)
+- Layer F — CUT 2026-05-03 (RegionQA Layer C covers reasoning
+  surface differently; avoid splitting judge attention)
+
+**Phase 5 — Deploy + demo + submit:** PENDING. Backend Dockerfile
+shipped 2026-05-03 PM (`55e35b5`) so Cloud Run deploy is unblocked.
+Demo recording + Devpost submission Day 9–10. NotebookLM oracle pass
++ pitch dry-run (`./scripts/pitch-stopwatch.sh`) still on Stephen's
+plate.
+
+**Critical-path Vinh deps still open:**
+1. Task 1.11 — Layer A stat → A1 + A2
+2. Task 2.7 — GeminiService → RegionQA real backend +
+   `RegionResponse.narrative` populating
+3. Task 2.8 — Gemini Live multimodal → optional RegionQA upgrade
+4. Task 2.9 — HybridAuditor → ComplianceLog auto-flips
+5. `data_confidence` flag per FIPS → CountyMap hatch wires up
+6. Backend Cloud Run deploy
+
+**Critical-path Stephen ops still open:**
+1. Pitch dry-run with `./scripts/pitch-stopwatch.sh`
+2. Cloud Run frontend deploy (backend Dockerfile ready)
+3. NotebookLM oracle pre-pitch pass (`docs/notebooklm_oracle_prompts.md`)
+4. Demo recording (Day 9 — `docs/sound_design.md` + `docs/demo_storyboard.md`)
+5. Devpost submission form fill (Day 10/11 from `SUBMISSION.md`)
+
+---
+
 ## 🌅 Vinh — read this first when you wake up (2026-05-02 morning)
 
 **End-of-day 2026-05-01 status:**
