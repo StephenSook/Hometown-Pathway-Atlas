@@ -51,15 +51,20 @@ import CountyTooltip from './CountyTooltip';
 import { fmtPerCapita } from '../lib/format';
 import { cn } from '../lib/utils';
 
-// Hardcoded centroids for the four counties used in the mock dataset.
-// Backend contract addition tracked in PLAN.md task 0.9 + DESIGN_SYSTEM
-// §13.2.1 — once `AnalogEntry`/`RegionResponse` grow a `centroid` field,
-// this lookup goes away.
-const KNOWN_CENTROIDS: Record<string, [number, number]> = {
-  '13067': [-84.55, 33.94], // Cobb County, GA
-  '37119': [-80.83, 35.24], // Mecklenburg County, NC
-  '37183': [-78.65, 35.78], // Wake County, NC
-  '21111': [-85.66, 38.19], // Jefferson County, KY
+// Fallback centroids for mock-only flows (sparse sentinel ZIP 11111
+// + the 4 mock counties). Real backend (Vinh Phase 2 ship 2026-05-03)
+// emits centroid: [lng, lat] | null on every RegionResponse +
+// AnalogEntry — caller passes those via sourceCentroid prop +
+// AnalogEntry.centroid field. This table only gates against the
+// frontend-only mock paths where centroid wasn't available at the
+// data source. Drop entirely if mock paths get a centroid backfill
+// or after backend wire-up sweeps every demo path.
+const FALLBACK_CENTROIDS: Record<string, [number, number]> = {
+  '13067': [-84.55, 33.94], // Cobb County, GA — mockRegion
+  '37119': [-80.83, 35.24], // Mecklenburg County, NC — mockAnalogs[0]
+  '37183': [-78.65, 35.78], // Wake County, NC — mockAnalogs[1]
+  '21111': [-85.66, 38.19], // Jefferson County, KY — mockAnalogs[2]
+  '30033': [-106.99, 47.02], // Garfield County, MT — mockSparseRegion
 };
 
 // Memoized style objects — defined module-level to keep referential equality
@@ -83,6 +88,9 @@ const DEFAULT_STYLE = {
 
 interface CountyMapProps {
   sourceFips: string;
+  /** Source county centroid as [lng, lat] from RegionResponse.centroid.
+   *  Falls back to FALLBACK_CENTROIDS when null (mock paths). */
+  sourceCentroid?: [number, number] | null;
   sourceTooltip: CountyTooltipData;
   analogs: AnalogEntry[];
   className?: string;
@@ -97,6 +105,7 @@ interface HoverState {
 
 export default function CountyMap({
   sourceFips,
+  sourceCentroid,
   sourceTooltip,
   analogs,
   className,
@@ -104,30 +113,36 @@ export default function CountyMap({
   const [hover, setHover] = useState<HoverState | null>(null);
   const arrowMarkerId = useId();
 
-  // Single source of truth for centroid lookup. One DEV-mode warn per
-  // missing FIPS on the way through, plus a missingCount surface for the
-  // visible degradation chip below.
+  // Single source of truth for centroid lookup. Prefers the API-supplied
+  // centroid, falls back to FALLBACK_CENTROIDS for mock paths or any
+  // legacy backend response that hasn't yet populated the field. One
+  // DEV-mode warn per missing FIPS on the way through, plus a
+  // missingCount surface for the visible degradation chip below.
   const centroids = useMemo(() => {
-    const source = KNOWN_CENTROIDS[sourceFips] ?? null;
+    const source: [number, number] | null =
+      sourceCentroid ?? FALLBACK_CENTROIDS[sourceFips] ?? null;
     const analogList = analogs.map((a) => ({
       fips: a.fips,
-      coords: KNOWN_CENTROIDS[a.fips] ?? null,
+      coords: a.centroid ?? FALLBACK_CENTROIDS[a.fips] ?? null,
     }));
     if (import.meta.env.DEV) {
       if (!source) {
         console.warn(
-          `[CountyMap] Source FIPS ${sourceFips} missing from KNOWN_CENTROIDS. ` +
-            `Wire centroid through AnalogEntry per DESIGN_SYSTEM §13.2.1.`,
+          `[CountyMap] Source FIPS ${sourceFips} has no centroid in API ` +
+            `response or FALLBACK_CENTROIDS. Pin will not render.`,
         );
       }
       analogList.forEach((x) => {
         if (!x.coords) {
-          console.warn(`[CountyMap] Analog FIPS ${x.fips} missing from KNOWN_CENTROIDS.`);
+          console.warn(
+            `[CountyMap] Analog FIPS ${x.fips} has no centroid in API ` +
+              `response or FALLBACK_CENTROIDS. Pin + arc will not render.`,
+          );
         }
       });
     }
     return { source, analogList };
-  }, [sourceFips, analogs]);
+  }, [sourceFips, sourceCentroid, analogs]);
 
   const totalCount = 1 + analogs.length;
   const plottedCount =

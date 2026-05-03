@@ -358,6 +358,7 @@ export default function HomePage() {
               <Suspense fallback={<CountyMapSkeleton />}>
                 <CountyMap
                   sourceFips={activeRegion.fips}
+                  sourceCentroid={activeRegion.centroid}
                   sourceTooltip={{
                     countyName: activeRegion.county_name,
                     state: activeRegion.state,
