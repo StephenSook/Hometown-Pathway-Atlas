@@ -32,6 +32,7 @@ import {
   PILLAR5_LIGHTHOUSE_NGBS as NGBS,
 } from '../lib/pillar5';
 import { cn } from '../lib/utils';
+import SourceTooltip from './SourceTooltip';
 
 interface Pillar5DefenseProps {
   className?: string;
@@ -94,7 +95,12 @@ export default function Pillar5Defense({ className }: Pillar5DefenseProps) {
                 className="rounded-xl border border-soft-border bg-warm-neutral p-4 flex flex-col gap-1.5"
               >
                 <p className="font-sans font-bold text-body-lg text-navy leading-tight">
-                  {ngb.name}
+                  <SourceTooltip
+                    source={`${ngb.name} — ${ngb.program} program disclosures`}
+                    href={ngb.source}
+                  >
+                    {ngb.name}
+                  </SourceTooltip>
                 </p>
                 <p className="font-mono uppercase tracking-wider text-eyebrow text-navy">
                   {ngb.program}
