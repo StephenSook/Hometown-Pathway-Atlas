@@ -441,17 +441,6 @@ function LegendRow({
   );
 }
 
-export function CountyMapSkeleton({ className }: { className?: string }) {
-  return (
-    <div
-      aria-busy="true"
-      aria-label="Loading regional map"
-      className={cn(
-        'rounded-2xl bg-card-white border border-soft-border shadow-card-resting p-4 animate-pulse',
-        className,
-      )}
-    >
-      <div className="aspect-[8/5] w-full rounded-xl bg-soft-border" />
-    </div>
-  );
-}
+// CountyMapSkeleton moved to ./CountyMapSkeleton.tsx — leaf-only file
+// avoids dragging us-atlas TopoJSON + react-simple-maps + d3-geo into
+// every loading state of ResultsSkeleton.

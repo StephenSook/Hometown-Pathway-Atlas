@@ -13,7 +13,7 @@
  */
 
 import { RegionHeaderSkeleton } from './RegionHeader';
-import { CountyMapSkeleton } from './CountyMap';
+import { CountyMapSkeleton } from './CountyMapSkeleton';
 import { ParityPanelSkeleton } from './ParityPanel';
 import { SportMixSkeleton } from './SportMix';
 import { ClimateBadgeSkeleton } from './ClimateBadge';
