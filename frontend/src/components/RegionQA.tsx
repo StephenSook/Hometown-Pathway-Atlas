@@ -267,9 +267,20 @@ export default function RegionQA({ region, className }: RegionQAProps) {
                 </p>
               </>
             ) : (
-              <p className="font-serif italic text-caption text-muted-text">
-                Awaiting response…
-              </p>
+              // Layout-preserving skeleton — matches the shape of the
+              // eventual answer paragraph + confidence pill so the
+              // response area doesn't pop in / reflow when data lands.
+              // Mirrors the animate-pulse pattern from ResultsSkeleton
+              // siblings.
+              <div aria-label="Generating response" className="animate-pulse">
+                <div className="space-y-2 mb-4">
+                  <div className="h-4 w-full rounded bg-soft-border" />
+                  <div className="h-4 w-[92%] rounded bg-soft-border" />
+                  <div className="h-4 w-[78%] rounded bg-soft-border" />
+                  <div className="h-4 w-[85%] rounded bg-soft-border" />
+                </div>
+                <div className="h-3 w-32 rounded bg-soft-border/60" />
+              </div>
             )}
           </section>
         </div>
