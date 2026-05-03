@@ -215,3 +215,57 @@ export const mockPathway: PathwayResponse = {
     },
   ],
 };
+
+/**
+ * Sparse-county sentinel mock — exercises the "low public data" empty
+ * states for ParityPanel / SportMix / AdaptiveAccessCard. Returned when
+ * a user enters ZIP `11111` (sentinel) so the editorial empty-state
+ * rendering can be demoed without waiting for backend integration with
+ * a real low-population rural county.
+ *
+ * Honest framing: zero-counts in BOTH pillars + empty top_sports +
+ * 0 chapters. Anti-false-failure perception — judges seeing zeros must
+ * read "this region's signal is sparse" not "the app is broken." The
+ * editorial empty copy in ParityPanelEmpty / SportMixEmpty handles the
+ * narrative framing.
+ *
+ * Synthetic FIPS / county pulled from a real low-pop rural county
+ * (Garfield County, MT, FIPS 30033, pop ~1,100) so the geographic
+ * framing is plausible. Does NOT claim the real Garfield County
+ * literally has zero athletes — the mock is illustrative only.
+ */
+export const mockSparseRegion: RegionResponse = {
+  fips: '30033',
+  county_name: 'Garfield County',
+  state: 'MT',
+  msa_label: 'Non-MSA — rural county',
+  population: 1106,
+  metrics: {
+    olympic: {
+      count: 0,
+      per_100k: 0,
+      percentile: 0,
+      evidence: 'low',
+    },
+    paralympic: {
+      count: 0,
+      per_100k: 0,
+      percentile: 0,
+      evidence: 'low',
+    },
+  },
+  top_sports: [],
+  climate: {
+    zone: 'continental',
+    avg_temp_f: 44.1,
+    annual_precip_in: 13.8,
+    elevation_ft: 2900,
+  },
+  adaptive_access: {
+    move_united_chapters_50mi: 0,
+    confidence: 'low',
+  },
+  narrative:
+    'This region shows fewer athlete-pathway signals in our indexed sources. Three peer counties sharing geographic and climate signature could provide context — see analogs below.',
+  compliance_log: [],
+};

@@ -31,7 +31,12 @@ import ResultsSkeleton from '../components/ResultsSkeleton';
 import HeroStat from '../components/HeroStat';
 import { ApiError } from '../lib/api';
 import { HERO_STAT } from '../lib/heroStat';
-import { mockRegion, mockAnalogs, mockPathway } from '../lib/mocks';
+import {
+  mockRegion,
+  mockSparseRegion,
+  mockAnalogs,
+  mockPathway,
+} from '../lib/mocks';
 
 type View = 'hero' | 'results';
 
@@ -56,6 +61,12 @@ export default function HomePage() {
 
   const [view, setView] = useState<View>(initialView);
   const [loading, setLoading] = useState(false);
+  // Sparse-county sentinel — ZIP `11111` routes to mockSparseRegion
+  // (Garfield County, MT — pop ~1,100, zero athlete placements in
+  // mock dataset) to demo the editorial empty-state rendering across
+  // ParityPanel + SportMix + AdaptiveAccessCard without waiting for
+  // backend integration.
+  const [activeRegion, setActiveRegion] = useState(mockRegion);
   const mainRef = useRef<HTMLElement>(null);
   // Skip the very first paint — only manage focus on user-driven view change.
   const isInitialMount = useRef(true);
@@ -76,21 +87,26 @@ export default function HomePage() {
   // "Hometown Pathway Atlas — Team USA county-level analytics".
   useEffect(() => {
     if (view === 'results') {
-      document.title = resultsTitle(mockRegion.county_name, mockRegion.state);
+      document.title = resultsTitle(activeRegion.county_name, activeRegion.state);
     } else {
       document.title = DEFAULT_TITLE;
     }
-  }, [view]);
+  }, [view, activeRegion]);
 
   const handleSubmit = async (zip: string) => {
     setLoading(true);
     setView('results');
+    // Sentinel ZIP `11111` switches to mockSparseRegion to exercise
+    // the empty-state rendering. All other ZIPs (including the
+    // canonical demo 30060) use mockRegion.
+    const region = zip === '11111' ? mockSparseRegion : mockRegion;
+    setActiveRegion(region);
     // URL state sync — push deep-link with both zip + fips so judges can
-    // share the exact view. Mock data always resolves to mockRegion.fips
-    // until Day 4 backend integrates real ZIP→FIPS resolution.
+    // share the exact view. Mock data always resolves to active region's
+    // fips until Day 4 backend integrates real ZIP→FIPS resolution.
     const params = new URLSearchParams();
     params.set('zip', zip);
-    params.set('fips', mockRegion.fips);
+    params.set('fips', region.fips);
     window.history.replaceState({}, '', `?${params.toString()}`);
     try {
       // ───────── DAY 4 INTEGRATION POINT ─────────
@@ -228,40 +244,40 @@ export default function HomePage() {
             <>
             <div className="mb-10">
               <RegionHeader
-                countyName={mockRegion.county_name}
-                state={mockRegion.state}
-                msaLabel={mockRegion.msa_label}
-                population={mockRegion.population}
+                countyName={activeRegion.county_name}
+                state={activeRegion.state}
+                msaLabel={activeRegion.msa_label}
+                population={activeRegion.population}
               />
             </div>
 
             <div className="mb-10">
               <CountyMap
-                sourceFips={mockRegion.fips}
+                sourceFips={activeRegion.fips}
                 sourceTooltip={{
-                  countyName: mockRegion.county_name,
-                  state: mockRegion.state,
-                  olympicPer100k: mockRegion.metrics.olympic.per_100k,
-                  paralympicPer100k: mockRegion.metrics.paralympic.per_100k,
-                  olympicEvidence: mockRegion.metrics.olympic.evidence,
-                  paralympicEvidence: mockRegion.metrics.paralympic.evidence,
+                  countyName: activeRegion.county_name,
+                  state: activeRegion.state,
+                  olympicPer100k: activeRegion.metrics.olympic.per_100k,
+                  paralympicPer100k: activeRegion.metrics.paralympic.per_100k,
+                  olympicEvidence: activeRegion.metrics.olympic.evidence,
+                  paralympicEvidence: activeRegion.metrics.paralympic.evidence,
                 }}
                 analogs={mockAnalogs.analogs}
               />
             </div>
 
             <ParityPanel
-              countyName={mockRegion.county_name}
-              msaLabel={mockRegion.msa_label}
-              olympic={mockRegion.metrics.olympic}
-              paralympic={mockRegion.metrics.paralympic}
+              countyName={activeRegion.county_name}
+              msaLabel={activeRegion.msa_label}
+              olympic={activeRegion.metrics.olympic}
+              paralympic={activeRegion.metrics.paralympic}
               className="max-w-3xl mx-auto"
             />
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-              <SportMix sports={mockRegion.top_sports} />
-              <ClimateBadge climate={mockRegion.climate} />
-              <AdaptiveAccessCard access={mockRegion.adaptive_access} />
+              <SportMix sports={activeRegion.top_sports} />
+              <ClimateBadge climate={activeRegion.climate} />
+              <AdaptiveAccessCard access={activeRegion.adaptive_access} />
             </div>
 
             <div className="mt-16">
@@ -295,7 +311,7 @@ export default function HomePage() {
       </main>
 
       {view === 'results' && (
-        <ComplianceLog entries={mockRegion.compliance_log} demoMode={true} />
+        <ComplianceLog entries={activeRegion.compliance_log} demoMode={true} />
       )}
     </div>
   );

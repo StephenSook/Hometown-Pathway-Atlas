@@ -31,6 +31,32 @@ function widthPercent(z: number): number {
 }
 
 export default function SportMix({ sports, className }: SportMixProps) {
+  // Sparse-county empty state — sports.length === 0 means no sport
+  // over-indexed enough vs national distribution to register. Editorial
+  // empty copy honestly frames the absence rather than rendering an
+  // empty bar list (which would look broken).
+  if (sports.length === 0) {
+    return (
+      <article
+        aria-label="Top sports — no over-indexed signal"
+        className={cn(
+          'rounded-2xl bg-card-white border border-soft-border shadow-card-resting p-6',
+          className,
+        )}
+      >
+        <p className="font-mono uppercase tracking-wider text-eyebrow text-navy mb-4">
+          <SourceTooltip source={SPORT_MIX_SOURCE}>Top sports</SourceTooltip>
+        </p>
+        <p className="font-serif italic text-body text-muted-text leading-relaxed">
+          No sport over-indexed in this region — county participation
+          patterns may be balanced across categories, or sample size is
+          below the threshold needed for a stable z-score. The absence is
+          itself a signal.
+        </p>
+      </article>
+    );
+  }
+
   return (
     <article
       aria-label="Top sports the region could be associated with"

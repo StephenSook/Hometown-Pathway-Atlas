@@ -50,10 +50,19 @@ export default function AdaptiveAccessCard({
 
       <EvidenceLabel level={access.confidence} className="self-start" />
 
-      <p className="font-serif italic text-eyebrow text-muted-text leading-relaxed">
-        Display only. Not used in similarity matching. Move United chapter
-        density is a proxy and may underrepresent regional access.
-      </p>
+      {chapters === 0 ? (
+        <p className="font-serif italic text-eyebrow text-muted-text leading-relaxed">
+          No Move United chapters within 50 mi in our indexed directory.
+          Adaptive sports access likely exists through other organizations
+          not in our source set; absence here is not a verdict on
+          available access.
+        </p>
+      ) : (
+        <p className="font-serif italic text-eyebrow text-muted-text leading-relaxed">
+          Display only. Not used in similarity matching. Move United chapter
+          density is a proxy and may underrepresent regional access.
+        </p>
+      )}
     </article>
   );
 }
