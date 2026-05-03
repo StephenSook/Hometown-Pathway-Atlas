@@ -69,6 +69,28 @@ const TOKENS = [
     tsRegex: /50 NGBs/i,
     mdAlternatives: ['50 NGBs', '50 National Governing Bodies'],
   },
+  // 2026-05-03 council additions — per-incident harm + 3 named lighthouse NGBs.
+  // Each token must appear in BOTH lib/pillar5.ts AND docs/pitch_pillar5.md.
+  {
+    name: 'Per-incident harm ($35K-$70K)',
+    tsRegex: /number:\s*['"]\$35K[–-]\$70K['"]/,
+    mdAlternatives: ['$35K–$70K', '$35,000–$70,000', '$35K-$70K', '$35,000-$70,000'],
+  },
+  {
+    name: 'Lighthouse NGB 1 — USA Wrestling',
+    tsRegex: /name:\s*['"]USA Wrestling['"]/,
+    mdAlternatives: ['USA Wrestling'],
+  },
+  {
+    name: 'Lighthouse NGB 2 — USA Swimming',
+    tsRegex: /name:\s*['"]USA Swimming['"]/,
+    mdAlternatives: ['USA Swimming'],
+  },
+  {
+    name: 'Lighthouse NGB 3 — USA Track & Field',
+    tsRegex: /name:\s*['"]USA Track & Field['"]/,
+    mdAlternatives: ['USA Track & Field', 'USA Track and Field'],
+  },
 ];
 
 /**
@@ -80,6 +102,11 @@ const REQUIRED_SOURCES = [
   { name: 'Aspen Project Play', regex: /Aspen Institute Project Play/i },
   { name: 'NFHS 2023-24 survey', regex: /NFHS|National Federation of State High School Associations/i },
   { name: 'USOPC NGB list anchor', regex: /USOPC/i },
+  // 2026-05-03 council additions — defensibility-checklist sources for the
+  // new per-incident harm + lighthouse NGB exports.
+  { name: 'Beat the Streets FAQ (URL)', regex: /beatthestreets\.org/i },
+  { name: 'USA Swimming Foundation (URL)', regex: /usaswimming\.org/i },
+  { name: 'USATF RunJumpThrow (URL)', regex: /usatf\.org/i },
 ];
 
 async function main() {

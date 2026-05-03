@@ -48,6 +48,23 @@ update both — there is no automated sync.
 
 ---
 
+## Per-incident dollar harm
+
+Council 2026-05-03 weakest-pillar diagnosis: existing Pillar 5 had a TAM number
++ a "Zero" cost-of-gap framing but NO per-incident harm dollar. Without a
+quantified unit cost of NOT using Atlas, "we have a market" never matures into
+"we have a quantified harm dollar." This section closes that gap.
+
+### ~$35K–$70K — startup-year cost of one mistargeted Beat the Streets chapter
+
+- **Number:** $35,000–$70,000 — the year-one budget for one new Beat the Streets startup wrestling chapter (2–3 programming sites + ~100 youth served)
+- **Source:** Beat the Streets National program tier disclosures (Tier 1 startup year), https://new.beatthestreets.org/faq-on-bts/
+- **Why:** This is the unit-cost waste when a community-development siting decision is made on hometown gut + statewide aggregates instead of county-FIPS parity. Tier 3–4 regional orgs run >$500K/yr with 30+ sites — so a single mis-sited Tier 3 regional = $500K+ of misallocated capacity. Atlas's per-county lens is the targeting layer that makes those siting decisions defensible.
+- **Top-of-funnel context:** USOPC distributed **$139.3M** in grants to athletes + NGBs in 2024 (USOPC 2024 Impact Report). Atlas's value prop sharpens per-county targeting across that grant flow — a 5% efficiency gain on county-level allocation ≈ $7M/yr in better-targeted funding. Modeled, not guaranteed; cited as flow context, not as Atlas's claim of impact.
+- **Audit note (2026-05-03):** Per-incident framing was chosen deliberately OVER abuse-settlement framing (Larry Nassar / USA Gymnastics / SafeSport). Abuse settlements are NOT what Atlas addresses — Atlas is a pipeline-equity siting tool, not a safeguarding tool. Conflating the two would misframe the value prop and create PR risk. If a judge asks "what about safety?", the honest answer is "Atlas is upstream of safety; safety is a different product."
+
+---
+
 ## Revenue model
 
 ### B2B licensing → NGBs
@@ -59,6 +76,62 @@ update both — there is no automated sync.
 
 - **Channel:** ~20,000 HS programs accessible via state recreation department RFPs
 - **Pricing thesis:** $5K-$15K/yr per state license × 50 states + tiered district licensing = $250K-$750K state-level + bottom-up district pull-through
+
+---
+
+## Named lighthouse NGB pilots
+
+Three named NGBs make abstract "50 NGBs" → concrete first-customer ICP. Each
+chosen because (a) public unit economics exist for grant validation, (b)
+geographic siting decisions sit at the core of their community-development
+strategy, (c) sport profiles together test all three Atlas similarity
+dimensions (combat / aquatic / outdoor distributed).
+
+### 1. USA Wrestling — Beat the Streets Network
+
+- **Program:** Beat the Streets youth wrestling community chapters
+- **Reach:** 7,366 youth, 257 teams across 10 major markets (NYC, Philadelphia, Los Angeles, Chicago, Lancaster, Cleveland, Bay Area, New England, Detroit, Baltimore, Washington DC) — 37 cities total via regional affiliates
+- **Unit economics:** $35K–$70K Tier 1 startup year; $250K–$499K Tier 2 (6–12 sites, 300–500 youth); $500K+ Tier 3–4 (30+ sites, 400–1,200 youth)
+- **Why first-customer fit:** Climate-agnostic indoor sport, dense regional pipeline, explicit chapter-grant siting decisions. Atlas's county-FIPS parity could be associated with where the next chapter is most likely to convert vs. duplicate existing access. ~90% of regional revenue is board-driven individual + corporate giving — meaning a defensible county-targeting tool is currently absent from their stack.
+- **Source:** Beat the Streets FAQ, https://new.beatthestreets.org/faq-on-bts/
+
+### 2. USA Swimming — Make A Splash Foundation
+
+- **Program:** Make A Splash Local Partner network
+- **Reach:** 850+ qualified swim-lesson providers nationally; 4.9M+ children served since 2007
+- **Unit economics:** $6.3M cumulative invested (2007–present) → ~$1.29 per child served via lesson grant subsidy
+- **Why first-customer fit:** Climate-correlated (warm-state pool-access advantage maps directly to Atlas's climate dimension); explicit equity-grant program already siting-aware; aligns with Atlas's adaptive-access display layer; Make A Splash is already grant-program structured — lowest-friction first integration.
+- **Source:** USA Swimming Foundation, https://www.usaswimming.org/foundation
+
+### 3. USA Track & Field — RunJumpThrow (Hershey)
+
+- **Program:** Hershey's RunJumpThrow free youth track & field intro
+- **Reach:** 200,000+ children, 1,100+ schools (2016 baseline; current figures undisclosed publicly), 8+ states + cities (NJ, NY, GA, DC, CA, FL, OR, ID)
+- **Unit economics:** Free to schools (Hershey-sponsor-funded); USATF supplies curriculum + 21 station kits
+- **Why first-customer fit:** Largest single-NGB youth program by reach; geographic dispersion maximally tests Atlas's county-FIPS scaling discipline; outdoor / distributed sport profile balances combat (USAW) and aquatic (USAS) coverage to round out a 3-dimension stress test.
+- **Source:** USA Track & Field RunJumpThrow, https://www.usatf.org/runjumpthrow-new/home
+
+### Why these three together
+
+The 3 named NGBs span Atlas's three similarity dimensions:
+
+| Atlas dimension | Weight | USA Wrestling | USA Swimming | USA Track & Field |
+|---|---|---|---|---|
+| Athlete profile | 40% | dense regional pipeline | broad national base | top-of-funnel youth intro |
+| Sport mix | 35% | combat (indoor) | aquatic (seasonal) | outdoor (distributed) |
+| Climate | 25% | climate-agnostic | warm-state correlated | outdoor seasonal |
+
+A 3-NGB lighthouse pilot stress-tests Atlas's similarity model end-to-end
+before broader 50-NGB rollout. Lower risk for both sides: NGBs see Atlas
+validated against the other two NGBs' siting outcomes; Atlas builds
+public, named case studies for the broader NGB sales motion.
+
+**Audit note (2026-05-03):** Sequence intentional — USA Wrestling first
+(smallest, most data-rich, fastest validation cycle), USA Swimming second
+(grant-program structured, lowest integration friction), USA Track & Field
+third (largest scaling test, requires the first two as proof). If only one
+pilot is feasible inside the hackathon timeframe, USA Wrestling is the
+single-pick.
 
 ---
 
@@ -95,9 +168,36 @@ Before pitch:
 - [ ] NFHS Participation Survey link (latest year — 2023-24 confirmed 19,983 schools)
 - [ ] USOPC NGB list (https://www.usopc.org/NGB-IMS) — confirms 50 NGBs
 - [ ] USOPC 2024 Team USA roster (610 Olympic + 225 Paralympic) as fallback hard number
+- [ ] USOPC 2024 Impact Report ($139.3M grants disclosure) — slide-ready citation for top-of-funnel context
+- [ ] Beat the Streets FAQ (https://new.beatthestreets.org/faq-on-bts/) — Tier 1–4 budget disclosure for per-incident harm
+- [ ] USA Swimming Foundation page (https://www.usaswimming.org/foundation) — Make A Splash $6.3M / 4.9M kids
+- [ ] USATF RunJumpThrow page (https://www.usatf.org/runjumpthrow-new/home) — 200K+ kids / 1,100+ schools
 - [ ] Gap analysis screenshot (showing other tools fail to reach county-FIPS parity) ready as backup slide
 
-If a judge presses "where does ~50M come from?" — answer: *Aspen Institute
-Project Play, State of Play 2024 — children ages 6-17 in addressable
-youth-sports market.* If they press on 6,000 — *modeled from USOPC's 50
-NGBs × ~120 slots/yr.*
+---
+
+## Q&A elevator surfaces
+
+The 30-second pitch lands TAM + Zero + 20K + 50 NGBs (Beat 4). Per-incident
+harm + lighthouse NGBs surface in extended Q&A only. Stephen has both surfaces
+memorized; pitch goes 30s → if judge engages, drop into Q&A elevator below.
+
+### Judge: "Who's your first customer?"
+
+> *"Three named NGBs in sequence — USA Wrestling's Beat the Streets network first, because it's siting decisions for $35K–$70K youth wrestling chapters across 10 markets and they've publicly disclosed their tier budgets, so we have a measurable validation signal. Then USA Swimming's Make A Splash, then USA Track & Field's RunJumpThrow. Each tests a different Atlas similarity dimension."*
+
+### Judge: "What does it cost when they get it wrong without you?"
+
+> *"At the unit level — $35K to $70K is the year-one cost of a single mistargeted Beat the Streets startup chapter. At Tier 3, it's $500K+ for a regional org. At the top of funnel, USOPC pushes $139.3M in 2024 grants to athletes and NGBs — even a 5% better targeting on county-level allocation is $7M a year in grants going to higher-equity counties. We're not claiming we capture that; we're saying that's the size of the targeting decision space we're in."*
+
+### Judge: "How does this scale beyond 3 NGBs?"
+
+> *"Pilot validates the similarity model across 3 sport profiles. After lighthouse, the same engine serves the other 47 NGBs without re-training — only the front-end framing changes per NGB. And the $5K–$15K state recreation department channel lights up in parallel — those 50 state RFPs run on the same county-FIPS data."*
+
+### Judge: "Where does ~50M come from?"
+
+> *"Aspen Institute Project Play, State of Play 2024 — children ages 6 to 17 in the addressable youth-sports market."*
+
+### Judge: "Where does 6,000 come from?"
+
+> *"Modeled. 50 NGBs from the USOPC NGB list, times ~120 estimated active recruitment slots per year. Hard fallback number is 835 — the named Team USA Paris 2024 roster, 610 Olympic plus 225 Paralympic."*
