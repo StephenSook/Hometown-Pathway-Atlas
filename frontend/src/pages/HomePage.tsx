@@ -24,6 +24,7 @@ import TradeoffPanel from '../components/TradeoffPanel';
 import CountyMap from '../components/CountyMap';
 import PatternGapPanel from '../components/PatternGapPanel';
 import ComplianceLog from '../components/ComplianceLog';
+import Pillar5Strip from '../components/Pillar5Strip';
 import { mockRegion, mockAnalogs, mockPathway } from '../lib/mocks';
 
 type View = 'hero' | 'results';
@@ -173,6 +174,10 @@ export default function HomePage() {
 
             <div className="mt-8">
               <TradeoffPanel explanation={mockAnalogs.tradeoff_explanation} />
+            </div>
+
+            <div className="mt-16">
+              <Pillar5Strip />
             </div>
 
             <p className="font-serif italic text-caption text-muted-text text-center mt-12">
