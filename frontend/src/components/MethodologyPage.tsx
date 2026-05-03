@@ -161,8 +161,8 @@ export default function MethodologyPage({ onBack }: MethodologyPageProps) {
         <p>
           Every Gemini-generated narrative passes through a two-layer
           audit before reaching the user. Layer one is deterministic
-          regex catching banned causal verbs (<em>produces</em>,{' '}
-          <em>creates</em>, <em>guarantees</em>, <em>leads to</em>,{' '}
+          regex catching banned causal verbs (<em>produces</em>,{' '} {/* atlas-phrasing-allow */}
+          <em>creates</em>, <em>guarantees</em>, <em>leads to</em>,{' '} {/* atlas-phrasing-allow */}
           <em>causes</em>). Layer two is Gemini itself, called with a
           structured-output JSON schema (verdict / violations /
           rewritten) constraining the model to a self-review of its own
@@ -171,7 +171,7 @@ export default function MethodologyPage({ onBack }: MethodologyPageProps) {
         <p>
           The audit log streams live in the right-side panel. When the
           regex layer catches{' '}
-          <em>"Cobb County PRODUCES Olympic athletes"</em> and the
+          <em>"Cobb County PRODUCES Olympic athletes"</em> and the {/* atlas-phrasing-allow */}
           Gemini layer rewrites it to{' '}
           <em>
             "could be associated with Olympic representation patterns,"
