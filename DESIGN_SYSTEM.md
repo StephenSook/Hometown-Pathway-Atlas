@@ -446,7 +446,15 @@ Reference: `docs/moodboard/05_compliance_log.png`
 - Amber `#D97706` = `fail` (stays expanded, shows banned phrase highlighted)
 - Green `#2E8B57` = `fixed` (replaces `fail` in place via 300ms crossfade)
 
-**Demo-mode prop (`demoMode: boolean`, default `false`):** when `true`, ComplianceLog renders a canonical pre-scripted `fail` → `fixed` sequence regardless of live Gemini output. Fail entry shows "Draft contained 'produces athletes'" → fixed entry shows "region shows representation patterns". Ensures Pillar 4 demo moment is reproducible during recording. **Production behavior:** `demoMode={false}` always — must NEVER ship enabled. Add a runtime guard: `process.env.NODE_ENV === 'development' || window.location.hostname === 'localhost'` to prevent accidental production enable. Demo recording uses a feature-flag override.
+**Demo-mode prop (`demoMode: boolean`, default `false`):** when `true`, ComplianceLog renders a canonical pre-scripted `fail` → `fixed` sequence regardless of live Gemini output. Fail entry shows "Draft contained 'produces athletes'" → fixed entry shows "region shows representation patterns". Ensures Pillar 4 demo moment is reproducible during recording.
+
+**Production behavior (updated 2026-05-03 PM):** demoMode is now **data-aware** at the HomePage callsite — `demoMode={!activeRegion?.compliance_log?.length}`. The scripted demo fires only when the backend returns an empty `compliance_log` array. The moment Vinh's HybridAuditor (task 2.9) ships and populates real audit events, demoMode auto-flips to `false` and the live audit stream renders. Zero code change to switch from fixture to live.
+
+Two-layer protection against fixture leak:
+1. **Hostname allow-list** in `ComplianceLog.tsx::isDemoEnvironmentSafe()` — DEV builds + `localhost` + `127.0.0.1` + `*.run.app` (hackathon Cloud Run period). Coarse opt-out for non-Cloud-Run-non-localhost forks (custom domain redeploys).
+2. **Data-aware HomePage prop** — primary protection. Live `compliance_log` from backend disables demo regardless of host gate.
+
+For tighter post-hackathon enforcement: replace the `endsWith('.run.app')` check with a `VITE_DEMO_HOST_ALLOWLIST` env var listing exact known hostnames.
 
 **Fail entry expansion (the demo moment):**
 - Shows banned phrase highlighted in mono with strikethrough
