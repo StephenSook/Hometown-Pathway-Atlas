@@ -173,11 +173,15 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   });
 
   if (!response.ok) {
+    // Read body once as text, then attempt JSON.parse on the string —
+    // calling response.json() then response.text() in catch fails
+    // because the stream was already consumed by the failed JSON read.
     let body: unknown;
+    const text = await response.text();
     try {
-      body = await response.json();
+      body = JSON.parse(text);
     } catch {
-      body = await response.text();
+      body = text;
     }
     throw new ApiError(response.status, `Request failed: ${response.status}`, body);
   }
