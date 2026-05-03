@@ -81,6 +81,18 @@ export default function SourceTooltip({
           'group-focus-visible:opacity-100 group-focus-visible:visible',
           'group-focus-within:opacity-100 group-focus-within:visible',
           'transition-opacity duration-150',
+          // Arrow pointer triangle — NYT/Bloomberg pattern visually
+          // connecting tooltip card to underlined element below.
+          // ::before is the outer (soft-border color, 9px) + ::after
+          // is the inner (card-white, 8px, -mt-px to align flush
+          // with card bottom border). Two stacked triangles produce
+          // the bordered triangle effect via CSS only — no SVG.
+          "before:content-[''] before:absolute before:top-full before:left-1/2",
+          'before:-translate-x-1/2 before:border-[9px] before:border-transparent',
+          'before:border-t-soft-border',
+          "after:content-[''] after:absolute after:top-full after:left-1/2",
+          'after:-translate-x-1/2 after:border-8 after:border-transparent',
+          'after:border-t-card-white after:-mt-px',
         )}
       >
         <span className="block font-mono uppercase tracking-wider text-eyebrow text-navy mb-1">
