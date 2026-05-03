@@ -52,7 +52,7 @@
 
 import { useCallback, useEffect, useId, useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import { Activity, X } from 'lucide-react';
+import { Activity, RotateCcw, X } from 'lucide-react';
 import type { ComplianceLogEntry } from '../lib/api';
 import { fmtTimestamp } from '../lib/format';
 import { demoComplianceScript } from '../lib/mocks';
@@ -89,6 +89,11 @@ export default function ComplianceLog({
   const [displayed, setDisplayed] = useState<ComplianceLogEntry[]>([]);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [srMessage, setSrMessage] = useState('');
+  // Replay counter — incrementing it forces the demo useEffect to re-run
+  // (counter is in the dep array), which replays the scripted scheduled
+  // sequence from scratch. Lets judges + Stephen-during-recording rewatch
+  // the Pillar 4 audit moment without page reload. Demo-mode only.
+  const [replayKey, setReplayKey] = useState(0);
 
   const effectiveDemoMode = demoMode === true && isDemoEnvironmentSafe();
 
@@ -165,7 +170,10 @@ export default function ComplianceLog({
         performance.clearMeasures('compliance-cycle');
       }
     };
-  }, [effectiveDemoMode]);
+    // replayKey is intentionally in the dep array so click-to-replay
+    // restarts the scheduled timeout chain from T+0 with a fresh
+    // cancelled-flag closure.
+  }, [effectiveDemoMode, replayKey]);
 
   // Live mode — sync from props (already coerced to safe array)
   useEffect(() => {
@@ -253,10 +261,28 @@ export default function ComplianceLog({
               Live audit
             </p>
           </div>
-          <span className="relative flex h-2 w-2" aria-hidden="true">
-            <span className="absolute inline-flex h-full w-full rounded-full bg-accent-teal opacity-75 animate-ping" />
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-accent-teal" />
-          </span>
+          <div className="flex items-center gap-3">
+            {/* Replay button — demo-mode only. Lets judges + Stephen
+                rewatch the Pillar 4 audit moment without page reload.
+                Increments replayKey which is in the demo useEffect's
+                dep array, forcing the scheduled timeout chain to
+                restart from T+0 with a fresh cancelled-flag closure. */}
+            {effectiveDemoMode && (
+              <button
+                type="button"
+                onClick={() => setReplayKey((k) => k + 1)}
+                aria-label="Replay audit sequence"
+                title="Replay audit"
+                className="inline-flex items-center justify-center rounded p-1 text-muted-text hover:text-navy hover:bg-warm-neutral transition-colors focus-ring"
+              >
+                <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
+              </button>
+            )}
+            <span className="relative flex h-2 w-2" aria-hidden="true">
+              <span className="absolute inline-flex h-full w-full rounded-full bg-accent-teal opacity-75 animate-ping" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-accent-teal" />
+            </span>
+          </div>
         </header>
 
         <div className="grid grid-cols-2 divide-x divide-soft-border flex-1 min-h-0">
