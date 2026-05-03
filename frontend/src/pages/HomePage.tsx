@@ -19,7 +19,7 @@
  * Reference: docs/moodboard/01_hero.png + 02_parity_panel.png + 03_analog_cards.png.
  */
 
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
@@ -31,14 +31,25 @@ import ClimateBadge from '../components/ClimateBadge';
 import AdaptiveAccessCard from '../components/AdaptiveAccessCard';
 import AnalogList from '../components/AnalogList';
 import TradeoffPanel from '../components/TradeoffPanel';
-import CountyMap from '../components/CountyMap';
+// CountyMap is lazy-loaded — its static import of us-atlas/counties-10m
+// .json adds 250KB gz to the bundle (55% of total). Splitting it into
+// its own chunk pulls that weight off the initial bundle. CountyMap
+// only mounts after region data lands (inside loading conditional);
+// chunk download runs in parallel with the API request, so the user
+// never perceives a Suspense delay.
+const CountyMap = lazy(() => import('../components/CountyMap'));
 import PatternGapPanel from '../components/PatternGapPanel';
 import ComplianceLog from '../components/ComplianceLog';
 import Pillar5Strip from '../components/Pillar5Strip';
 import Pillar5Defense from '../components/Pillar5Defense';
 import ResultsSkeleton from '../components/ResultsSkeleton';
+import { CountyMapSkeleton } from '../components/CountyMapSkeleton';
 import HeroStat from '../components/HeroStat';
-import MethodologyPage from '../components/MethodologyPage';
+// MethodologyPage is lazy-loaded — only renders on #about hash route,
+// never on the critical demo path (30060 → results). React.lazy splits
+// it into its own chunk so the initial bundle ships ~6KB lighter and
+// the methodology-prose JS only downloads when a judge clicks About.
+const MethodologyPage = lazy(() => import('../components/MethodologyPage'));
 import RegionQA from '../components/RegionQA';
 import SectionNav from '../components/SectionNav';
 
@@ -235,7 +246,22 @@ export default function HomePage() {
         className="pt-32 md:pt-40 pb-16 focus:outline-none"
       >
         {view === 'methodology' ? (
-          <MethodologyPage onBack={handleMethodologyBack} />
+          <Suspense
+            fallback={
+              <div
+                aria-label="Loading methodology"
+                className="mx-auto max-w-3xl px-6 py-16 text-center"
+              >
+                <p className="font-mono uppercase tracking-wider text-eyebrow text-muted-text">
+                  Methodology
+                </p>
+                <div className="mt-8 h-12 w-3/4 mx-auto rounded bg-soft-border animate-pulse" />
+                <div className="mt-6 h-4 w-2/3 mx-auto rounded bg-soft-border/60 animate-pulse" />
+              </div>
+            }
+          >
+            <MethodologyPage onBack={handleMethodologyBack} />
+          </Suspense>
         ) : view === 'hero' ? (
           <>
             <HeroStat stat={HERO_STAT} className="mb-8" />
@@ -329,18 +355,20 @@ export default function HomePage() {
             </div>
 
             <div id="section-map" className="mb-10 scroll-mt-32">
-              <CountyMap
-                sourceFips={activeRegion.fips}
-                sourceTooltip={{
-                  countyName: activeRegion.county_name,
-                  state: activeRegion.state,
-                  olympicPer100k: activeRegion.metrics.olympic.per_100k,
-                  paralympicPer100k: activeRegion.metrics.paralympic.per_100k,
-                  olympicEvidence: activeRegion.metrics.olympic.evidence,
-                  paralympicEvidence: activeRegion.metrics.paralympic.evidence,
-                }}
-                analogs={activeAnalogs?.analogs ?? []}
-              />
+              <Suspense fallback={<CountyMapSkeleton />}>
+                <CountyMap
+                  sourceFips={activeRegion.fips}
+                  sourceTooltip={{
+                    countyName: activeRegion.county_name,
+                    state: activeRegion.state,
+                    olympicPer100k: activeRegion.metrics.olympic.per_100k,
+                    paralympicPer100k: activeRegion.metrics.paralympic.per_100k,
+                    olympicEvidence: activeRegion.metrics.olympic.evidence,
+                    paralympicEvidence: activeRegion.metrics.paralympic.evidence,
+                  }}
+                  analogs={activeAnalogs?.analogs ?? []}
+                />
+              </Suspense>
             </div>
 
             <div id="section-parity" className="scroll-mt-32">
