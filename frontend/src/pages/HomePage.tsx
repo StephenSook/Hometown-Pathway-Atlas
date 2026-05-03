@@ -55,27 +55,33 @@ export default function HomePage() {
     setView('results');
     try {
       // ───────── DAY 4 INTEGRATION POINT ─────────
-      // Replace the setTimeout below with React Query hook adoption:
+      // Replace the simulated network below with React Query hook adoption:
       //   1. Lift `setSubmittedZip(zip)` to component state
       //   2. Read `useRegion(submittedZip)` + `useAnalogs(region.data?.fips)`
       //      + `usePathway(region.data?.fips)` at the top of HomePage
-      //   3. Derive `loading` from `region.isLoading || analogs.isFetching
-      //      || pathway.isFetching` and `error` from union of `.error` props
-      //   4. Pass `region.data`, `mockAnalogs.analogs`→`analogs.data?.analogs`,
+      //   3. Derive `loading` from `region.isPending || analogs.isFetching
+      //      || pathway.isFetching` (`isPending` not `isLoading` per RQ v5)
+      //   4. Drop the manual try/catch — `QueryCache.onError` in
+      //      lib/queryClient.ts already toasts every failure globally
+      //   5. Pass `region.data`, `mockAnalogs.analogs`→`analogs.data?.analogs`,
       //      `mockPathway.gaps`→`pathway.data?.gaps` into the existing JSX
-      //   5. Delete this manual setTimeout — React Query owns the lifecycle
-      // Hooks scaffolded in src/hooks/{useRegion,useAnalogs,usePathway}.ts
-      // and the QueryClientProvider is already mounted in App.tsx, so the
-      // swap is purely substitution at the data-source sites.
+      //
+      // Sentinel ZIP `00000` throws ApiError(404) so the catch arm and the
+      // global QueryCache.onError handler both get exercised before Day 4
+      // — without this, the entire error UX is dead code until the real
+      // backend ships.
+      if (zip === '00000') {
+        throw new ApiError(404, 'No region for ZIP 00000 (sentinel test)');
+      }
       void zip;
       await new Promise((resolve) => setTimeout(resolve, 600));
       setLoading(false);
     } catch (err) {
-      setLoading(false);
       setView('hero');
+      setLoading(false);
       const message =
         err instanceof ApiError
-          ? `Could not load that region (${err.status}). Try another ZIP.`
+          ? `Could not load that region (HTTP ${err.status}). Try another ZIP.`
           : 'Something went wrong loading that region. Try again in a moment.';
       toast.error(message);
     }
