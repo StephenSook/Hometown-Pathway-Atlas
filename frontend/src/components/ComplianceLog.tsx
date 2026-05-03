@@ -54,6 +54,7 @@ import { useCallback, useEffect, useId, useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { Activity, X } from 'lucide-react';
 import type { ComplianceLogEntry } from '../lib/api';
+import { fmtTimestamp } from '../lib/format';
 import { demoComplianceScript } from '../lib/mocks';
 import LogEntry from './LogEntry';
 import { cn } from '../lib/utils';
@@ -135,12 +136,15 @@ export default function ComplianceLog({
 
   // sr-only announcement for fail→fixed — visual color morph is silent to
   // AT because role="log" only broadcasts on add/remove, not in-place prop
-  // changes.
+  // changes. Timestamp suffix forces React to see a unique string per fix
+  // event; otherwise two fixes with the same `check` field produce
+  // identical message strings, React bails on setState, and aria-live
+  // doesn't re-announce. Suffix doubles as informative chrome for AT users.
   useEffect(() => {
     const lastFixed = displayed.findLast((e) => e.status === 'fixed');
     if (lastFixed) {
       setSrMessage(
-        `${lastFixed.check} rewritten in conditional phrasing in our indexed sources.`,
+        `${lastFixed.check} rewritten in conditional phrasing in our indexed sources at ${fmtTimestamp(lastFixed.ts)}.`,
       );
     }
   }, [displayed]);

@@ -16,6 +16,11 @@ interface TradeoffPanelProps {
   className?: string;
 }
 
+// Co-located duration so the chevron CSS transition + Framer height
+// collapse stay in sync. If this changes, both surfaces update together.
+const COLLAPSE_DURATION_S = 0.3;
+const COLLAPSE_EASE = [0.16, 1, 0.3, 1] as const;
+
 export default function TradeoffPanel({
   explanation,
   className,
@@ -45,9 +50,14 @@ export default function TradeoffPanel({
         <ChevronDown
           aria-hidden="true"
           className={cn(
-            'h-5 w-5 text-muted-text transition-transform duration-300',
+            'h-5 w-5 text-muted-text',
             isOpen && 'rotate-180',
           )}
+          style={{
+            transition: reduceMotion
+              ? 'none'
+              : `transform ${COLLAPSE_DURATION_S}s cubic-bezier(${COLLAPSE_EASE.join(',')})`,
+          }}
         />
       </button>
 
@@ -61,7 +71,9 @@ export default function TradeoffPanel({
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={
-              reduceMotion ? { duration: 0 } : { duration: 0.3, ease: [0.16, 1, 0.3, 1] }
+              reduceMotion
+                ? { duration: 0 }
+                : { duration: COLLAPSE_DURATION_S, ease: COLLAPSE_EASE }
             }
             className="overflow-hidden"
           >
