@@ -37,7 +37,7 @@
  * file. No other components depend on it.
  */
 
-import { useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { Brain, Loader2, Send } from 'lucide-react';
 import type { RegionResponse } from '../lib/api';
 import { cn } from '../lib/utils';
@@ -109,6 +109,18 @@ export default function RegionQA({ region, className }: RegionQAProps) {
   const [response, setResponse] = useState<QAResponse | null>(null);
   const [asking, setAsking] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  // Cancelled-flag ref guards async state setters against unmount during
+  // the 1.8s stub delay (e.g. user clicks Back to home, navigates to
+  // #about, or submits a new ZIP that re-mounts the page). Without
+  // this, setResponse / setAsking after unmount triggers React 19
+  // silent setState no-op + can leak the stub timer reference.
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -119,10 +131,11 @@ export default function RegionQA({ region, className }: RegionQAProps) {
     // ───────── BACKEND INTEGRATION POINT ─────────
     // Replace the simulated delay + STUBBED_RESPONSE below with:
     //   const result = await api.regionQA(region.fips, question.trim());
-    //   setResponse(result);
+    //   if (mountedRef.current) setResponse(result);
     // When task 2.7 ships, also wire ApiError → toast.error path
     // (QueryCache.onError doesn't cover non-React-Query fetches).
     await new Promise((resolve) => setTimeout(resolve, 1800));
+    if (!mountedRef.current) return;
     setResponse(STUBBED_RESPONSE);
     setAsking(false);
   };
