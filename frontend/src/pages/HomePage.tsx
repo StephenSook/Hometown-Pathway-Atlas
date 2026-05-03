@@ -29,6 +29,7 @@ import Pillar5Strip from '../components/Pillar5Strip';
 import Pillar5Defense from '../components/Pillar5Defense';
 import ResultsSkeleton from '../components/ResultsSkeleton';
 import HeroStat from '../components/HeroStat';
+import MethodologyPage from '../components/MethodologyPage';
 import { ApiError } from '../lib/api';
 import { HERO_STAT } from '../lib/heroStat';
 import {
@@ -38,7 +39,7 @@ import {
   mockPathway,
 } from '../lib/mocks';
 
-type View = 'hero' | 'results';
+type View = 'hero' | 'results' | 'methodology';
 
 // Per-FIPS document.title format. Mock data only renders Cobb County
 // today; once backend integrates, the actual region.county_name + state
@@ -51,13 +52,17 @@ function resultsTitle(countyName: string, state: string): string {
 export default function HomePage() {
   // URL-state hydration on first mount: ?fips=13067 in the URL means a
   // judge clicked a deep-link share — skip the hero view and land
-  // directly on results. window.location used directly (no react-router
-  // dependency yet); Day 4 router migration will swap to useSearchParams.
+  // directly on results. #about hash routes to the methodology page.
+  // window.location used directly (no react-router dependency yet);
+  // Day 4 router migration will swap to useSearchParams + useNavigate.
   const initialView: View =
-    typeof window !== 'undefined' &&
-    new URLSearchParams(window.location.search).has('fips')
-      ? 'results'
-      : 'hero';
+    typeof window === 'undefined'
+      ? 'hero'
+      : new URLSearchParams(window.location.search).has('fips')
+        ? 'results'
+        : window.location.hash === '#about'
+          ? 'methodology'
+          : 'hero';
 
   const [view, setView] = useState<View>(initialView);
   const [loading, setLoading] = useState(false);
@@ -88,10 +93,37 @@ export default function HomePage() {
   useEffect(() => {
     if (view === 'results') {
       document.title = resultsTitle(activeRegion.county_name, activeRegion.state);
+    } else if (view === 'methodology') {
+      document.title = 'Methodology — Hometown Pathway Atlas';
     } else {
       document.title = DEFAULT_TITLE;
     }
   }, [view, activeRegion]);
+
+  // Hash-router for the methodology page. Listens for clicks on the
+  // Navbar #about anchor; updating window.location.hash triggers the
+  // listener which sets view='methodology'. Day 4 router migration
+  // replaces this with a real /about route.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handler = () => {
+      if (window.location.hash === '#about') {
+        setView('methodology');
+      } else if (view === 'methodology') {
+        setView('hero');
+      }
+    };
+    window.addEventListener('hashchange', handler);
+    return () => window.removeEventListener('hashchange', handler);
+  }, [view]);
+
+  const handleMethodologyBack = () => {
+    setView('hero');
+    if (typeof window !== 'undefined') {
+      // Strip the #about hash so refresh doesn't re-route to methodology.
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  };
 
   const handleSubmit = async (zip: string) => {
     setLoading(true);
@@ -159,7 +191,9 @@ export default function HomePage() {
         tabIndex={-1}
         className="pt-32 md:pt-40 pb-16 focus:outline-none"
       >
-        {view === 'hero' ? (
+        {view === 'methodology' ? (
+          <MethodologyPage onBack={handleMethodologyBack} />
+        ) : view === 'hero' ? (
           <>
             <HeroStat stat={HERO_STAT} className="mb-8" />
 
