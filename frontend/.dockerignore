@@ -1,0 +1,39 @@
+# Build artifacts + deps re-built inside container
+node_modules
+dist
+
+# Dev tooling
+.vite
+.cache
+*.log
+npm-debug.log*
+
+# Source control + Docker meta (not needed in build context)
+.git
+.gitignore
+.dockerignore
+Dockerfile
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode
+.idea
+
+# Tests + coverage (no runtime impact, smaller context = faster builds)
+coverage
+.nyc_output
+__tests__
+*.test.ts
+*.test.tsx
+
+# Cloud Run / IaC artifacts (not part of the static bundle)
+cloudbuild.yaml
+.gcloudignore
+
+# Playwright artifacts
+.playwright-mcp
+playwright-report
+test-results
