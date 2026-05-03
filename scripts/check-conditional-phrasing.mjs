@@ -6,13 +6,29 @@
  * phrasing — "could be associated with", "may correlate", "interpretation
  * only" — never causal verbs like "produces", "creates", "guarantees",
  * "leads to". The runtime hybrid auditor (ComplianceLog ★) catches Gemini-
- * generated drift, but it does NOT catch banned verbs that ship in:
- *   - Markdown docs (pitch_script, README, SUBMISSION)
+ * generated drift, but it does NOT catch banned verbs in static code +
+ * docs.
+ *
+ * SCOPE — what this script actually scans:
  *   - JSX/TSX inline strings in React components
  *   - Plain string constants in lib files
  *
- * This script is the pre-commit defensive moat. Run before every commit
- * touching pitch surfaces or component user-visible strings.
+ * SCOPE — what this script DELIBERATELY does NOT scan (manual review
+ * is the control for these surfaces):
+ *   - Markdown docs in `docs/` (pitch_script, demo_storyboard,
+ *     pitch_pillar5, council_2026-05-03, etc) — these surfaces
+ *     intentionally quote banned verbs as illustrations of what the
+ *     audit catches; per-line allow markers would explode the file
+ *   - README.md + SUBMISSION.md — same rationale
+ *   - CLAUDE.md + PLAN.md — the hard-rule statement itself uses
+ *     banned verbs to define them
+ *   - mocks.ts + ComplianceLog.tsx + LogEntry.tsx — Pillar 4 demo
+ *     fixture intentionally ships a banned-verb phrase that the
+ *     auditor catches at runtime
+ *
+ * Bottom line: the script is a COMPONENT-LAYER drift guard, not a
+ * doc-layer guard. Doc drift is caught by manual cold-check passes
+ * (Sookra Council + NotebookLM oracle deck) before pitch lock.
  *
  * Run manually:
  *   node scripts/check-conditional-phrasing.mjs
