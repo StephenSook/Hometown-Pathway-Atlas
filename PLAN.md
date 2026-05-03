@@ -153,7 +153,7 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started · ⛔ blocked · ✂️
 | 3.13 | Compliance Log streaming animation | `frontend/src/components/ComplianceLog/*` | Stephen | ⬜ | 3.11 | Day 5. **Demo differentiator.** Cinematic but subtle. Practice the fail→rewrite sequence. |
 | 3.14 | End-to-end happy path | full stack | Stephen+Vinh | ⬜ | 2.6, 3.12 | Day 5 EOD. Type ZIP → see full results, no errors. |
 | 3.15 | Loading + error + mobile + a11y polish | frontend/* | Stephen | ⬜ | 3.14 | Day 6. Skeleton UIs. Sonner toast for errors. Mobile responsive. Keyboard nav. |
-| 3.16 | **Pillar 5 lock — TAM, cost, revenue framing** | `docs/pitch_pillar5.md` | Stephen | ⬜ | — | Day 6 ~30 min. NotebookLM-flagged weakest pillar. NGB recruitment ~6K, youth athletic households ~50M, school athletics ~13K. B2B/B2G framing. **Do not skip.** |
+| 3.16 | **Pillar 5 lock — TAM, cost, revenue framing** | `docs/pitch_pillar5.md` + `frontend/src/components/Pillar5Strip.tsx` | Stephen | ✅ | — | Day 6 PM. NotebookLM-flagged weakest pillar — locked. TAM ~50M households (Aspen Institute Project Play), Cost framing "Zero" (no public county-level Atlas tools — gap analysis), Revenue model B2B NGBs (~6K positions/yr) + B2G state recreation depts (~13K HS). Numbers hardcoded in Pillar5Strip per spec §4.18 "do not ship without all three numbers visible". Cold-check pass caught 8 issues fixed pre-commit (declarative footer "Built for" → observational, source-citation token mismatch, nested-article landmark noise, pills not list per spec, stat-lg overflow risk, skeleton delete, TAM label clarity, per-constant lock anchors). 30-second pitch script + number-defensibility checklist documented. |
 
 ### Phase 4 — Maximum Scope ambitious layers (Days 5–9)
 
