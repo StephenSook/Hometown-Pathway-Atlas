@@ -66,7 +66,7 @@ export default function AnalogList({
               Limited match
             </p>
             <p className="font-serif italic text-caption text-muted-text leading-relaxed max-w-[200px]">
-              Sparse data in this region — see methodology footnote for
+              Sparse indexed data for this region; see methodology for
               context.
             </p>
           </article>

@@ -150,8 +150,8 @@ export default function RegionQA({ region, className }: RegionQAProps) {
             Ask the Atlas — Gemini region Q&A
           </p>
           <p className="font-serif italic text-caption text-muted-text">
-            Reason over the visible region context · conditional-phrased
-            response · visible reasoning chain
+            Reasons over the visible region context. Conditional-phrased
+            answer + visible reasoning chain.
           </p>
         </div>
         <Brain
@@ -181,7 +181,7 @@ export default function RegionQA({ region, className }: RegionQAProps) {
           <button
             type="submit"
             disabled={!question.trim() || asking}
-            aria-label="Ask Gemini"
+            aria-label="Ask region question"
             className="self-start rounded-xl bg-navy text-card-white px-4 py-3 font-mono uppercase tracking-wider text-eyebrow shrink-0 hover:bg-olympic-blue focus-ring transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {asking ? (
@@ -195,7 +195,7 @@ export default function RegionQA({ region, className }: RegionQAProps) {
 
       <div className="mb-6">
         <p className="font-mono uppercase tracking-wider text-eyebrow text-muted-text mb-2">
-          Suggested
+          Sample questions
         </p>
         <ul className="flex flex-wrap gap-2">
           {SUGGESTED_QUESTIONS.map((q) => (
@@ -287,10 +287,8 @@ export default function RegionQA({ region, className }: RegionQAProps) {
       )}
 
       <p className="mt-6 font-serif italic text-eyebrow text-muted-text leading-relaxed">
-        Backend gemini service shipping with Vinh task 2.7 — current
-        Q&A demos against a fixture response while the live endpoint
-        wires up. Real-backend responses will pass through HybridAuditor
-        (task 2.9) before reaching this panel.
+        Region Q&A currently uses a fixed demonstration response; live
+        responses will pass through the same audit checks before display.
       </p>
     </article>
   );

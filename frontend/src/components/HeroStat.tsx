@@ -25,7 +25,7 @@ import SourceTooltip from './SourceTooltip';
 import { cn } from '../lib/utils';
 
 const HERO_STAT_EXPANDED_SOURCE =
-  'Cross-references Move United 2024 Impact Report (141 of 225 ≈ 63% of 2024 U.S. Paralympic athletes via Move United chapter network) with Atlas county-FIPS aggregated 2016–2024 Team USA roster. Replace with Vinh task 1.11 finding once shipped.';
+  'Cross-references Move United 2024 Impact Report (141 of 225 ≈ 63% of 2024 U.S. Paralympic athletes via Move United chapter network) with Atlas county-FIPS aggregated 2016–2024 Team USA roster.';
 
 interface HeroStatProps {
   stat: HeroStatData;

@@ -398,9 +398,8 @@ export default function HomePage() {
 
             {isSparse && (
               <p className="font-serif italic text-caption text-muted-text text-center mt-12">
-                ZIP 11111 routes to a synthetic sparse-county fixture
-                (Garfield County, MT) to demo the editorial empty-state
-                rendering. Real ZIPs hit the live backend.
+                ZIP 11111 shows a sparse-data example for Garfield
+                County, MT. Real ZIPs use the live backend.
               </p>
             )}
           </section>

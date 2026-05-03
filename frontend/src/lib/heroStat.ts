@@ -39,5 +39,5 @@ export const HERO_STAT: HeroStatData = {
   context:
     'U.S. counties that have placed any athlete on the 2016–2024 Team USA roster have also placed at least one Paralympic athlete — in our indexed sources.',
   source: '2016–2024 Team USA roster, county-FIPS aggregated',
-  caveat: 'Placeholder pending Layer A analysis ship (Vinh task 1.11).',
+  caveat: 'Preliminary finding; Layer A analysis pending.',
 };

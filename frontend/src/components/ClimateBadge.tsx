@@ -78,7 +78,7 @@ export default function ClimateBadge({ climate, className }: ClimateBadgeProps) 
           </dd>
         </div>
         <div className="flex items-baseline justify-between">
-          <dt className="text-muted-text uppercase tracking-wider">Precip</dt>
+          <dt className="text-muted-text uppercase tracking-wider">Annual precip</dt>
           <dd className="text-body-text tabular">
             {climate.annual_precip_in === null
               ? DASH

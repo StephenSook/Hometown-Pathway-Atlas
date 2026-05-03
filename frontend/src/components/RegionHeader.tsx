@@ -57,7 +57,7 @@ export default function RegionHeader({
           className="inline-flex items-center gap-2 rounded-full border border-soft-border bg-card-white px-3 py-1 font-mono uppercase tracking-wider text-eyebrow text-muted-text"
           aria-label={`Population: ${fmtPopulation(population)}`}
         >
-          <span className="text-muted-text">pop</span>
+          <span className="text-muted-text">Population</span>
           <span className="tabular text-body-text">
             {fmtPopulation(population)}
           </span>

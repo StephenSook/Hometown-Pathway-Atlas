@@ -50,7 +50,7 @@ export default function PatternGapPanel({
 
       {gaps.length === 0 ? (
         <p className="font-serif italic text-caption text-muted-text text-center">
-          No pattern signals available for this region in our indexed sources.
+          No indexed pattern signals for this region.
         </p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
