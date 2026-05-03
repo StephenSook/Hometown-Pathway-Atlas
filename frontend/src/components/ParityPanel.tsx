@@ -25,7 +25,15 @@ import { useId } from 'react';
 import type { ParityMetric } from '../lib/api';
 import { fmtPerCapita, fmtPercentile } from '../lib/format';
 import EvidenceLabel from './EvidenceLabel';
+import SourceTooltip from './SourceTooltip';
 import { cn } from '../lib/utils';
+
+const PARITY_SOURCES = {
+  olympic:
+    'Team USA Olympic roster 2016–2024 (Rio + Tokyo + Paris) aggregated to county FIPS, per-capita normalized vs Census ACS 5-year population with empirical Bayes shrinkage to dampen small-county noise.',
+  paralympic:
+    'Team USA Paralympic roster 2016–2024 aggregated to county FIPS, per-capita normalized vs Census ACS 5-year population with empirical Bayes shrinkage to dampen small-county noise. Ranked by percentile separately from Olympic — never merged.',
+} as const;
 
 interface ParityPanelProps {
   countyName: string;
@@ -69,7 +77,9 @@ function ParityColumn({ side, metric }: ColumnProps) {
       </p>
 
       <p className={cn('font-sans font-bold text-stat-md md:text-stat-lg leading-none tabular', statColor)}>
-        {fmtPerCapita(metric.per_100k)}
+        <SourceTooltip source={isOlympic ? PARITY_SOURCES.olympic : PARITY_SOURCES.paralympic}>
+          {fmtPerCapita(metric.per_100k)}
+        </SourceTooltip>
       </p>
 
       <p className="text-caption text-muted-text">per 100k population</p>
