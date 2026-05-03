@@ -500,6 +500,45 @@ Detailed in 4.16. Single audit log row.
 
 ---
 
+### 4.20 RegionQA ★ (Layer C — multimodal Gemini Q&A panel)
+
+**Why it exists:** Added 2026-05-03 as the Layer C "Gemini in new ways" judging surface from CLAUDE.md Maximum Scope Addendum. User asks a natural-language question about the visible region; Gemini reasons over parity metrics + sport mix + climate + analog peers and answers in conditional, evidence-grounded prose. Visible reasoning chain mirrors the ComplianceLog audit-stream pattern but at core UX layer rather than compliance instrumentation.
+
+**Anatomy:**
+- Renders below TradeoffPanel inside the `#section-qa` wrapper (mt-12 spacing from prior section)
+- Card on `#FFFFFF` `bg-card-white`, `rounded-2xl`, `border-soft-border`, `shadow-sm`, `p-6`
+- Header (justify-between):
+  - Left: Eyebrow JetBrains Mono uppercase navy `Ask the Atlas — Gemini region Q&A` + Instrument Serif italic explainer caption
+  - Right: Brain icon (lucide), `h-5 w-5 text-olympic-blue`
+- Question form:
+  - Eyebrow label `Question`
+  - Textarea (2 rows, `bg-warm-neutral`, placeholder includes the active region's county name)
+  - Send button (`bg-navy text-card-white`, swaps to spinner when `asking`)
+- Suggested-question chips: 3 `<button>` chips on `bg-warm-neutral` rounded-full; click auto-fills the textarea + focuses it
+- Response zone (renders only when `asking` or `response` exists):
+  - Top hairline divider
+  - Two-zone grid `[1fr_2fr]` (mobile: stack), with hairline divider on the right edge of zone A on `md+`
+  - **Zone A — Reasoning:** ordered `<ol role="list">` of 4 numbered steps; each step's opacity transitions from 0.3 (placeholder) to 1.0 (revealed) as steps complete
+  - **Zone B — Answer:** Inter body 16px paragraph + JetBrains Mono confidence pill (`Confidence: <high|medium|low>`); when `asking` is true and no response yet, renders a layout-preserving skeleton (4 lines of pulsing `bg-soft-border` placeholders + 1 small confidence-pill placeholder) so the response area doesn't reflow when data lands
+- Footer note (Instrument Serif italic eyebrow muted): forward-spec disclosure that backend GeminiService (Vinh task 2.7) wires up via 1-line swap + HybridAuditor (task 2.9) gates live responses
+
+**Locked rules:**
+- Final answer text MUST pass conditional-phrasing CI (`scripts/check-conditional-phrasing.mjs`). The runtime regex check in `RegionQA.tsx` is hand-authored to satisfy the rule today; the live Gemini call must pass through HybridAuditor before reaching this panel
+- Suggested-question chips intentionally include one banned-verb question (markered with `atlas-phrasing-allow`) — quoting natural-language input is the only way the audit catch demo can show what user inputs look like before the audit gate
+- Zone A reasoning chain is always 4 steps minimum even if the live backend returns fewer; pad with no-op steps to preserve the visual cadence (deferred to backend implementation)
+- Component is removable in 1 import + 1 JSX line per the cut posture (see RegionQA.tsx header comment) — used if Vinh task 2.7 doesn't ship by Day 9 EOD
+
+**ARIA:**
+- Outer: `<article role="region" aria-labelledby={headingId}>` matching §4.18 / §4.19 sibling landmark convention
+- Question form: `<label htmlFor>` tied to textarea; submit button has `aria-label="Ask Gemini"`
+- Reasoning chain: `<ol role="list">` for sequential AT readout
+- Answer section: `aria-labelledby` on its container + `aria-live="polite"` so the answer announces when it lands
+- Loading skeleton: `aria-label="Generating response"` on the placeholder container; the parent section's aria-live still does the work for the eventual answer announcement
+
+**Motion:** Reasoning step opacity transition (0.3 → 1.0, 300ms) per step as the chain "completes." Pulsing skeleton uses Tailwind `animate-pulse`. No Framer Motion bespoke variants.
+
+---
+
 ## 5. Motion choreography
 
 All Framer Motion. Reference `frontend/src/lib/motion.ts` (to be created).
