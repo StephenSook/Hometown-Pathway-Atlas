@@ -70,6 +70,17 @@ and rewrite it conditionally to *"could be associated with Olympic
 representation patterns."* Live. Visible. Auditable. **This is the
 Pillar 4 demo moment.**
 
+### 5. RegionQA — Ask the Atlas (Layer C)
+
+Below the analog narrative, a Gemini-powered Q&A panel lets the user
+ask any natural-language question about the visible region. Reasoning
+chain visible step-by-step, parallel to the Compliance Log audit-
+stream pattern but at the core UX layer. Conditional phrasing
+enforced by the same hybrid auditor before responses reach the panel.
+Suggested-question chips lower judge friction; a hand-authored
+fixture demos the surface today, with a one-line swap to the live
+Vertex AI Gemini call when the GeminiService backend lands.
+
 ---
 
 ## Architecture
