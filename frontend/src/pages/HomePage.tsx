@@ -40,6 +40,16 @@ import ResultsSkeleton from '../components/ResultsSkeleton';
 import HeroStat from '../components/HeroStat';
 import MethodologyPage from '../components/MethodologyPage';
 import RegionQA from '../components/RegionQA';
+import SectionNav from '../components/SectionNav';
+
+const RESULTS_SECTIONS = [
+  { id: 'section-region', label: 'Region' },
+  { id: 'section-map', label: 'Map' },
+  { id: 'section-parity', label: 'Parity' },
+  { id: 'section-analogs', label: 'Analogs' },
+  { id: 'section-qa', label: 'Q&A' },
+  { id: 'section-pillar5', label: 'Pillar 5' },
+];
 import { useRegion } from '../hooks/useRegion';
 import { useAnalogs } from '../hooks/useAnalogs';
 import { usePathway } from '../hooks/usePathway';
@@ -309,7 +319,7 @@ export default function HomePage() {
               <ResultsSkeleton />
             ) : (
             <>
-            <div className="mb-10">
+            <div id="section-region" className="mb-10 scroll-mt-32">
               <RegionHeader
                 countyName={activeRegion.county_name}
                 state={activeRegion.state}
@@ -318,7 +328,7 @@ export default function HomePage() {
               />
             </div>
 
-            <div className="mb-10">
+            <div id="section-map" className="mb-10 scroll-mt-32">
               <CountyMap
                 sourceFips={activeRegion.fips}
                 sourceTooltip={{
@@ -333,13 +343,15 @@ export default function HomePage() {
               />
             </div>
 
-            <ParityPanel
-              countyName={activeRegion.county_name}
-              msaLabel={activeRegion.msa_label}
-              olympic={activeRegion.metrics.olympic}
-              paralympic={activeRegion.metrics.paralympic}
-              className="max-w-3xl mx-auto"
-            />
+            <div id="section-parity" className="scroll-mt-32">
+              <ParityPanel
+                countyName={activeRegion.county_name}
+                msaLabel={activeRegion.msa_label}
+                olympic={activeRegion.metrics.olympic}
+                paralympic={activeRegion.metrics.paralympic}
+                className="max-w-3xl mx-auto"
+              />
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
               <SportMix sports={activeRegion.top_sports} />
@@ -347,7 +359,7 @@ export default function HomePage() {
               <AdaptiveAccessCard access={activeRegion.adaptive_access} />
             </div>
 
-            <div className="mt-16">
+            <div id="section-analogs" className="mt-16 scroll-mt-32">
               <AnalogList analogs={activeAnalogs?.analogs ?? []} />
             </div>
 
@@ -361,7 +373,7 @@ export default function HomePage() {
               />
             </div>
 
-            <div className="mt-12">
+            <div id="section-qa" className="mt-12 scroll-mt-32">
               <RegionQA region={activeRegion} />
             </div>
             </>
@@ -376,7 +388,7 @@ export default function HomePage() {
                 pop-in when data lands; skeleton + Pillar 5 are visible
                 together during load, then the data section swaps in
                 place above them with zero reflow. */}
-            <div className="mt-16">
+            <div id="section-pillar5" className="mt-16 scroll-mt-32">
               <Pillar5Strip />
             </div>
 
@@ -396,10 +408,13 @@ export default function HomePage() {
       </main>
 
       {view === 'results' && (
-        <ComplianceLog
-          entries={activeRegion?.compliance_log ?? []}
-          demoMode={!activeRegion?.compliance_log?.length}
-        />
+        <>
+          <ComplianceLog
+            entries={activeRegion?.compliance_log ?? []}
+            demoMode={!activeRegion?.compliance_log?.length}
+          />
+          <SectionNav sections={RESULTS_SECTIONS} />
+        </>
       )}
 
       <Footer />
