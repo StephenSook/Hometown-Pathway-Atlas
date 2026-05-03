@@ -129,119 +129,45 @@ ships with task 5.8 — replaces this Mermaid placeholder.*
 
 ## API contract — Pydantic + Vertex AI structured output
 
-The frontend's `frontend/src/lib/api.ts` is the locked TypeScript surface;
-the Pydantic v2 models below are the 1:1 backend mirror Vinh's FastAPI
-service implements. Schema drift = build break — when either side changes,
+Backend Pydantic schemas in [`backend/schemas/`](backend/schemas/) are
+the **authoritative** shared contract as of Vinh's Phase 2 ship
+(2026-05-03). The frontend's [`frontend/src/lib/api.ts`](frontend/src/lib/api.ts)
+mirrors them 1:1. Schema drift = build break — when either side changes,
 the other follows in the same commit.
 
-Three endpoints, three response models, plus two Vertex AI structured-output
-JSON schemas for Gemini narrative + the hybrid auditor self-review.
+| Endpoint | Method | Schema (backend) | Type (frontend) |
+|---|---|---|---|
+| `/api/region` | POST `{zip}` | `schemas/region.py::RegionResponse` | `RegionResponse` |
+| `/api/analogs/{fips}` | GET | `schemas/analog.py::AnalogsResponse` | `AnalogsResponse` |
+| `/api/pathway/{fips}` | GET | `schemas/pathway.py::PathwayResponse` | `PathwayResponse` |
+| `/api/stats/county/{fips}` | GET | `schemas/region.py` (subset) | (CountyMap hover endpoint) |
 
-### 1. Pydantic v2 response models
+Response models include nested types for parity metrics
+(`MetricsBlock`/`ParityMetric`), sport mix (`SportEntry` with `share`
+fraction), climate (`ClimateBlock` with nullable temp/precip), adaptive
+access (`AdaptiveAccessBlock` with `chapters_within_50mi` + 3-tier
+`confidence`), similarity breakdown (`athlete`/`sport_mix`/`climate`
+weights), and compliance log (`ComplianceEntry` per audit event).
 
-```python
-# backend/schemas.py — derived 1:1 from frontend/src/lib/api.ts
-from typing import Literal
-from pydantic import BaseModel, Field
+Read the source-of-truth files for exact field types — duplicating them
+here would invite drift. Frontend types and CountyMap +
+SimilarityBreakdown + SportMix + ClimateBadge + AdaptiveAccessCard +
+AnalogCard render against these directly.
 
-EvidenceLevel = Literal["high", "medium", "low"]
-ComplianceStatus = Literal["pass", "fail", "fixed"]
-ComplianceLayer = Literal["rules", "gemini"]
-GapCategory = Literal[
-    "observed_strength", "public_access_signal", "opportunity_hypothesis"
-]
-MatchQuality = Literal["strong", "partial"]
-
-class ComplianceLogEntry(BaseModel):
-    layer: ComplianceLayer
-    check: str
-    status: ComplianceStatus
-    details: str | None = None
-    ts: str  # ISO8601 — set in service layer, validated client-side
-    before: str | None = None
-    after: str | None = None
-
-class ParityMetric(BaseModel):
-    count: int = Field(ge=0)
-    per_100k: float = Field(ge=0)
-    percentile: float = Field(ge=0, le=100)
-    evidence: EvidenceLevel
-
-class SportEntry(BaseModel):
-    sport: str
-    z_score: float
-
-class ClimateProfile(BaseModel):
-    zone: str
-    avg_temp_f: float
-    annual_precip_in: float
-    elevation_ft: float
-
-class AdaptiveAccess(BaseModel):
-    move_united_chapters_50mi: int = Field(ge=0)
-    confidence: EvidenceLevel
-
-class RegionMetrics(BaseModel):
-    olympic: ParityMetric
-    paralympic: ParityMetric
-
-class RegionRequest(BaseModel):
-    zip: str = Field(pattern=r"^\d{5}$")
-
-class RegionResponse(BaseModel):
-    fips: str = Field(pattern=r"^\d{5}$")
-    county_name: str
-    state: str = Field(min_length=2, max_length=2)
-    msa_label: str
-    population: int = Field(ge=0)
-    metrics: RegionMetrics
-    top_sports: list[SportEntry] = Field(max_length=10)
-    climate: ClimateProfile
-    adaptive_access: AdaptiveAccess
-    narrative: str  # Gemini-generated, audited
-    compliance_log: list[ComplianceLogEntry]
-
-class SimilarityBreakdown(BaseModel):
-    athlete_score: float = Field(ge=0, le=1)
-    sport_mix_score: float = Field(ge=0, le=1)
-    climate_score: float = Field(ge=0, le=1)
-
-class AnalogEntry(BaseModel):
-    rank: int = Field(ge=1, le=3)
-    fips: str = Field(pattern=r"^\d{5}$")
-    county_name: str
-    state: str = Field(min_length=2, max_length=2)
-    overall_score: float = Field(ge=0, le=1)
-    breakdown: SimilarityBreakdown
-    match_quality: MatchQuality
-    metrics: RegionMetrics
-    narrative: str
-    compliance_log: list[ComplianceLogEntry]
-
-class AnalogsResponse(BaseModel):
-    source_fips: str = Field(pattern=r"^\d{5}$")
-    analogs: list[AnalogEntry] = Field(min_length=3, max_length=3)
-    tradeoff_explanation: str
-
-class PatternGap(BaseModel):
-    category: GapCategory
-    claim: str
-    evidence: dict
-    confidence: EvidenceLevel
-
-class PathwayResponse(BaseModel):
-    source_fips: str = Field(pattern=r"^\d{5}$")
-    gaps: list[PatternGap] = Field(min_length=3, max_length=3)
-```
-
-### 2. Vertex AI Gemini narrative schema
+### Vertex AI Gemini narrative schema (forward-spec)
 
 Gemini 2.5 Flash is called with `response_mime_type="application/json"` +
 `response_schema` — the model is **constrained** to return JSON matching
 the schema, eliminating prose drift before the auditor sees the output.
 
+This section remains **forward-spec** — Vinh tasks 2.7 (GeminiService)
+and 2.9 (HybridAuditor) ship the Python implementation. The frontend
+already accepts the response shape (`RegionResponse.narrative` and
+`compliance_log`); both currently come back as empty defaults from the
+backend until those tasks land.
+
 ```python
-# backend/services/gemini.py
+# backend/services/gemini.py — forward-spec (task 2.7)
 from vertexai.generative_models import GenerativeModel, GenerationConfig
 
 NARRATIVE_SCHEMA = {
@@ -272,7 +198,7 @@ config = GenerationConfig(
 model = GenerativeModel("gemini-2.5-flash", generation_config=config)
 ```
 
-### 3. Hybrid auditor self-review schema
+### Hybrid auditor self-review schema (forward-spec, task 2.9)
 
 After narrative generation, the same model is called a second time in
 **self-review mode** with the auditor schema. Combined with the
