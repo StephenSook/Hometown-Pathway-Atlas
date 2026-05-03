@@ -7,7 +7,7 @@
  */
 
 import { useId, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { ChevronDown } from 'lucide-react';
 import { cn } from '../lib/utils';
 
@@ -22,6 +22,7 @@ export default function TradeoffPanel({
 }: TradeoffPanelProps) {
   const [isOpen, setIsOpen] = useState(false);
   const contentId = useId();
+  const reduceMotion = useReducedMotion() ?? false;
 
   return (
     <section
@@ -59,7 +60,9 @@ export default function TradeoffPanel({
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            transition={
+              reduceMotion ? { duration: 0 } : { duration: 0.3, ease: [0.16, 1, 0.3, 1] }
+            }
             className="overflow-hidden"
           >
             <div className="px-6 pb-5 pt-1">
@@ -71,5 +74,23 @@ export default function TradeoffPanel({
         )}
       </AnimatePresence>
     </section>
+  );
+}
+
+export function TradeoffPanelSkeleton({ className }: { className?: string }) {
+  return (
+    <div
+      aria-busy="true"
+      aria-label="Loading tradeoff narrative"
+      className={cn(
+        'rounded-2xl bg-card-white border border-soft-border shadow-card-resting p-4 animate-pulse',
+        className,
+      )}
+    >
+      <div className="flex items-center justify-between gap-4">
+        <div className="h-4 w-32 rounded bg-soft-border" />
+        <div className="h-5 w-5 rounded bg-soft-border" />
+      </div>
+    </div>
   );
 }
