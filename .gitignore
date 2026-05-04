@@ -222,6 +222,18 @@ __marimo__/
 # Research dossiers (PDFs, docx) — large binaries kept local only
 /research/
 
+# CRITICAL — raw athlete CSVs contain athlete NAMES.
+# CLAUDE.md hard-rule #1: "No athlete name/image/likeness (NIL) in any
+# output, code path, or UI. Athlete names dropped at aggregation step.
+# Never persisted, never reach Gemini, never in UI." The geocoded
+# .parquet files (which DO ship in the backend container) drop names
+# during the geocode step — only [fips, sport, year, olympic_or_
+# paralympic] survive. The raw CSVs are ingest-only inputs and must
+# NOT be tracked in git. Removed from index 2026-05-03 PM via
+# `git rm --cached` after repo-sentinel audit caught the violation.
+backend/data/processed/*.csv
+backend/data/raw/
+
 # macOS Finder metadata
 .DS_Store
 **/.DS_Store
