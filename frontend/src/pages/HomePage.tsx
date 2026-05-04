@@ -58,6 +58,7 @@ import RegionNarrative from '../components/RegionNarrative';
 import RotatingGlobe from '../components/RotatingGlobe';
 import SectionNav from '../components/SectionNav';
 import CountyNameSearch from '../components/CountyNameSearch';
+import ScrollytellingHero from '../components/scrolly/ScrollytellingHero';
 
 const RESULTS_SECTIONS = [
   { id: 'section-region', label: 'Region' },
@@ -367,95 +368,86 @@ export default function HomePage() {
           </Suspense>
         ) : view === 'hero' ? (
           <div className="relative overflow-hidden">
-            {/* Ambient rotating world globe behind hero content. Editorial-
-                restrained interpretation of Stephen's Bloom AI reference
-                (2026-05-04). Slow rotation (90s/revolution), low opacity,
-                positioned off-center-right so it peeks from the right edge
-                rather than dominating. Honors prefers-reduced-motion via
-                internal hook. pointer-events:none so it never steals
-                interaction from the ZipInput / tour CTA. */}
-            <div className="absolute inset-0 z-0 flex items-center justify-end pointer-events-none">
-              <RotatingGlobe
-                size={680}
-                className="-mr-[180px] md:-mr-[140px] lg:-mr-[80px]"
-              />
-            </div>
+            <ScrollytellingHero
+              ctaSlot={
+                <div className="relative">
+                  {/* Ambient globe behind the CTA chapter only. Earlier
+                      iterations rendered the globe behind every chapter,
+                      but ScrollyMap is now the active visual hook for
+                      chapters 1-4; the globe re-emerges on the CTA
+                      chapter as the ambient closing texture. */}
+                  <div className="absolute inset-0 z-0 flex items-center justify-end pointer-events-none">
+                    <RotatingGlobe
+                      size={520}
+                      className="-mr-[120px] md:-mr-[80px] lg:-mr-[40px]"
+                    />
+                  </div>
 
-            <div className="relative z-10">
-            <HeroStat stat={HERO_STAT} className="mb-8" />
+                  <div className="relative z-10">
+                    <HeroStat stat={HERO_STAT} className="mb-8" />
 
-            <section
-              id="region"
-              aria-labelledby="hero-heading"
-              className="mx-auto max-w-[880px] px-6 text-center scroll-mt-32"
-            >
-              <p className="text-eyebrow font-mono uppercase text-muted-text mb-6">
-                Hometown Pathway Atlas
-              </p>
+                    <section
+                      id="region"
+                      aria-labelledby="hero-heading"
+                      className="mx-auto max-w-[880px] px-6 text-center scroll-mt-32"
+                    >
+                      <p className="text-eyebrow font-mono uppercase text-muted-text mb-6">
+                        Hometown Pathway Atlas
+                      </p>
 
-              <h1
-                id="hero-heading"
-                className="text-[40px] md:text-h1 font-sans font-semibold text-navy leading-[1.05] tracking-tight mb-6"
-              >
-                Your county{' '}
-                <span className="font-serif italic font-normal">Team USA</span>{' '}
-                story
-              </h1>
+                      <h1
+                        id="hero-heading"
+                        className="text-[40px] md:text-h1 font-sans font-semibold text-navy leading-[1.05] tracking-tight mb-6"
+                      >
+                        Your county{' '}
+                        <span className="font-serif italic font-normal">Team USA</span>{' '}
+                        story
+                      </h1>
 
-              <p className="text-body-lg text-muted-text max-w-2xl mx-auto mb-10">
-                Per-capita parity. County-level granularity. Conditional phrasing
-                only. Enter your ZIP code to see Olympic and Paralympic
-                representation patterns in your region.
-              </p>
+                      <p className="text-body-lg text-muted-text max-w-2xl mx-auto mb-10">
+                        Per-capita parity. County-level granularity. Conditional phrasing
+                        only. Enter your ZIP code to see Olympic and Paralympic
+                        representation patterns in your region.
+                      </p>
 
-              <ZipInput onSubmit={handleSubmit} loading={loading} />
+                      <ZipInput onSubmit={handleSubmit} loading={loading} />
 
-              {/* Tour CTA — eliminates type-friction for judges + demo
-                  recording. Single click jumps to the canonical demo
-                  region (Cobb County, GA / ZIP 30060). Editorial-restrained
-                  styling: serif italic prefix + monospace ZIP token + arrow,
-                  positioned as a soft secondary affordance below the
-                  primary ZipInput rather than competing with it. */}
-              <p className="mt-6 font-serif italic text-caption text-muted-text">
-                or try{' '}
-                <button
-                  type="button"
-                  onClick={() => handleSubmit('30060')}
-                  disabled={loading}
-                  className="font-mono uppercase tracking-wider text-eyebrow text-navy hover:text-olympic-blue focus-ring rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  aria-label="Auto-load Cobb County, GA demo (ZIP 30060)"
-                >
-                  Cobb County, GA →
-                </button>
-              </p>
+                      <p className="mt-6 font-serif italic text-caption text-muted-text">
+                        or try{' '}
+                        <button
+                          type="button"
+                          onClick={() => handleSubmit('30060')}
+                          disabled={loading}
+                          className="font-mono uppercase tracking-wider text-eyebrow text-navy hover:text-olympic-blue focus-ring rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          aria-label="Auto-load Cobb County, GA demo (ZIP 30060)"
+                        >
+                          Cobb County, GA →
+                        </button>
+                      </p>
 
-              {/* County-name search — alternate hero entry path for
-                  judges who don't know specific ZIPs. Routes through
-                  the same handleSelectCounty pathway map-click drill-
-                  down uses, hitting /api/region/by-fips/{fips}.
-                  Positioned below the ZIP form + tour CTA so the
-                  ZIP path stays primary (matches pitch script Beat 2
-                  ZIP-submit moment). */}
-              <div className="mt-8 max-w-md mx-auto">
-                <CountyNameSearch
-                  onSelect={handleSelectCounty}
-                  disabled={loading}
-                />
-              </div>
-            </section>
+                      <div className="mt-8 max-w-md mx-auto">
+                        <CountyNameSearch
+                          onSelect={handleSelectCounty}
+                          disabled={loading}
+                        />
+                      </div>
+                    </section>
 
-            <section
-              aria-label="Methodology footnote"
-              className="mx-auto max-w-[640px] px-6 mt-20 text-center"
-            >
-              <p className="font-serif italic text-caption text-muted-text leading-relaxed">
-                Hometown is the recognized hometown on the Team USA roster — not
-                birthplace, not training residence. Analytical baseline window is
-                2016–2024. Olympic and Paralympic data displayed side-by-side,
-                never merged.
-              </p>
-            </section>
-            </div>
+                    <section
+                      aria-label="Methodology footnote"
+                      className="mx-auto max-w-[640px] px-6 mt-20 text-center"
+                    >
+                      <p className="font-serif italic text-caption text-muted-text leading-relaxed">
+                        Hometown is the recognized hometown on the Team USA roster — not
+                        birthplace, not training residence. Analytical baseline window is
+                        2016–2024. Olympic and Paralympic data displayed side-by-side,
+                        never merged.
+                      </p>
+                    </section>
+                  </div>
+                </div>
+              }
+            />
           </div>
         ) : (
           <section
