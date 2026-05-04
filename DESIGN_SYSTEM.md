@@ -592,6 +592,34 @@ Detailed in 4.16. Single audit log row.
 
 ---
 
+### 4.23 RegionNarrative (Vertex AI Gemini prose card — Beat 3 frame)
+
+**Why it exists:** Added 2026-05-04 EOD-1, immediately after Vinh task 2.7 (GeminiService) ship 7893fa7. Backend `enrich_region` now populates `region.narrative` on every `POST /api/region` call — 2-3 sentence Gemini-generated prose framing the region's Olympic + Paralympic representation pattern in conditional phrasing. Pre-2.7 the field shipped empty (frontend api.ts:110 documented "Empty string until Vinh task 2.7 ships"). Post-2.7 the field is live; this component surfaces it. Pitch differentiation: judges see Gemini's interpretation rendered live, not a static template paragraph.
+
+**Placement:** Between `<RegionHeader />` and `<CountyMap />` in the results-view JSX. Frames Beat 3 narration ("Cobb County, Georgia. Population 766,000. The map plots us in navy") with Gemini's prose interpretation BEFORE the visual reveal — the narrative card sits at `mb-10 max-w-3xl` so it reads as a constrained editorial column, not full-width.
+
+**Anatomy:**
+- Card chrome: `rounded-2xl bg-card-white border border-soft-border shadow-card-resting` (matches sibling editorial cards — TradeoffPanel, RegionQA)
+- Distinguishing accent: `border-l-4 border-l-olympic-blue` (visual anchor signaling this is the Gemini-generated prose; mirrors blockquote pattern in pitch_deck.md and the audit-stream visual language)
+- Eyebrow row: `font-mono uppercase tracking-wider text-eyebrow text-muted-text` reading "Region narrative — Vertex AI Gemini", wrapped in `<SourceTooltip>` revealing full attribution + audit lineage on hover/focus
+- Body prose: `font-serif italic text-body-lg text-body-text leading-relaxed` — Instrument Serif italic matches the editorial voice established in HeroStat + pitch surfaces, signals "interpretive prose" vs the deterministic data in surrounding cards
+- Padding: `px-6 py-5` — slightly tighter vertical than RegionQA (which has form chrome) to keep the card compact
+
+**States:**
+- **Empty narrative (`narrative === ''`):** Component returns `null`. No layout pop-in, no empty box. Backend's `_fallback_region_narrative` should always populate something even if Gemini fails, so this state is rare — covers the path where the field is truly missing (e.g., schema drift).
+- **Banned-verb drift (frontend safety net):** If the narrative contains any banned causal verb from the same regex as `scripts/check-conditional-phrasing.mjs` (`produces?|producing|creates?|creating|guarantees?|leads to`), component returns `null`. DEV-mode `console.warn` logs the suppressed narrative for observability during smoke + recording. Insurance against Gemini drift before HybridAuditor (Vinh task 2.9) ships as the deterministic backstop.
+- **Valid narrative:** Renders the card.
+
+**Locked rule:** The frontend banned-verb regex must mirror `scripts/check-conditional-phrasing.mjs` exactly. If the CI list changes, update both in sync. Fail-closed (suppress render) on a verb hit, not fail-open — a missing narrative is judge-acceptable, a banned-verb-in-prose narrative is a Pillar 4 compliance violation.
+
+**ARIA:** `<article role="region" aria-labelledby={headingId}>`. Eyebrow doubles as label via the `id` reference. SourceTooltip's `aria-describedby` (inherited from SourceTooltip primitive) provides AT readout of the full Vertex AI attribution.
+
+**Motion:** None. Card mounts as part of the parent `!loading && activeRegion` branch — it lands together with RegionHeader + CountyMap + ParityPanel etc when the API request completes (~10s for region call due to Gemini in path). Adding entrance motion would compete with the existing layout-land moment.
+
+**Cut posture:** This is a Layer-equivalent surface (Gemini lineage parallels Layer C RegionQA). If Gemini reliability drops sub-95% on real Cloud Run, swap the card to render `_fallback_region_narrative` content (still in the `narrative` field via backend's try/except path) — no UI change needed.
+
+---
+
 ## 5. Motion choreography
 
 All Framer Motion. Reference `frontend/src/lib/motion.ts` (to be created).
