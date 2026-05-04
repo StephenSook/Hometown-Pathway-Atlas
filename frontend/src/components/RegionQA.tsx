@@ -60,39 +60,6 @@ interface QAResponse {
   confidence: 'high' | 'medium' | 'low';
 }
 
-// STUBBED_RESPONSE — replace with `await api.regionQA(region.fips, question)`
-// when Vinh ships task 2.7 (GeminiService) + the new POST /api/region/qa
-// endpoint. The shape here matches what the backend response will look
-// like: ordered reasoning steps + final conditional-phrased answer +
-// confidence tier. Hand-authored to satisfy conditional-phrasing CI.
-const STUBBED_RESPONSE: QAResponse = {
-  reasoning: [
-    {
-      step: 'Pulling region parity metrics',
-      detail:
-        'Olympic + Paralympic per-100k from this region as base context.',
-    },
-    {
-      step: 'Cross-referencing top sports',
-      detail:
-        'Per-sport over-indexing pattern from NFHS + Team USA roster join.',
-    },
-    {
-      step: 'Reasoning over climate signature',
-      detail:
-        'Köppen-Geiger zone match against the region pattern set.',
-    },
-    {
-      step: 'Drafting conditional-phrased response',
-      detail:
-        'Hedged claims only; banned causal verbs caught at draft + audit.',
-    },
-  ],
-  answer:
-    "This region's representation patterns could be associated with a combination of climate signature and historical participation density in the over-indexed sports listed above. The Olympic and Paralympic counts shown (each ranked separately by per-capita percentile) may correlate with regional pathway depth — though hometown listings reflect what's recognized in our indexed sources, not full athlete origin stories.",
-  confidence: 'medium',
-};
-
 // Pre-canned suggested questions to lower judge friction. Picking one
 // auto-fills the textarea. Same questions work for any region thanks to
 // region-agnostic phrasing.
@@ -101,6 +68,104 @@ const SUGGESTED_QUESTIONS = [
   'What signals could explain the Olympic vs Paralympic gap here?',
   'How does this region compare to its analog peers?',
 ] as const;
+
+// STUBBED_RESPONSES — keyed by SUGGESTED_QUESTIONS so each chip yields
+// distinct reasoning + answer (Stephen flagged 2026-05-04 that all 3
+// sample questions returned identical text, making the panel look
+// non-functional even though stub-ness is documented in the footer).
+// Replace with `await api.regionQA(region.fips, question)` when Vinh
+// ships /api/region/qa (B3 in atlas_layers_pending_vinh.md). Shapes here
+// match what the backend response will look like; hand-authored to
+// satisfy conditional-phrasing CI + parity (Olympic + Paralympic both
+// referenced in every answer).
+const STUBBED_RESPONSES: Record<string, QAResponse> = {
+  [SUGGESTED_QUESTIONS[0]]: {
+    reasoning: [
+      {
+        step: 'Pulling region top-sports distribution',
+        detail:
+          'Per-sport share from NFHS + Team USA roster join, normalized by indexed athlete count.',
+      },
+      {
+        step: 'Cross-referencing climate signature',
+        detail:
+          'Köppen-Geiger zone match against historical sport-pattern clusters.',
+      },
+      {
+        step: 'Comparing against analog peer mix',
+        detail:
+          'Three highest-similarity peers from analog matrix (athlete profile + sport mix + climate weighted).',
+      },
+      {
+        step: 'Drafting conditional-phrased response',
+        detail:
+          'Hedged claims only; banned causal verbs caught at draft + auditor.',
+      },
+    ],
+    answer:
+      "This region's representation pattern could be associated with a combination of climate signature and historical participation density in the over-indexed sports listed above. The Olympic and Paralympic counts shown (ranked separately by per-capita percentile) may correlate with regional pathway depth — though hometown listings reflect what's recognized in our indexed sources, not full athlete origin stories.",
+    confidence: 'medium',
+  },
+  [SUGGESTED_QUESTIONS[1]]: {
+    reasoning: [
+      {
+        step: 'Pulling parity per-capita rates',
+        detail:
+          'Olympic + Paralympic per-100k from this region as base context.',
+      },
+      {
+        step: 'Reading adaptive-access signal',
+        detail:
+          'Move United chapter density within 50 miles (display-only per locked decision #2).',
+      },
+      {
+        step: 'Cross-referencing indexed-source coverage',
+        detail:
+          'Paralympic athlete attribution often sparser than Olympic in 2016–2024 hometown rosters — known indexing limitation.',
+      },
+      {
+        step: 'Drafting conditional-phrased response',
+        detail:
+          'Gap framed as data-availability hypothesis, not as causal claim.',
+      },
+    ],
+    answer:
+      "The observed Olympic vs Paralympic gap could be associated with a mix of adaptive-access infrastructure availability and indexed-source coverage limitations — Paralympic hometown attribution in our 2016–2024 corpus is known to be sparser than Olympic. The percentile ranks shown (each computed independently by Games) may also reflect smaller per-county sample sizes for Paralympic representation, which our empirical Bayes shrinkage dampens but does not fully resolve.",
+    confidence: 'medium',
+  },
+  [SUGGESTED_QUESTIONS[2]]: {
+    reasoning: [
+      {
+        step: 'Reading similarity-matrix output',
+        detail:
+          'Top 3 peers selected from candidate pool of 20, with MSA-diversity tie-break per locked decision #10.',
+      },
+      {
+        step: 'Decomposing similarity dimensions',
+        detail:
+          'Athlete profile (40%) + sport mix (35%) + climate (25%) per locked decision #7.',
+      },
+      {
+        step: 'Comparing parity profiles across peers',
+        detail:
+          'Olympic + Paralympic per-100k for each analog vs source region.',
+      },
+      {
+        step: 'Drafting conditional-phrased response',
+        detail:
+          'Comparison framed as analytical alignment, not as causal recommendation.',
+      },
+    ],
+    answer:
+      "This region appears most aligned with its three analog peers along athlete-profile dimensions, with secondary alignment in climate and sport mix. The Olympic and Paralympic per-capita rates may differ across the analog set, reflecting variance in indexed-source coverage and local sport infrastructure rather than divergent talent pipelines per se. Peer comparison is offered as pattern context, not as a causal claim — analog selection is similarity-driven, not outcome-driven.",
+    confidence: 'high',
+  },
+};
+
+// Fallback for free-text questions outside the suggested set — until
+// /api/region/qa ships, custom questions reuse the first stub answer
+// with a footer caveat.
+const FALLBACK_STUB: QAResponse = STUBBED_RESPONSES[SUGGESTED_QUESTIONS[0]]!;
 
 export default function RegionQA({ region, className }: RegionQAProps) {
   const headingId = useId();
@@ -129,14 +194,18 @@ export default function RegionQA({ region, className }: RegionQAProps) {
     setResponse(null);
 
     // ───────── BACKEND INTEGRATION POINT ─────────
-    // Replace the simulated delay + STUBBED_RESPONSE below with:
+    // Replace the simulated delay + stub lookup below with:
     //   const result = await api.regionQA(region.fips, question.trim());
     //   if (mountedRef.current) setResponse(result);
     // When task 2.7 ships, also wire ApiError → toast.error path
     // (QueryCache.onError doesn't cover non-React-Query fetches).
     await new Promise((resolve) => setTimeout(resolve, 1800));
     if (!mountedRef.current) return;
-    setResponse(STUBBED_RESPONSE);
+    // Look up stub fixture by question text (suggested-chip clicks set
+    // the textarea to the exact question string). Free-text questions
+    // not in the suggested set fall back to the first stub.
+    const stub = STUBBED_RESPONSES[question.trim()] ?? FALLBACK_STUB;
+    setResponse(stub);
     setAsking(false);
   };
 
@@ -239,7 +308,7 @@ export default function RegionQA({ region, className }: RegionQAProps) {
               Reasoning
             </p>
             <ol role="list" className="flex flex-col gap-3">
-              {(response?.reasoning ?? STUBBED_RESPONSE.reasoning).map(
+              {(response?.reasoning ?? FALLBACK_STUB.reasoning).map(
                 (step, i) => {
                   const visible = response !== null || i < 1;
                   return (
