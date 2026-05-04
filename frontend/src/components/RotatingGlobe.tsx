@@ -28,8 +28,9 @@
 import { useEffect, useState } from 'react';
 import { useReducedMotion } from 'framer-motion';
 import { ComposableMap, Geographies, Geography } from 'react-simple-maps';
-// @ts-expect-error world-atlas ships JSON without strict types — runtime
-// shape is GeoJSON-compatible Topology, react-simple-maps handles it.
+// world-atlas ships JSON without strict types but Vite's JSON import
+// inference is permissive enough that react-simple-maps' geography
+// prop accepts it without a cast at compile time.
 import worldTopo from 'world-atlas/countries-110m.json';
 
 interface RotatingGlobeProps {

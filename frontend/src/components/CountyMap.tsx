@@ -266,39 +266,6 @@ export default function CountyMap({
     setPosition((p) => ({ ...p, zoom: Math.max(1, p.zoom / 1.5) }));
   }, []);
 
-  // Reset zoom — smarter than "back to US-wide". Computes the bounding
-  // box of source + 3 analog centroids, centers on it, picks a zoom
-  // that fits all 4 with comfortable padding. User naturally wants to
-  // see the data after zooming in to inspect; defaulting back to
-  // US-wide loses the source/peer context. (2026-05-04 upgrade.)
-  const resetZoom = useCallback(() => {
-    const allCoords: [number, number][] = [];
-    if (centroids.source) allCoords.push(centroids.source);
-    centroids.analogList.forEach((x) => {
-      if (x.coords) allCoords.push(x.coords);
-    });
-    if (allCoords.length === 0) {
-      setPosition({ coordinates: [-96, 38], zoom: 1 });
-      return;
-    }
-    const lngs = allCoords.map((c) => c[0]);
-    const lats = allCoords.map((c) => c[1]);
-    const minLng = Math.min(...lngs);
-    const maxLng = Math.max(...lngs);
-    const minLat = Math.min(...lats);
-    const maxLat = Math.max(...lats);
-    const center: [number, number] = [
-      (minLng + maxLng) / 2,
-      (minLat + maxLat) / 2,
-    ];
-    // Heuristic: continental US is ~58° wide at zoom 1. Pad span by 5°
-    // on each side. Clamp to maxZoom 5 / minZoom 1.2 so degenerate
-    // cases (single point, all-collapsed-to-one-spot) stay sensible.
-    const span = Math.max(maxLng - minLng, maxLat - minLat);
-    const zoom = Math.min(5, Math.max(1.2, 50 / (span + 5)));
-    setPosition({ coordinates: center, zoom });
-  }, [centroids.source, centroids.analogList]);
-
   // Single source of truth for centroid lookup. Prefers the API-supplied
   // centroid, falls back to FALLBACK_CENTROIDS for mock paths or any
   // legacy backend response that hasn't yet populated the field. One
@@ -343,6 +310,39 @@ export default function CountyMap({
     }
     return { source, analogList, byFips };
   }, [sourceFips, sourceCentroid, analogs]);
+
+  // Reset zoom — smarter than "back to US-wide". Computes bounding
+  // box of source + 3 analog centroids, centers on it, picks zoom
+  // that fits all 4 with comfortable padding. User naturally wants to
+  // see the data after zooming in to inspect; defaulting back to
+  // US-wide loses source/peer context. (2026-05-04 upgrade.)
+  const resetZoom = useCallback(() => {
+    const allCoords: [number, number][] = [];
+    if (centroids.source) allCoords.push(centroids.source);
+    centroids.analogList.forEach((x) => {
+      if (x.coords) allCoords.push(x.coords);
+    });
+    if (allCoords.length === 0) {
+      setPosition({ coordinates: [-96, 38], zoom: 1 });
+      return;
+    }
+    const lngs = allCoords.map((c) => c[0]);
+    const lats = allCoords.map((c) => c[1]);
+    const minLng = Math.min(...lngs);
+    const maxLng = Math.max(...lngs);
+    const minLat = Math.min(...lats);
+    const maxLat = Math.max(...lats);
+    const center: [number, number] = [
+      (minLng + maxLng) / 2,
+      (minLat + maxLat) / 2,
+    ];
+    // Heuristic: continental US is ~58° wide at zoom 1. Pad span by 5°
+    // on each side. Clamp to maxZoom 5 / minZoom 1.2 so degenerate
+    // cases (single point, all-collapsed-to-one-spot) stay sensible.
+    const span = Math.max(maxLng - minLng, maxLat - minLat);
+    const zoom = Math.min(5, Math.max(1.2, 50 / (span + 5)));
+    setPosition({ coordinates: center, zoom });
+  }, [centroids.source, centroids.analogList]);
 
   const totalCount = 1 + analogs.length;
   const plottedCount =
@@ -596,7 +596,11 @@ export default function CountyMap({
                 onFocus={() => onHoverAnalog?.(x.fips)}
                 onBlur={() => onHoverAnalog?.(null)}
                 tabIndex={0}
-                style={{ cursor: 'pointer' }}
+                style={{
+                  default: { cursor: 'pointer' },
+                  hover: { cursor: 'pointer' },
+                  pressed: { cursor: 'pointer' },
+                }}
               >
                 {isHovered && (
                   <circle
