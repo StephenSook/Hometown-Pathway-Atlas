@@ -349,6 +349,14 @@ export default function CountyMap({
               .split(/\s+/)
               .slice(0, 2)
               .join(' ');
+            // Flip label to LEFT side when pin sits in the extreme right
+            // of the US (lng > -74° — captures Connecticut, NJ, far-east
+            // NY). Greater Bridgeport CT (~-73.2°) was clipping past the
+            // map's right edge with the default right-side label. Stephen
+            // caught 2026-05-04. Threshold tuned so VA + SC pins stay
+            // right-side (Alexandria ~-77°, Charleston ~-79.9°).
+            const lng = x.coords[0];
+            const labelOnLeft = lng > -74;
             return (
               <Marker key={`pin-${x.fips}`} coordinates={x.coords}>
                 <circle
@@ -359,8 +367,9 @@ export default function CountyMap({
                 />
                 {labelText && (
                   <text
-                    x={9}
+                    x={labelOnLeft ? -9 : 9}
                     y={4}
+                    textAnchor={labelOnLeft ? 'end' : 'start'}
                     fontFamily="JetBrains Mono, ui-monospace, monospace"
                     fontSize={9}
                     fontWeight={500}
