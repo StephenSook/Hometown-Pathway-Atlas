@@ -56,9 +56,13 @@ Single 457KB-gz bundle. Vite warned >500KB chunk. **Build time
 
 **Initial bundle: 457.51 → 148.12 KB gz (−67%).** Same total bytes
 (everything still ships); but only 148 KB is downloaded + parsed
-on hero load. CountyMap chunk loads in parallel with the API
-request when results view mounts; MethodologyPage loads on #about
-hash click. **Build time 1.74 s** (TSC cached after first run).
+on hero load. CountyMap chunk request fires when its Suspense
+boundary first attempts to render — gated on `activeRegion`
+landing in the results view, so the chunk download is sequential
+with the API resolve, not parallel. CountyMapSkeleton fallback
+covers the brief load + the chunk caches for subsequent region-view
+mounts in the same session. MethodologyPage loads on #about hash
+click. **Build time 1.74 s** (TSC cached after first run).
 
 ## Lighthouse scores (hero view, headless Chrome)
 
