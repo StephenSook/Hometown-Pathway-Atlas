@@ -82,10 +82,12 @@ HeroStat renderer is scaffolded with a placeholder; constant swap on Vinh's ship
 - Pillar5Defense second-layer card (per-incident harm + 3 lighthouse NGB chips)
 - Sound design recipe in `docs/sound_design.md` for Day 9 recording (still Stephen-action)
 
-### Layer C — Multimodal Gemini Live Region Q&A [SHIPPED VIA STUB 2026-05-03 PM — awaits Vinh task 2.7]
-RegionQA panel renders below TradeoffPanel on results view. Question input + visible reasoning chain + final conditional-phrased answer + suggested-question chips. Currently demos against a hand-authored fixture; one-line swap to live Gemini call when GeminiService backend ships. CLAUDE-side responsibility: keep the integration point marked + fixtures conditional-phrased.
+### Layer C — Multimodal Gemini Live Region Q&A [SHIPPED VIA STUB — awaits Vinh QA endpoint]
+RegionQA panel renders below TradeoffPanel on results view. Question input + visible reasoning chain + final conditional-phrased answer + suggested-question chips. **Stub upgraded 2026-05-04** to 3 distinct fixtures keyed by suggested question (climate / parity gap / analog comparison) so each chip yields different reasoning + answer. Footer caveat preserved.
 
-CUT TRIGGER (preserved): if Vinh task 2.7 doesn't ship by Day 9 EOD, RegionQA stays on stub through demo recording — single fixture answer is honest as a "design preview" rather than risking incomplete real-Gemini integration in front of judges. Component is removable in 1 import + 1 JSX line if you decide to fully cut.
+Vinh's GeminiService shipped 2026-05-03 (commit 7893fa7) with `enrich_region` + `enrich_analogs` methods only — NO `qa(fips, question)` method + NO `/api/region/qa` route. RegionQA stays on stub until Vinh adds the QA-specific backend surface. One-line swap at RegionQA.tsx:131-136 when endpoint exists (`api.regionQA(region.fips, question)` replaces stub fixture lookup).
+
+CUT TRIGGER (preserved): if backend QA endpoint doesn't ship by Day 9 EOD, stub stays through recording. Stub is honest as a "design preview" — 3 fixtures look + feel real to judges. Component is removable in 1 import + 1 JSX line if you decide to fully cut.
 
 ### Layer D — Embedded Scrollytelling Editorial (Days 6–7, Stephen) [PENDING — depends on Layer A]
 Anchored on Layer A's discovered stat. Cut trigger: if Layer A fails to surface a genuinely surprising stat, scrollytelling has nothing to anchor on. Cut.

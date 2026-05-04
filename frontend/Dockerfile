@@ -4,12 +4,12 @@
 #   1. builder — node:22-alpine, npm ci, npm run build
 #   2. runtime — nginx:alpine serving dist/ on port 8080 (Cloud Run default)
 #
-# Production deploy: write frontend/.env.production with the backend
-# URL BEFORE running `gcloud run deploy --source frontend/ ...`.
-# .env.production is NOT gitignored (only `.env` is) so the source
-# upload includes it, the Docker build COPY pulls it in, and Vite's
-# loadEnv reads it at build time. See docs/cloud_run_deploy.md for
-# the full runbook + the .env-precedence trap that bit us 2026-05-04.
+# Production deploy: ARG VITE_API_BASE_URL default at line 49 IS the
+# production backend URL. `gcloud run deploy --source frontend/ ...` uses
+# the ARG default without extra config — bundle ships with right URL on
+# every deploy. See docs/cloud_run_deploy.md for the full runbook + the
+# inline rationale at lines 28-50 explaining why the .env.production
+# approach failed (Vite loadEnv precedence trap, fixed 2026-05-04).
 
 # ─────── builder ───────
 FROM node:22-alpine AS builder
