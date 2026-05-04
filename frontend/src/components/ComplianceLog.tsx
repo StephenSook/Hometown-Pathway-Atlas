@@ -67,9 +67,9 @@
  * synchronized with on-screen text.
  */
 
-import { useCallback, useEffect, useId, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import { Activity, ChevronRight, Minus, RotateCcw, X } from 'lucide-react';
+import { Activity, ChevronRight, GripHorizontal, LocateFixed, Minus, RotateCcw, X } from 'lucide-react';
 import type { ComplianceLogEntry } from '../lib/api';
 import { fmtTimestamp } from '../lib/format';
 import { demoComplianceScript } from '../lib/mocks';
@@ -116,6 +116,16 @@ export default function ComplianceLog({
   // eating viewport width; clicking the chip expands the full panel.
   // Mobile keeps the existing FAB-drawer pattern (mobileOpen state).
   const [isCollapsed, setIsCollapsed] = useState(false);
+  // Desktop drag — Stephen explicitly requested 2026-05-04 the ability
+  // to drag the audit panel anywhere on screen (e.g. flip it to the
+  // LEFT side of the map so the right side of Cobb County metrics is
+  // unobstructed). dragOffset is the cumulative translation from the
+  // default right-4 top-24 position. Persists across collapse/expand
+  // (chip + sidebar share the offset). Resets per page mount, no
+  // localStorage — clean slate each session.
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartRef = useRef<{ px: number; py: number; ox: number; oy: number } | null>(null);
   const [srMessage, setSrMessage] = useState('');
   // Replay counter — incrementing it forces the demo useEffect to re-run
   // (counter is in the dep array), which replays the scripted scheduled
@@ -242,6 +252,63 @@ export default function ComplianceLog({
     );
   }, []);
 
+  // Drag handlers — pointer events with setPointerCapture so drag continues
+  // even when pointer leaves the header (captured to the element).
+  // Skipped when pointer-down lands on a button (Minus / Reset / Replay)
+  // so button clicks aren't hijacked into drag-start.
+  const handleDragPointerDown = useCallback(
+    (e: React.PointerEvent<HTMLElement>) => {
+      if ((e.target as HTMLElement).closest('button')) return;
+      e.preventDefault();
+      setIsDragging(true);
+      dragStartRef.current = {
+        px: e.clientX,
+        py: e.clientY,
+        ox: dragOffset.x,
+        oy: dragOffset.y,
+      };
+      e.currentTarget.setPointerCapture(e.pointerId);
+    },
+    [dragOffset.x, dragOffset.y],
+  );
+
+  const handleDragPointerMove = useCallback(
+    (e: React.PointerEvent<HTMLElement>) => {
+      if (!isDragging || !dragStartRef.current) return;
+      const dx = e.clientX - dragStartRef.current.px;
+      const dy = e.clientY - dragStartRef.current.py;
+      setDragOffset({
+        x: dragStartRef.current.ox + dx,
+        y: dragStartRef.current.oy + dy,
+      });
+    },
+    [isDragging],
+  );
+
+  const handleDragPointerUp = useCallback(
+    (e: React.PointerEvent<HTMLElement>) => {
+      if (!isDragging) return;
+      setIsDragging(false);
+      dragStartRef.current = null;
+      if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      }
+    },
+    [isDragging],
+  );
+
+  const resetPosition = useCallback(() => {
+    setDragOffset({ x: 0, y: 0 });
+  }, []);
+
+  // Apply the drag offset as a CSS transform. When unmoved, return undefined
+  // so React doesn't emit an empty inline style attribute.
+  const dragTransform =
+    dragOffset.x !== 0 || dragOffset.y !== 0
+      ? { transform: `translate(${dragOffset.x}px, ${dragOffset.y}px)` }
+      : undefined;
+  const isDragged = dragOffset.x !== 0 || dragOffset.y !== 0;
+
   const rulesEntries = displayed.filter((e) => e.layer === 'rules');
   const geminiEntries = displayed.filter((e) => e.layer === 'gemini');
 
@@ -281,6 +348,7 @@ export default function ComplianceLog({
           onClick={() => setIsCollapsed(false)}
           aria-label={`Expand live audit (${passCount} of ${totalCount} checks passed)`}
           title="Expand live audit"
+          style={dragTransform}
           className="hidden md:inline-flex fixed right-4 top-24 z-30 items-center gap-2 rounded-full bg-card-white border border-soft-border shadow-lg px-3 py-2 text-eyebrow font-mono uppercase tracking-wider text-navy hover:bg-warm-neutral focus-ring transition-colors"
         >
           <Activity className="h-3.5 w-3.5" aria-hidden="true" />
@@ -311,6 +379,7 @@ export default function ComplianceLog({
       <aside
         id={labelId}
         aria-labelledby={`${labelId}-eyebrow`}
+        style={dragTransform}
         className={cn(
           'fixed z-30 rounded-2xl bg-card-white border border-soft-border shadow-lg flex-col overflow-hidden',
           // Desktop: full sidebar when expanded, hidden when collapsed
@@ -322,11 +391,30 @@ export default function ComplianceLog({
           mobileOpen
             ? 'flex left-4 right-4 bottom-20 max-h-[60vh] md:left-auto md:bottom-4 md:max-h-none'
             : 'hidden md:flex',
+          // Slight visual feedback during drag — soft elevation bump.
+          isDragging && 'shadow-xl',
           className,
         )}
       >
-        <header className="flex items-center justify-between px-4 py-3 border-b border-soft-border shrink-0">
+        <header
+          onPointerDown={handleDragPointerDown}
+          onPointerMove={handleDragPointerMove}
+          onPointerUp={handleDragPointerUp}
+          onPointerCancel={handleDragPointerUp}
+          className={cn(
+            'flex items-center justify-between px-4 py-3 border-b border-soft-border shrink-0 select-none',
+            // Drag affordance — desktop only. Mobile FAB-drawer is too
+            // small for a useful drag-anywhere pattern + would conflict
+            // with touch scrolling.
+            'md:cursor-grab',
+            isDragging && 'md:cursor-grabbing',
+          )}
+        >
           <div className="flex items-center gap-2">
+            <GripHorizontal
+              className="hidden md:inline h-3.5 w-3.5 text-muted-text/60"
+              aria-hidden="true"
+            />
             <Activity className="h-3.5 w-3.5 text-navy" aria-hidden="true" />
             <p
               id={`${labelId}-eyebrow`}
@@ -356,6 +444,20 @@ export default function ComplianceLog({
               <span className="absolute inline-flex h-full w-full rounded-full bg-accent-teal opacity-75 animate-ping" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-accent-teal" />
             </span>
+            {/* Reset position — desktop only, conditional. Snaps the
+                panel back to its default right-4 top-24 anchor when the
+                user has dragged it elsewhere. */}
+            {isDragged && (
+              <button
+                type="button"
+                onClick={resetPosition}
+                aria-label="Reset audit panel to default position"
+                title="Reset position"
+                className="hidden md:inline-flex items-center justify-center rounded p-1 text-muted-text hover:text-navy hover:bg-warm-neutral transition-colors focus-ring"
+              >
+                <LocateFixed className="h-3.5 w-3.5" aria-hidden="true" />
+              </button>
+            )}
             {/* Collapse to chip — desktop only. Mobile uses the FAB
                 pattern (X button on the FAB toggles drawer open/closed). */}
             <button
