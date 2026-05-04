@@ -11,7 +11,7 @@
 
 ---
 
-## ⏱️ Status snapshot (last sync 2026-05-03 PM Day 3)
+## ⏱️ Status snapshot (last sync 2026-05-04 PM Day 4)
 
 The detailed Phase 0–5 task tables below remain the historical record.
 This snapshot is the at-a-glance reality check for anyone reading
@@ -23,13 +23,12 @@ PLAN.md fresh.
 commit `fc0253a`). Outstanding: task **1.11** Layer A shocking-stat
 hunt — gates HeroStat real number swap + Layer D scrollytelling.
 
-**Phase 2 — Backend services (Vinh):** ✓ MOSTLY DONE (tasks 2.2–2.6
-in commits `8a36c91`, `cac8540`, `ecbb9b8`, `a617346`). Pydantic
-schemas + ProfileService + AnalogService + PathwayService + 4 routes
-live. Outstanding: task **2.7** GeminiService → unblocks RegionQA
-real backend; task **2.9** HybridAuditor ✅ DONE 2026-05-04 — HybridAuditor
-+ NarrativeCache wired into GeminiService; ComplianceLog auto-flips
-to live mode (frontend ready, demoMode prop is data-aware).
+**Phase 2 — Backend services (Vinh):** ✓ DONE. All tasks 2.1–2.11
+complete. Pre-deploy review 2026-05-04 caught + fixed: over-broad
+`will` causal regex, NaN crash on sparse counties, per-analog narratives
+unaudited, duplicate compliance log entries, tradeoff audit entries
+discarded, Gemini retry early-return, pathway silent 200 on bad FIPS.
+40/40 tests passing after linter pass. Ready for task 5.1 Cloud Run deploy.
 
 **Phase 3 — Frontend conservative (Stephen):** ✓ DONE. All
 components shipped + wired against real Phase 2 backend. End-to-end
@@ -56,11 +55,10 @@ plate.
 
 **Critical-path Vinh deps still open:**
 1. ~~Task 1.11 — Layer A stat~~ ✅ DONE 2026-05-04
-2. Task 2.7 — GeminiService → RegionQA real backend +
-   `RegionResponse.narrative` populating
-3. Task 2.8 — Gemini Live multimodal → optional RegionQA upgrade
+2. ~~Tasks 2.7–2.11 — GeminiService + HybridAuditor + Cache~~ ✅ DONE + reviewed
+3. Task 2.8 — Gemini Live multimodal → optional RegionQA upgrade (Layer C spike)
 4. `data_confidence` flag per FIPS → CountyMap hatch wires up
-5. Backend Cloud Run deploy (task 5.1)
+5. **Backend Cloud Run deploy (task 5.1) — next up**
 
 **Critical-path Stephen ops still open:**
 1. Pitch dry-run with `./scripts/pitch-stopwatch.sh`
@@ -190,10 +188,10 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started · ⛔ blocked · ✂️
 | 2.5 | PathwayService | `backend/services/pathway_service.py` | Vinh | ✅ | 1.8, 2.2 | Done 2026-05-03. All 3 gap categories: observed_strength (dominant percentile track), public_access_signal (Move United chapters, display-only per D2), opportunity_hypothesis (weaker track vs climate peers). Conditional phrasing enforced. |
 | 2.6 | Routes — `/api/region`, `/api/analogs/{fips}`, `/api/pathway/{fips}` | `backend/routes/*.py` | Vinh | ✅ | 2.3, 2.4, 2.5 | Done 2026-05-03. All 4 routers wired in main.py. `/api/stats/county/{fips}` included (task 0.9 contract). |
 | 2.7 | GeminiService — region narrative | `backend/services/gemini_service.py` | Vinh | ✅ | 2.3 | Done 2026-05-03. Vertex AI structured output (response_schema). enrich_region + enrich_analogs (tradeoff + per-analog narrative). Fallback narratives on Gemini failure. Compliance log entries from parity_check. Wired into /api/region + /api/analogs routes. |
-| 2.8 | GeminiService — test 5 sample counties | `backend/tests/test_gemini.py` | Vinh | ✅ | 2.7 | Done 2026-05-03. 20/20 passed (2m42s). 4 test classes × 5 FIPSes: structured output, analogs, parity, compliance schema. All green against live Vertex AI. |
+| 2.8 | GeminiService — test 5 sample counties | `backend/tests/test_gemini.py` | Vinh | ✅ | 2.7 | Done 2026-05-03. 20/20 passed (2m42s). 4 test classes × 5 FIPSes: structured output, analogs, parity, compliance schema. All green against live Vertex AI. **Pre-5.1 review 2026-05-04:** added `tests/test_routes.py` — 21 HTTP-layer integration tests (all 5 endpoints, sentinel ZIPs 00000, 422/404 shapes, CORS). 40/40 total suite green. |
 | 2.9 | HybridAuditor — deterministic layer | `backend/services/auditor.py` | Vinh | ✅ | 2.7 | Done 2026-05-04. Deterministic regex: causal verbs, parity mention, name leak. HybridAuditor service in backend/services/auditor.py. |
 | 2.10 | HybridAuditor — Gemini semantic layer | `backend/services/auditor.py` | Vinh | ✅ | 2.9 | Done 2026-05-04. Gemini semantic rewrite loop, max 2 attempts, graceful fallback. Extends auditor.py. |
-| 2.11 | Caching layer | `backend/services/cache.py` | Vinh | ✅ | 2.7 | Done 2026-05-04. FIPS-keyed in-memory TTL cache (24h). backend/services/cache.py. Wired into GeminiService. |
+| 2.11 | Caching layer | `backend/services/cache.py` | Vinh | ✅ | 2.7 | Done 2026-05-04. FIPS-keyed in-memory TTL cache (24h). backend/services/cache.py. Wired into GeminiService. **Pre-5.1 review 2026-05-04:** added `_CACHE_SCHEMA_VERSION` guard — stale entries auto-evicted on schema change. |
 
 ### Phase 3 — Frontend conservative (Days 1–6, Stephen)
 
@@ -234,7 +232,7 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started · ⛔ blocked · ✂️
 
 | # | Component | File(s) | Owner | Status | Deps | Notes |
 |---|---|---|---|---|---|---|
-| 5.1 | Backend Dockerfile + Cloud Run deploy | `backend/Dockerfile` | Vinh | ⬜ | 2.11 | Day 8 AM. `--memory 1Gi --cpu 1 --min-instances 1 --max-instances 5`. Smoke test from prod URL. |
+| 5.1 | Backend Dockerfile + Cloud Run deploy | `backend/Dockerfile` | Vinh | 🟡 | 2.11 | Day 8 AM. `--memory 1Gi --cpu 1 --min-instances 1 --max-instances 5`. Smoke test from prod URL. **Pre-deploy review done 2026-05-04:** fixed CRITICAL PathwayService crash (bare `row["olympic_percentile"]` → `_safe_float(row.get(...))`), fixed AnalogService silent <3 analog return, added Gemini post-parse schema validation, added cache schema version guard, fixed sports share float sum, added warning logs for unknown confidence/evidence values. 40/40 tests green. Ready to deploy. |
 | 5.2 | Frontend Dockerfile + Cloud Run deploy | `frontend/Dockerfile` + `frontend/nginx.conf` + `docs/cloud_run_deploy.md` | Stephen | 🟡 | 3.15 | **Image + runbook ready** (commits 8861b6e + 8483089). Multi-stage Dockerfile (node:22-alpine builder → nginx:alpine runtime, 93.7MB image). nginx.conf serves SPA on port 8080 with gzip, asset cache headers, /healthz, deep-link fallback. ARG VITE_API_BASE_URL for build-time backend URL injection. **Verified locally**: docker build + run + Playwright + axe — 0 violations, all components render. **Day 8 deploy**: `gcloud run deploy atlas-frontend --source frontend/` per runbook. ✅ flips after live deploy + URL captured. |
 | 5.3 | End-to-end production test | prod URLs | Stephen+Vinh | ⬜ | 5.1, 5.2 | Day 8 EOD. 20 sample ZIPs urban/rural/coastal/mountain. |
 | 5.4 | Pitch script + demo storyboard | `docs/pitch_script.md` + `docs/demo_storyboard.md` | Stephen | 🟡 | 3.16 | **Both drafted** (commits c58ffbd, 80f82ad, 8ad3ae5). pitch_script.md = 7-beat narration, 3:04 estimated (trim options to 2:58 documented), Move United 63% opener + Tech Proof beat (hackathon FAQ requirement) + Pillar 5 close. demo_storyboard.md = single-take + separate-narration shot list, recording tool tradeoffs, Day 9 timeline, backup plans, NIL/IOC/USOPC DQ checklist. Reconciled against original 03_demo_outline.docx — preserved structure, updated Pillar 5 numbers per cold-check, leveraged ComplianceLog auto-demo timing instead of live re-trigger. **Day 8 PM**: read-aloud + stopwatch. **Day 9**: dry runs + record + submit. Status ✅ after Day 9 evening. |
@@ -461,4 +459,4 @@ git commit -m "chore(plan): cut 4.E ✂️ — Day 7 not clean enough"
 
 ---
 
-_Last updated: 2026-05-04 by Vinh (tasks 2.9–2.11 ✅, task 1.11 ✅)._
+_Last updated: 2026-05-04 by Vinh (pre-deploy review fixes + linter pass ✅, 40/40 tests green)._
