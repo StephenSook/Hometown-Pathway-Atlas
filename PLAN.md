@@ -48,7 +48,7 @@ smoke verified 30060 / 00000 / 11111 sentinels.
   surface differently; avoid splitting judge attention)
 
 **Phase 5 — Deploy + demo + submit:** IN PROGRESS. Backend Cloud Run
-✅ LIVE 2026-05-04 (task 5.1 done — revision 00004, smoke verified).
+✅ LIVE 2026-05-04 (revision 00007-6k7 — adds /api/stats/global + /api/region/by-fips/{fips}, smoke verified).
 Frontend Cloud Run 🟡 ready to deploy (task 5.2). Demo recording +
 Devpost submission Day 9–10. NotebookLM oracle pass + pitch dry-run
 (`./scripts/pitch-stopwatch.sh`) still on Stephen's plate.
@@ -56,7 +56,7 @@ Devpost submission Day 9–10. NotebookLM oracle pass + pitch dry-run
 **Critical-path Vinh deps still open:**
 1. ~~Task 1.11 — Layer A stat~~ ✅ DONE 2026-05-04
 2. ~~Tasks 2.7–2.11 — GeminiService + HybridAuditor + Cache~~ ✅ DONE + reviewed
-3. Task 2.8 — Gemini Live multimodal → optional RegionQA upgrade (Layer C spike)
+3. ~~Task 2.8 — Gemini Live multimodal~~ ✂️ CUT (4C skipped)
 4. `data_confidence` flag per FIPS → CountyMap hatch wires up
 5. **Backend Cloud Run deploy (task 5.1) — next up**
 
@@ -224,7 +224,7 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started · ⛔ blocked · ✂️
 | 4.C-api | Layer C — `/api/region/qa` endpoint | `backend/routes/qa.py`, `backend/services/gemini_live.py` | Vinh | ⬜ | 4.C-back | Day 5 PM (only if spike succeeds). Multimodal: current view + question → structured JSON answer. Auditor-reviewed. |
 | 4.C-fe | Layer C — Q&A panel UI | `frontend/src/components/QAPanel/*` | Stephen | ⬜ | 4.C-api | Day 7. Below region profile. Type or click suggested questions. Cinematic answer reveal. |
 | 4.D | **Layer D — Scrollytelling editorial** | `frontend/src/scrollytelling/*` | Stephen | ⬜ | 1.11 | Days 6–7. 3–4 chapters anchored on Layer A stats. Map drives reveal. Pudding-style. CUT if Layer A finds nothing surprising — reduce to 2 chapters or cut. |
-| 4.D-api | Layer D — `/api/stats/global` endpoint | `backend/routes/stats.py` | Vinh | ⬜ | 1.8 | Day 7. Aggregate stats for scrollytelling chapters. |
+| 4.D-api | Layer D — `/api/stats/global` endpoint | `backend/routes/stats.py` | Vinh | ✅ | 1.8 | Done 2026-05-04. GET /api/stats/global returns GapStat ("4 in 5" framing, 2,667 counties no athletes) + UnderdogStat (68% small-county outlier vs major-metro median). lru_cache(1) — parquet read at first call, free after. 5 new tests added, 26/26 suite green. |
 | 4.E | **Layer E — Temporal layer** | per-Games schema rework | Vinh+Stephen | ⬜ | all | Day 8 ONLY if Days 1–7 are clean. **DEFAULT TO CUT.** Re-architects parquet schema. |
 | 4.F | **Layer F — Agentic comparison** | `backend/services/comparison_agent.py`, `frontend/src/components/CompareView/*` | Vinh+Stephen | ⬜ | all | Days 8–9 ONLY if Layers C, D, E are stable. **FIRST TO CUT** if anything else slips. |
 
