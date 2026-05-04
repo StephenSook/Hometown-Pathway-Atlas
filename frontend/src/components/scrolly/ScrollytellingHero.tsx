@@ -138,8 +138,10 @@ export default function ScrollytellingHero({ ctaSlot }: ScrollytellingHeroProps)
   const stats = useGlobalStats();
   const [activeIdx, setActiveIdx] = useState<number>(0);
 
-  const handleStepEnter = ({ data }: { data: number }) => {
-    setActiveIdx(data);
+  const handleStepEnter = ({ data }: { data: unknown }) => {
+    if (typeof data === 'number') {
+      setActiveIdx(data);
+    }
   };
 
   // Mobile + reduced-motion fallback — render a static stack of
