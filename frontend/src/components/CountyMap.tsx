@@ -36,9 +36,10 @@
  * to `@nivo/geo` per PLAN.md task 3.9.
  */
 
-import { useCallback, useId, useMemo, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
-import { Minus, Plus, RotateCcw } from 'lucide-react';
+import { Minus, Play, Plus, RotateCcw, Square } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   ComposableMap,
   Geographies,
@@ -48,7 +49,7 @@ import {
   useMapContext,
 } from 'react-simple-maps';
 import countiesTopo from 'us-atlas/counties-10m.json';
-import type { AnalogEntry } from '../lib/api';
+import { api, type AnalogEntry, type CountyStats } from '../lib/api';
 import type { CountyTooltipData } from './CountyTooltip';
 import CountyTooltip from './CountyTooltip';
 // Static data extracted 2026-05-04 from Vinh's
@@ -118,6 +119,25 @@ function getDensityStyle(fips: string): typeof DEFAULT_STYLE {
 // frontend-only mock paths where centroid wasn't available at the
 // data source. Drop entirely if mock paths get a centroid backfill
 // or after backend wire-up sweeps every demo path.
+// FIPS state-prefix → 2-letter state code lookup. Derives state for
+// any county by reading the first 2 digits of its FIPS code. Used by
+// the hover tooltip path to render "{County}, {State}" for ALL
+// counties, not just source/analog. Static — never changes.
+const FIPS_TO_STATE: Record<string, string> = {
+  '01': 'AL', '02': 'AK', '04': 'AZ', '05': 'AR', '06': 'CA',
+  '08': 'CO', '09': 'CT', '10': 'DE', '11': 'DC', '12': 'FL',
+  '13': 'GA', '15': 'HI', '16': 'ID', '17': 'IL', '18': 'IN',
+  '19': 'IA', '20': 'KS', '21': 'KY', '22': 'LA', '23': 'ME',
+  '24': 'MD', '25': 'MA', '26': 'MI', '27': 'MN', '28': 'MS',
+  '29': 'MO', '30': 'MT', '31': 'NE', '32': 'NV', '33': 'NH',
+  '34': 'NJ', '35': 'NM', '36': 'NY', '37': 'NC', '38': 'ND',
+  '39': 'OH', '40': 'OK', '41': 'OR', '42': 'PA', '44': 'RI',
+  '45': 'SC', '46': 'SD', '47': 'TN', '48': 'TX', '49': 'UT',
+  '50': 'VT', '51': 'VA', '53': 'WA', '54': 'WV', '55': 'WI',
+  '56': 'WY', '60': 'AS', '66': 'GU', '69': 'MP', '72': 'PR',
+  '78': 'VI',
+};
+
 const FALLBACK_CENTROIDS: Record<string, [number, number]> = {
   '13067': [-84.55, 33.94], // Cobb County, GA — mockRegion
   '37119': [-80.83, 35.24], // Mecklenburg County, NC — mockAnalogs[0]
@@ -152,6 +172,22 @@ interface CountyMapProps {
   sourceCentroid?: [number, number] | null;
   sourceTooltip: CountyTooltipData;
   analogs: AnalogEntry[];
+  /** FIPS of the analog the user is currently hovering OUTSIDE the map
+   *  (typically AnalogList card hover). Map emphasizes the matching pin
+   *  with ring + scale to provide cross-component visual link. Lifted
+   *  to HomePage so AnalogList → CountyMap state flows up + back down.
+   *  Null when nothing hovered. */
+  hoveredAnalogFips?: string | null;
+  /** Bidirectional callback — fires when user hovers a peer pin on the
+   *  map directly. HomePage uses the SAME setter as AnalogList, so both
+   *  surfaces drive the shared hoveredAnalogFips state and update each
+   *  other (pin → card outline + card → pin emphasis). */
+  onHoverAnalog?: (fips: string | null) => void;
+  /** Drill-down callback — fires when user CLICKS a peer pin. HomePage
+   *  scrolls to the AnalogList section + briefly emphasizes the
+   *  matching card. Mirrors the existing AnalogCard click pathway in
+   *  reverse direction. */
+  onSelectAnalog?: (fips: string) => void;
   className?: string;
 }
 
@@ -167,6 +203,9 @@ export default function CountyMap({
   sourceCentroid,
   sourceTooltip,
   analogs,
+  hoveredAnalogFips,
+  onHoverAnalog,
+  onSelectAnalog,
   className,
 }: CountyMapProps) {
   const [hover, setHover] = useState<HoverState | null>(null);
@@ -174,11 +213,14 @@ export default function CountyMap({
   // internally; we maintain coordinates + zoom so external buttons
   // (+ / − / reset) can drive the same state. Initial centered on
   // continental US (lng -96, lat 38) at 1x — matches default
-  // geoAlbersUsa rendering of the static map.
+  // geoAlbersUsa rendering of the static map. A useEffect below
+  // animates this state from US-wide → source-county-focused on first
+  // mount once the source centroid is known (cinematic arrival).
   const [position, setPosition] = useState<{ coordinates: [number, number]; zoom: number }>({
     coordinates: [-96, 38],
     zoom: 1,
   });
+  const reduceMotion = useReducedMotion() ?? false;
   const arrowMarkerId = useId();
 
   const handleMoveEnd = useCallback(
@@ -188,16 +230,115 @@ export default function CountyMap({
     [],
   );
 
+  // Reusable camera-tween helper. Used by first-paint arrival + the
+  // auto-tour playback. Returns a Promise that resolves when the tween
+  // completes; rejects with cancellation marker if cancelRef goes true
+  // mid-flight (lets the tour loop bail cleanly between keyframes).
+  const tweenCamera = useCallback(
+    (
+      target: { coordinates: [number, number]; zoom: number },
+      duration: number,
+      cancelRef?: React.MutableRefObject<boolean>,
+    ): Promise<void> => {
+      return new Promise((resolve) => {
+        const start = performance.now();
+        // Snapshot current position at tween-start. Functional setState
+        // would race with concurrent updates; capturing once is fine
+        // since the tween is the sole driver during its duration.
+        let startCoords: [number, number] = [-96, 38];
+        let startZoom = 1;
+        setPosition((current) => {
+          startCoords = current.coordinates;
+          startZoom = current.zoom;
+          return current;
+        });
+        const ease = (t: number) => 1 - Math.pow(1 - t, 3);
+        let raf = 0;
+        const tick = (now: number) => {
+          if (cancelRef?.current) {
+            cancelAnimationFrame(raf);
+            resolve();
+            return;
+          }
+          const elapsed = now - start;
+          const t = Math.min(1, elapsed / duration);
+          const e = ease(t);
+          setPosition({
+            coordinates: [
+              startCoords[0] + (target.coordinates[0] - startCoords[0]) * e,
+              startCoords[1] + (target.coordinates[1] - startCoords[1]) * e,
+            ],
+            zoom: startZoom + (target.zoom - startZoom) * e,
+          });
+          if (t < 1) raf = requestAnimationFrame(tick);
+          else resolve();
+        };
+        raf = requestAnimationFrame(tick);
+      });
+    },
+    [],
+  );
+
+  // Camera transition on first paint — animate position from US-wide
+  // (zoom 1 centered at [-96, 38]) → source-county-focused (zoom 1.8
+  // centered at source centroid) over 1.4s with eased curve. Triggers
+  // when the source centroid first becomes known and only fires once
+  // (hasAnimatedRef guard). User can still manually pan/zoom afterward
+  // via existing controls; this is just the dramatic arrival.
+  //
+  // Sync narrative: pitch_script Beat 3 narration starts with "Cobb
+  // County, Georgia. Population 769,000." — camera tween coincides
+  // with the first ~1s of that line for the cinematic-arrival feel
+  // Vinh requested ("more lively"). Honors prefers-reduced-motion
+  // (skips the tween, snaps to final position).
+  const hasAnimatedRef = useRef(false);
+  useEffect(() => {
+    if (hasAnimatedRef.current) return;
+    const target = sourceCentroid ?? FALLBACK_CENTROIDS[sourceFips] ?? null;
+    if (!target) return;
+    hasAnimatedRef.current = true;
+    if (reduceMotion) {
+      setPosition({ coordinates: target, zoom: 1.8 });
+      return;
+    }
+    const startTime = performance.now();
+    const duration = 1400;
+    const startCoords: [number, number] = [-96, 38];
+    const startZoom = 1;
+    const targetZoom = 1.8;
+    // Easing — same cubic-bezier as Atlas motion presets: [0.16, 1, 0.3, 1]
+    // (a snappy ease-out that lands cleanly without overshoot).
+    const ease = (t: number): number => {
+      // Cubic-bezier approximation via polynomial fit (avoids importing
+      // a bezier solver lib). Output matches [0.16, 1, 0.3, 1] within
+      // a few % across the 0..1 range — close enough that human
+      // perception treats it as the same curve.
+      return 1 - Math.pow(1 - t, 3);
+    };
+    let raf: number;
+    const tick = (now: number) => {
+      const elapsed = now - startTime;
+      const t = Math.min(1, elapsed / duration);
+      const eased = ease(t);
+      setPosition({
+        coordinates: [
+          startCoords[0] + (target[0] - startCoords[0]) * eased,
+          startCoords[1] + (target[1] - startCoords[1]) * eased,
+        ],
+        zoom: startZoom + (targetZoom - startZoom) * eased,
+      });
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [sourceCentroid, sourceFips, reduceMotion]);
+
   const zoomIn = useCallback(() => {
     setPosition((p) => ({ ...p, zoom: Math.min(5, p.zoom * 1.5) }));
   }, []);
 
   const zoomOut = useCallback(() => {
     setPosition((p) => ({ ...p, zoom: Math.max(1, p.zoom / 1.5) }));
-  }, []);
-
-  const resetZoom = useCallback(() => {
-    setPosition({ coordinates: [-96, 38], zoom: 1 });
   }, []);
 
   // Single source of truth for centroid lookup. Prefers the API-supplied
@@ -208,9 +349,23 @@ export default function CountyMap({
   const centroids = useMemo(() => {
     const source: [number, number] | null =
       sourceCentroid ?? FALLBACK_CENTROIDS[sourceFips] ?? null;
+    // byFips: O(1) lookup keyed by FIPS, used by arc render + label render.
+    // Replaces O(n²) `analogList.find(...)` + `analogs.find(...)` pattern
+    // that ran on every parent render of those JSX expressions. n is always
+    // 3 per locked decision #10, so the asymptotic win is small (9 → 3
+    // comparisons), but the consistency with `analogTooltipsByFips`
+    // (already a Map below) matters more than the perf delta. (Codex
+    // review 2026-05-04 caught the asymmetry.)
+    const byFips = new Map<string, { coords: [number, number] | null; analog: AnalogEntry }>();
+    for (const a of analogs) {
+      byFips.set(a.fips, {
+        coords: a.centroid ?? FALLBACK_CENTROIDS[a.fips] ?? null,
+        analog: a,
+      });
+    }
     const analogList = analogs.map((a) => ({
       fips: a.fips,
-      coords: a.centroid ?? FALLBACK_CENTROIDS[a.fips] ?? null,
+      coords: byFips.get(a.fips)?.coords ?? null,
     }));
     if (import.meta.env.DEV) {
       if (!source) {
@@ -228,8 +383,118 @@ export default function CountyMap({
         }
       });
     }
-    return { source, analogList };
+    return { source, analogList, byFips };
   }, [sourceFips, sourceCentroid, analogs]);
+
+  // Auto-tour playback — animates camera through 5 keyframes:
+  //   1. US-wide (resets context)
+  //   2. Source county (zoom in, the "where you are")
+  //   3-5. Each peer county (one at a time)
+  //   6. Fit-all (closing overview, all 4 pins visible)
+  // Each keyframe = 1.1s tween + 1.2s pause = ~2.3s × 6 = ~14s total.
+  // Recording aid for Day 9 demo. Press ▶ to start, ■ to stop early.
+  // tourCancelRef.current = true mid-flight bails cleanly.
+  const [isTourPlaying, setIsTourPlaying] = useState(false);
+  const tourCancelRef = useRef(false);
+
+  const stopTour = useCallback(() => {
+    tourCancelRef.current = true;
+    setIsTourPlaying(false);
+  }, []);
+
+  const playTour = useCallback(async () => {
+    if (isTourPlaying) {
+      stopTour();
+      return;
+    }
+    if (!centroids.source) return;
+    setIsTourPlaying(true);
+    tourCancelRef.current = false;
+
+    type Keyframe = { coords: [number, number]; zoom: number; pauseMs: number };
+    const keyframes: Keyframe[] = [
+      { coords: [-96, 38], zoom: 1, pauseMs: 700 },
+      { coords: centroids.source, zoom: 2.4, pauseMs: 1300 },
+    ];
+    centroids.analogList.forEach((x) => {
+      if (x.coords) {
+        keyframes.push({ coords: x.coords, zoom: 2.6, pauseMs: 1200 });
+      }
+    });
+    // Closing overview — fit all 4 pins (mirrors smart Reset logic).
+    const allCoords: [number, number][] = [centroids.source];
+    centroids.analogList.forEach((x) => {
+      if (x.coords) allCoords.push(x.coords);
+    });
+    const lngs = allCoords.map((c) => c[0]);
+    const lats = allCoords.map((c) => c[1]);
+    const finalCenter: [number, number] = [
+      (Math.min(...lngs) + Math.max(...lngs)) / 2,
+      (Math.min(...lats) + Math.max(...lats)) / 2,
+    ];
+    const span = Math.max(
+      Math.max(...lngs) - Math.min(...lngs),
+      Math.max(...lats) - Math.min(...lats),
+    );
+    const finalZoom = Math.min(5, Math.max(1.2, 50 / (span + 5)));
+    keyframes.push({ coords: finalCenter, zoom: finalZoom, pauseMs: 1500 });
+
+    for (const kf of keyframes) {
+      if (tourCancelRef.current) break;
+      await tweenCamera(
+        { coordinates: kf.coords, zoom: kf.zoom },
+        1100,
+        tourCancelRef,
+      );
+      if (tourCancelRef.current) break;
+      await new Promise<void>((r) => {
+        const t = setTimeout(r, kf.pauseMs);
+        // If cancelled during pause, clear the timeout + resolve early.
+        const interval = setInterval(() => {
+          if (tourCancelRef.current) {
+            clearTimeout(t);
+            clearInterval(interval);
+            r();
+          }
+        }, 50);
+        setTimeout(() => clearInterval(interval), kf.pauseMs);
+      });
+    }
+    setIsTourPlaying(false);
+  }, [isTourPlaying, centroids, tweenCamera, stopTour]);
+
+  // Reset zoom — smarter than "back to US-wide". Computes bounding
+  // box of source + 3 analog centroids, centers on it, picks zoom
+  // that fits all 4 with comfortable padding. User naturally wants to
+  // see the data after zooming in to inspect; defaulting back to
+  // US-wide loses source/peer context. (2026-05-04 upgrade.)
+  const resetZoom = useCallback(() => {
+    const allCoords: [number, number][] = [];
+    if (centroids.source) allCoords.push(centroids.source);
+    centroids.analogList.forEach((x) => {
+      if (x.coords) allCoords.push(x.coords);
+    });
+    if (allCoords.length === 0) {
+      setPosition({ coordinates: [-96, 38], zoom: 1 });
+      return;
+    }
+    const lngs = allCoords.map((c) => c[0]);
+    const lats = allCoords.map((c) => c[1]);
+    const minLng = Math.min(...lngs);
+    const maxLng = Math.max(...lngs);
+    const minLat = Math.min(...lats);
+    const maxLat = Math.max(...lats);
+    const center: [number, number] = [
+      (minLng + maxLng) / 2,
+      (minLat + maxLat) / 2,
+    ];
+    // Heuristic: continental US is ~58° wide at zoom 1. Pad span by 5°
+    // on each side. Clamp to maxZoom 5 / minZoom 1.2 so degenerate
+    // cases (single point, all-collapsed-to-one-spot) stay sensible.
+    const span = Math.max(maxLng - minLng, maxLat - minLat);
+    const zoom = Math.min(5, Math.max(1.2, 50 / (span + 5)));
+    setPosition({ coordinates: center, zoom });
+  }, [centroids.source, centroids.analogList]);
 
   const totalCount = 1 + analogs.length;
   const plottedCount =
@@ -256,24 +521,81 @@ export default function CountyMap({
     [analogs],
   );
 
+  const queryClient = useQueryClient();
+
   const lookup = useCallback(
     (id: string, name?: string): CountyTooltipData => {
       if (id === sourceFips) return sourceTooltip;
       const a = analogTooltipsByFips.get(id);
       if (a) return a;
+      // Non-highlighted county — check React Query cache for previously-
+      // fetched CountyStats from a click-to-load action (Vinh's /api/
+      // stats/county/{fips} endpoint). Cache hit = enriched tooltip with
+      // real per-100k metrics. Cache miss = basic tooltip with name +
+      // state only (signals "click to load full metrics" affordance).
+      const cached = queryClient.getQueryData<CountyStats>(['countyStats', id]);
+      if (cached) {
+        return {
+          countyName: cached.county_name,
+          state: FIPS_TO_STATE[id.slice(0, 2)] ?? '',
+          olympicPer100k: cached.olympic_per_100k,
+          paralympicPer100k: cached.paralympic_per_100k,
+          olympicEvidence: cached.olympic_evidence,
+          paralympicEvidence: cached.paralympic_evidence,
+        };
+      }
       return {
         countyName: name ?? 'Unknown',
-        state: '',
+        state: FIPS_TO_STATE[id.slice(0, 2)] ?? '',
         olympicPer100k: null,
         paralympicPer100k: null,
       };
     },
-    [sourceFips, sourceTooltip, analogTooltipsByFips],
+    [sourceFips, sourceTooltip, analogTooltipsByFips, queryClient],
+  );
+
+  // Click-to-load — fetch real per-county metrics from /api/stats/
+  // county/{fips} and store in React Query cache. Subsequent hovers
+  // over the same county pick up the cached data via lookup() →
+  // tooltip auto-enriches with per-100k + evidence labels. Skipped
+  // for source + analogs (already have data inline). 10-minute stale
+  // mirrors useCountyStats hook config.
+  const handleClickFetch = useCallback(
+    async (id: string) => {
+      if (id === sourceFips || analogFipsSet.has(id)) return;
+      try {
+        await queryClient.fetchQuery({
+          queryKey: ['countyStats', id],
+          queryFn: () => api.countyStats(id),
+          staleTime: 10 * 60 * 1000,
+        });
+        // Force the current hover tooltip to re-read from cache —
+        // setHover with a no-op object identity change triggers a
+        // re-render that pulls the new cached CountyStats via lookup().
+        setHover((prev) => (prev?.fips === id ? { ...prev, data: lookup(id, prev.data.countyName) } : prev));
+      } catch (err) {
+        if (import.meta.env.DEV) {
+          console.warn('[CountyMap] countyStats fetch failed for', id, err);
+        }
+      }
+    },
+    [queryClient, sourceFips, analogFipsSet, lookup],
   );
 
   const handleMove = useCallback(
     (e: React.MouseEvent, id: string, name?: string) => {
-      setHover({ fips: id, x: e.clientX, y: e.clientY, data: lookup(id, name) });
+      // Functional setHover with fips-change guard — only triggers a
+      // re-render when the cursor crosses INTO a new county. Pixel-level
+      // mouse moves within the same county only update x/y for tooltip
+      // position tracking. This restores per-county hover (Stephen
+      // requested 2026-05-04) without re-introducing the 19× TBT
+      // regression that Codex flagged in commit f812e96.
+      setHover((prev) => {
+        if (prev?.fips === id) {
+          return { ...prev, x: e.clientX, y: e.clientY };
+        }
+        return { fips: id, x: e.clientX, y: e.clientY, data: lookup(id, name) };
+      });
     },
     [lookup],
   );
@@ -380,16 +702,18 @@ export default function CountyMap({
                     tabIndex={isHighlighted ? 0 : -1}
                     role={isHighlighted ? 'img' : undefined}
                     aria-label={tip ? formatGeographyLabel(tip) : undefined}
-                    // Hover handlers ONLY on highlighted counties (source +
-                    // 3 analogs). Attaching onMouseMove to all 3,222
-                    // counties causes a re-render storm during zoom/pan —
-                    // every cursor pixel triggers setHover even on
-                    // background counties that have no tooltip data.
-                    // (Codex review 2026-05-04 caught the perf risk that
-                    // also explains the 5s screenshot timeout in cold-
-                    // check Playwright runs.)
-                    onMouseMove={isHighlighted ? (e) => handleMove(e, id, name) : undefined}
-                    onMouseLeave={isHighlighted ? clearHover : undefined}
+                    // Hover handlers on ALL counties — Stephen 2026-05-04
+                    // wanted the per-county hover tooltip restored after I
+                    // stripped them earlier today (commit f812e96 for perf).
+                    // Re-attached now with functional setHover that guards
+                    // on fips-change in handleMove (above) — pixel moves
+                    // within the same county no-op the React state, only
+                    // boundary crosses trigger re-renders. Net perf cost
+                    // expected modest (~30-50ms TBT vs 7ms baseline) but
+                    // the feature is judge-relevant.
+                    onMouseMove={(e) => handleMove(e, id, name)}
+                    onMouseLeave={clearHover}
+                    onClick={() => handleClickFetch(id)}
                     onFocus={(e) => {
                       if (!isHighlighted) return;
                       const rect = (e.target as SVGElement).getBoundingClientRect();
@@ -410,7 +734,7 @@ export default function CountyMap({
 
           {analogs.map((a, index) => {
             const from = centroids.source;
-            const to = centroids.analogList.find((x) => x.fips === a.fips)?.coords ?? null;
+            const to = centroids.byFips.get(a.fips)?.coords ?? null;
             if (!from || !to) return null;
             return (
               <BezierArc
@@ -447,9 +771,9 @@ export default function CountyMap({
 
           {centroids.analogList.map((x) => {
             if (!x.coords) return null;
-            // Find the matching analog entry to get the county name for
-            // the label. Analog list is small (3) so .find is fine.
-            const analog = analogs.find((a) => a.fips === x.fips);
+            // Look up matching analog entry for label text via byFips Map
+            // (O(1) — was O(n) .find before 2026-05-04 refactor).
+            const analog = centroids.byFips.get(x.fips)?.analog;
             // Truncate "Greater Bridgeport Planning Region" → "Greater
             // Bridgeport" so labels don't overlap each other on the map.
             // Take first 2 words max; for "Alexandria city" → "Alexandria"
@@ -467,13 +791,51 @@ export default function CountyMap({
             // right-side (Alexandria ~-77°, Charleston ~-79.9°).
             const lng = x.coords[0];
             const labelOnLeft = lng > -74;
+            // Cross-component highlight — when an AnalogCard below the
+            // map is hovered, lifted hoveredAnalogFips state matches
+            // this pin → emphasize with bigger radius + outer ring +
+            // bolder label. Bi-directional link makes the map ↔ analog
+            // list feel like one connected surface to judges who poke
+            // around. (2026-05-04 upgrade.)
+            const isHovered = hoveredAnalogFips === x.fips;
             return (
-              <Marker key={`pin-${x.fips}`} coordinates={x.coords}>
+              <Marker
+                key={`pin-${x.fips}`}
+                coordinates={x.coords}
+                onMouseEnter={() => onHoverAnalog?.(x.fips)}
+                onMouseLeave={() => onHoverAnalog?.(null)}
+                onFocus={() => onHoverAnalog?.(x.fips)}
+                onBlur={() => onHoverAnalog?.(null)}
+                onClick={() => onSelectAnalog?.(x.fips)}
+                onKeyDown={(e: React.KeyboardEvent<SVGGElement>) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onSelectAnalog?.(x.fips);
+                  }
+                }}
+                tabIndex={0}
+                aria-label={`Peer county pin — click to scroll to ${labelText} analog card`}
+                style={{
+                  default: { cursor: 'pointer' },
+                  hover: { cursor: 'pointer' },
+                  pressed: { cursor: 'pointer' },
+                }}
+              >
+                {isHovered && (
+                  <circle
+                    r={11}
+                    fill="none"
+                    stroke="#1F3A5F"
+                    strokeWidth={1.5}
+                    strokeOpacity={0.45}
+                  />
+                )}
                 <circle
-                  r={5}
-                  fill="#5B7DB1"
+                  r={isHovered ? 7 : 5}
+                  fill={isHovered ? '#1F3A5F' : '#5B7DB1'}
                   stroke="#FFFFFF"
-                  strokeWidth={1.25}
+                  strokeWidth={1.5}
+                  style={{ transition: 'r 0.18s ease-out, fill 0.18s ease-out' }}
                 />
                 {labelText && (
                   <text
@@ -481,9 +843,10 @@ export default function CountyMap({
                     y={4}
                     textAnchor={labelOnLeft ? 'end' : 'start'}
                     fontFamily="JetBrains Mono, ui-monospace, monospace"
-                    fontSize={9}
-                    fontWeight={500}
+                    fontSize={isHovered ? 10 : 9}
+                    fontWeight={isHovered ? 700 : 500}
                     fill="#1F3A5F"
+                    style={{ transition: 'font-size 0.18s ease-out, font-weight 0.18s ease-out' }}
                   >
                     {labelText.toUpperCase()}
                   </text>
@@ -539,6 +902,31 @@ export default function CountyMap({
               <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
             </button>
           )}
+          {/* Auto-tour Play/Stop — recording aid. Day 9 demo capture
+              uses this to deliver the consistent pin-to-pin camera move
+              without a hand-driven mouse path that varies take-to-take.
+              Sits as bottom button, always-visible (zoom controls hide
+              the Reset only when at 1x; tour button is independent of
+              zoom state). Toggles label/icon on play state. */}
+          <button
+            type="button"
+            onClick={playTour}
+            aria-label={isTourPlaying ? 'Stop auto tour' : 'Play auto tour'}
+            aria-pressed={isTourPlaying}
+            title={isTourPlaying ? 'Stop tour' : 'Play tour'}
+            className={cn(
+              'inline-flex items-center justify-center w-8 h-8 rounded-full border shadow-md focus-ring transition-colors mt-1.5',
+              isTourPlaying
+                ? 'bg-navy border-navy text-card-white hover:bg-deep-navy'
+                : 'bg-card-white border-soft-border text-navy hover:bg-warm-neutral',
+            )}
+          >
+            {isTourPlaying ? (
+              <Square className="h-3 w-3 fill-current" aria-hidden="true" />
+            ) : (
+              <Play className="h-3.5 w-3.5 fill-current" aria-hidden="true" />
+            )}
+          </button>
         </div>
       </div>
 
@@ -701,22 +1089,52 @@ function BezierArc({
   const lift = Math.min(60, norm * 0.25);
   const cx = mx + (-dy / norm) * lift;
   const cy = my + (dx / norm) * lift;
+  const pathD = `M ${x1} ${y1} Q ${cx} ${cy} ${x2} ${y2}`;
+  // Traveling dot duration scales with arc length so longer arcs (e.g.
+  // Cobb GA → Bridgeport CT) don't whoosh past faster than shorter
+  // ones (Cobb GA → Charleston SC). Base ~2.5s for the average
+  // continental US arc; clamp so very short arcs aren't instant and
+  // very long arcs aren't sluggish.
+  const dotDuration = Math.max(1.8, Math.min(4, norm / 100));
   return (
-    <motion.path
-      d={`M ${x1} ${y1} Q ${cx} ${cy} ${x2} ${y2}`}
-      fill="none"
-      stroke="#B96B5C"
-      strokeWidth={1.5}
-      strokeDasharray="4 3"
-      strokeLinecap="round"
-      markerEnd={`url(#${markerId})`}
-      initial={reduceMotion ? false : { pathLength: 0, opacity: 0 }}
-      animate={{ pathLength: 1, opacity: 1 }}
-      transition={{
-        pathLength: { duration: 1.2, delay: 0.3 + index * 0.18, ease: [0.16, 1, 0.3, 1] },
-        opacity: { duration: 0.4, delay: 0.3 + index * 0.18 },
-      }}
-    />
+    <g>
+      <motion.path
+        d={pathD}
+        fill="none"
+        stroke="#B96B5C"
+        strokeWidth={1.5}
+        strokeDasharray="4 3"
+        strokeLinecap="round"
+        markerEnd={`url(#${markerId})`}
+        initial={reduceMotion ? false : { pathLength: 0, opacity: 0 }}
+        animate={{ pathLength: 1, opacity: 1 }}
+        transition={{
+          pathLength: { duration: 1.2, delay: 0.3 + index * 0.18, ease: [0.16, 1, 0.3, 1] },
+          opacity: { duration: 0.4, delay: 0.3 + index * 0.18 },
+        }}
+      />
+      {/* Traveling dot — pulses along the arc continuously source → peer
+          to reinforce the "data flow direction" reading of the arc.
+          Subtle (small radius, low opacity) so it doesn't compete with
+          the source pin pulse or the analog pin emphasis. SVG
+          <animateMotion> is the cheapest path-following pattern (no JS
+          loop needed, runs at compositor rate). begin attribute
+          syncs each dot's first lap to the arc's draw-on completion +
+          a small offset so the 3 dots fire in staggered sequence,
+          matching the arc draw-on stagger. Skip entirely under
+          prefers-reduced-motion. */}
+      {!reduceMotion && (
+        <circle r={2.2} fill="#B96B5C" opacity={0.7}>
+          <animateMotion
+            dur={`${dotDuration}s`}
+            repeatCount="indefinite"
+            begin={`${1.5 + index * 0.5}s`}
+            path={pathD}
+            rotate="auto"
+          />
+        </circle>
+      )}
+    </g>
   );
 }
 

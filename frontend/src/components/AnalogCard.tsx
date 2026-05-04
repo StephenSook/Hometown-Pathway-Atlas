@@ -17,12 +17,25 @@ import { cn } from '../lib/utils';
 interface AnalogCardProps {
   analog: AnalogEntry;
   onSelect?: (fips: string) => void;
+  /** Cross-component highlight — fires onHover(fips) on
+   *  mouseenter/focus, onHover(null) on leave/blur. Lifted to
+   *  HomePage → CountyMap so the matching pin on the map gets
+   *  emphasized while user is hovering this card. */
+  onHover?: (fips: string | null) => void;
+  /** True when the SHARED hoveredAnalogFips state matches this
+   *  analog's fips. Drives a left-border accent so the bidirectional
+   *  link is visible when user hovers the matching pin on the map.
+   *  (Pin → card direction; card → pin direction is handled in
+   *  CountyMap via the same shared state.) */
+  isHighlighted?: boolean;
   className?: string;
 }
 
 export default function AnalogCard({
   analog,
   onSelect,
+  onHover,
+  isHighlighted,
   className,
 }: AnalogCardProps) {
   const headingId = useId();
@@ -31,11 +44,19 @@ export default function AnalogCard({
   return (
     <article
       aria-labelledby={headingId}
+      onMouseEnter={() => onHover?.(analog.fips)}
+      onMouseLeave={() => onHover?.(null)}
+      onFocus={() => onHover?.(analog.fips)}
+      onBlur={() => onHover?.(null)}
       className={cn(
         'group relative rounded-2xl bg-card-white border border-soft-border shadow-card-resting',
-        'p-6 flex flex-col gap-4',
+        'p-6 flex flex-col gap-4 transition-all duration-200',
+        // Bidirectional highlight — when matching map pin is hovered,
+        // outline this card with navy left border + lifted shadow.
+        // Mirror of CountyMap's pin emphasis when card is hovered.
+        isHighlighted && 'border-l-4 border-l-navy shadow-card-hover',
         isInteractive &&
-          'transition-all duration-200 group-hover:shadow-card-hover hover:shadow-card-hover hover:scale-[1.02]',
+          'group-hover:shadow-card-hover hover:shadow-card-hover hover:scale-[1.02]',
         className,
       )}
     >

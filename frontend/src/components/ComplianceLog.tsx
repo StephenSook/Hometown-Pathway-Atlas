@@ -229,6 +229,10 @@ export default function ComplianceLog({
   // identical message strings, React bails on setState, and aria-live
   // doesn't re-announce. Suffix doubles as informative chrome for AT users.
   useEffect(() => {
+    // Array.prototype.findLast() is ES2023 — Chrome 97+ / Safari 15.4+ /
+    // Firefox 104+. Vite default browser targets cover this for the May 2026
+    // deploy window. Flag for any future older-target config (Lighthouse
+    // CI runtime, IE polyfill bundle, etc) to add a polyfill at that point.
     const lastFixed = displayed.findLast((e) => e.status === 'fixed');
     if (lastFixed) {
       setSrMessage(
@@ -311,14 +315,22 @@ export default function ComplianceLog({
 
   const handleDragPointerUp = useCallback(
     (e: React.PointerEvent<HTMLElement>) => {
-      if (!isDragging) return;
+      // Use the ref guard, NOT isDragging state — matches handleDragPointerMove
+      // pattern. State has a one-render commit lag after pointerdown sets
+      // setIsDragging(true). If pointercancel fires before that commit, the
+      // closure still reads stale `false` and bails out, leaving
+      // dragStartRef.current populated for the next pointerdown to read
+      // stale ox/oy values. Ref is set synchronously, gates correctly.
+      // (Codex review 2026-05-04 caught the inconsistency between
+      // pointermove (ref) and pointerup (state).)
+      if (!dragStartRef.current) return;
       setIsDragging(false);
       dragStartRef.current = null;
       if (e.currentTarget.hasPointerCapture(e.pointerId)) {
         e.currentTarget.releasePointerCapture(e.pointerId);
       }
     },
-    [isDragging],
+    [],
   );
 
   // Chip-specific pointer-up: same cleanup as the header drag PLUS

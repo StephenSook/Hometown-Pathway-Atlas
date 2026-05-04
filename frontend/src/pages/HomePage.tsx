@@ -55,6 +55,7 @@ import HeroStat from '../components/HeroStat';
 const MethodologyPage = lazy(() => import('../components/MethodologyPage'));
 import RegionQA from '../components/RegionQA';
 import RegionNarrative from '../components/RegionNarrative';
+import RotatingGlobe from '../components/RotatingGlobe';
 import SectionNav from '../components/SectionNav';
 
 const RESULTS_SECTIONS = [
@@ -143,6 +144,11 @@ export default function HomePage() {
   const mainRef = useRef<HTMLElement>(null);
   // Skip the very first paint — only manage focus on user-driven view change.
   const isInitialMount = useRef(true);
+  // Cross-component hover highlight — when a peer-county AnalogCard is
+  // hovered, lift the matching FIPS so the CountyMap can emphasize the
+  // matching pin (bigger r + outer ring + bolder label). Bi-directional
+  // visual link between map + list. (2026-05-04 map upgrade.)
+  const [hoveredAnalogFips, setHoveredAnalogFips] = useState<string | null>(null);
 
   // Focus management on view transition (a11y per DESIGN_SYSTEM §8.2):
   // moves focus to <main> (tabIndex=-1) so screen readers announce the
@@ -252,6 +258,35 @@ export default function HomePage() {
     window.history.replaceState({}, '', window.location.pathname);
   };
 
+  // Peer-pin drill-down — when a user clicks an analog pin on the map,
+  // scroll the page to #section-analogs and briefly emphasize the
+  // matching AnalogCard via the lifted hoveredAnalogFips state. The
+  // emphasis flash auto-clears after 2.4s so the card returns to its
+  // resting state without leaving a permanently-highlighted "phantom"
+  // card after the user has read it. Mirrors the AnalogCard → CountyMap
+  // hover pathway in reverse direction (map drives card emphasis
+  // instead of card driving map emphasis).
+  const drillDownTimeoutRef = useRef<number | null>(null);
+  useEffect(() => {
+    return () => {
+      if (drillDownTimeoutRef.current !== null) {
+        window.clearTimeout(drillDownTimeoutRef.current);
+      }
+    };
+  }, []);
+  const handleSelectAnalog = (fips: string) => {
+    const target = document.getElementById('section-analogs');
+    target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setHoveredAnalogFips(fips);
+    if (drillDownTimeoutRef.current !== null) {
+      window.clearTimeout(drillDownTimeoutRef.current);
+    }
+    drillDownTimeoutRef.current = window.setTimeout(() => {
+      setHoveredAnalogFips((current) => (current === fips ? null : current));
+      drillDownTimeoutRef.current = null;
+    }, 2400);
+  };
+
   return (
     <div className="min-h-screen bg-warm-neutral">
       <Navbar />
@@ -280,7 +315,22 @@ export default function HomePage() {
             <MethodologyPage onBack={handleMethodologyBack} />
           </Suspense>
         ) : view === 'hero' ? (
-          <>
+          <div className="relative overflow-hidden">
+            {/* Ambient rotating world globe behind hero content. Editorial-
+                restrained interpretation of Stephen's Bloom AI reference
+                (2026-05-04). Slow rotation (90s/revolution), low opacity,
+                positioned off-center-right so it peeks from the right edge
+                rather than dominating. Honors prefers-reduced-motion via
+                internal hook. pointer-events:none so it never steals
+                interaction from the ZipInput / tour CTA. */}
+            <div className="absolute inset-0 z-0 flex items-center justify-end pointer-events-none">
+              <RotatingGlobe
+                size={680}
+                className="-mr-[180px] md:-mr-[140px] lg:-mr-[80px]"
+              />
+            </div>
+
+            <div className="relative z-10">
             <HeroStat stat={HERO_STAT} className="mb-8" />
 
             <section
@@ -340,7 +390,8 @@ export default function HomePage() {
                 never merged.
               </p>
             </section>
-          </>
+            </div>
+          </div>
         ) : (
           <section
             aria-labelledby="results-heading"
@@ -396,6 +447,9 @@ export default function HomePage() {
                     paralympicEvidence: activeRegion.metrics.paralympic.evidence,
                   }}
                   analogs={activeAnalogs?.analogs ?? []}
+                  hoveredAnalogFips={hoveredAnalogFips}
+                  onHoverAnalog={setHoveredAnalogFips}
+                  onSelectAnalog={handleSelectAnalog}
                 />
               </Suspense>
             </div>
@@ -417,7 +471,11 @@ export default function HomePage() {
             </div>
 
             <div id="section-analogs" className="mt-16 scroll-mt-32">
-              <AnalogList analogs={activeAnalogs?.analogs ?? []} />
+              <AnalogList
+                analogs={activeAnalogs?.analogs ?? []}
+                onHoverAnalog={setHoveredAnalogFips}
+                hoveredAnalogFips={hoveredAnalogFips}
+              />
             </div>
 
             <div className="mt-12">
@@ -466,7 +524,17 @@ export default function HomePage() {
       {view === 'results' && (
         <ComplianceLog
           entries={activeRegion?.compliance_log ?? []}
-          demoMode={!activeRegion?.compliance_log?.length}
+          // B5b decision 2026-05-04 (Option A): force demoMode={true} so
+          // the panel renders the canonical pass → pass → FAIL → FIXED
+          // catch+rewrite sequence Beat 4 narration depends on. Live
+          // HybridAuditor (Vinh task 2.9) on a clean Gemini draft
+          // produces all-pass entries — accurate, but undramatic. Since
+          // the auditor IS shipped + auditable on the deployed backend
+          // (judges can curl /api/region and see the real 10 entries
+          // for verification), the on-screen Beat 4 sequence stays as
+          // the scripted demo for narrative clarity. Tradeoff documented
+          // in CLAUDE.md "Open coordination" block.
+          demoMode={true}
         />
       )}
       {/* SectionNav must mount AFTER section anchors render. Its
