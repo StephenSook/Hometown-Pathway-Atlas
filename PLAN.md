@@ -47,11 +47,11 @@ smoke verified 30060 / 00000 / 11111 sentinels.
 - Layer F — CUT 2026-05-03 (RegionQA Layer C covers reasoning
   surface differently; avoid splitting judge attention)
 
-**Phase 5 — Deploy + demo + submit:** PENDING. Backend Dockerfile
-shipped 2026-05-03 PM (`55e35b5`) so Cloud Run deploy is unblocked.
-Demo recording + Devpost submission Day 9–10. NotebookLM oracle pass
-+ pitch dry-run (`./scripts/pitch-stopwatch.sh`) still on Stephen's
-plate.
+**Phase 5 — Deploy + demo + submit:** IN PROGRESS. Backend Cloud Run
+✅ LIVE 2026-05-04 (task 5.1 done — revision 00004, smoke verified).
+Frontend Cloud Run 🟡 ready to deploy (task 5.2). Demo recording +
+Devpost submission Day 9–10. NotebookLM oracle pass + pitch dry-run
+(`./scripts/pitch-stopwatch.sh`) still on Stephen's plate.
 
 **Critical-path Vinh deps still open:**
 1. ~~Task 1.11 — Layer A stat~~ ✅ DONE 2026-05-04
@@ -232,7 +232,7 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started · ⛔ blocked · ✂️
 
 | # | Component | File(s) | Owner | Status | Deps | Notes |
 |---|---|---|---|---|---|---|
-| 5.1 | Backend Dockerfile + Cloud Run deploy | `backend/Dockerfile` | Vinh | 🟡 | 2.11 | Day 8 AM. `--memory 1Gi --cpu 1 --min-instances 1 --max-instances 5`. Smoke test from prod URL. **Pre-deploy review done 2026-05-04:** fixed CRITICAL PathwayService crash (bare `row["olympic_percentile"]` → `_safe_float(row.get(...))`), fixed AnalogService silent <3 analog return, added Gemini post-parse schema validation, added cache schema version guard, fixed sports share float sum, added warning logs for unknown confidence/evidence values. 40/40 tests green. Ready to deploy. |
+| 5.1 | Backend Dockerfile + Cloud Run deploy | `backend/Dockerfile` | Vinh | ✅ | 2.11 | **LIVE 2026-05-04.** Revision atlas-backend-00004-44m. URL: https://atlas-backend-635524063449.us-central1.run.app. `/health` 200, POST /api/region 30060 → Cobb County 437-char narrative + 6 compliance entries. `/api/analogs/13067` → 3 analogs, 3 distinct regions. Deployed with parallel analog enrichment + auditor fallback + rural MSA diversity fix. `--memory 1Gi --cpu 1 --min-instances 1 --max-instances 5`. |
 | 5.2 | Frontend Dockerfile + Cloud Run deploy | `frontend/Dockerfile` + `frontend/nginx.conf` + `docs/cloud_run_deploy.md` | Stephen | 🟡 | 3.15 | **Image + runbook ready** (commits 8861b6e + 8483089). Multi-stage Dockerfile (node:22-alpine builder → nginx:alpine runtime, 93.7MB image). nginx.conf serves SPA on port 8080 with gzip, asset cache headers, /healthz, deep-link fallback. ARG VITE_API_BASE_URL for build-time backend URL injection. **Verified locally**: docker build + run + Playwright + axe — 0 violations, all components render. **Day 8 deploy**: `gcloud run deploy atlas-frontend --source frontend/` per runbook. ✅ flips after live deploy + URL captured. |
 | 5.3 | End-to-end production test | prod URLs | Stephen+Vinh | ⬜ | 5.1, 5.2 | Day 8 EOD. 20 sample ZIPs urban/rural/coastal/mountain. |
 | 5.4 | Pitch script + demo storyboard | `docs/pitch_script.md` + `docs/demo_storyboard.md` | Stephen | 🟡 | 3.16 | **Both drafted** (commits c58ffbd, 80f82ad, 8ad3ae5). pitch_script.md = 7-beat narration, 3:04 estimated (trim options to 2:58 documented), Move United 63% opener + Tech Proof beat (hackathon FAQ requirement) + Pillar 5 close. demo_storyboard.md = single-take + separate-narration shot list, recording tool tradeoffs, Day 9 timeline, backup plans, NIL/IOC/USOPC DQ checklist. Reconciled against original 03_demo_outline.docx — preserved structure, updated Pillar 5 numbers per cold-check, leveraged ComplianceLog auto-demo timing instead of live re-trigger. **Day 8 PM**: read-aloud + stopwatch. **Day 9**: dry runs + record + submit. Status ✅ after Day 9 evening. |
