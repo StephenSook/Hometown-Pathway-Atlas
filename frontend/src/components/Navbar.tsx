@@ -22,10 +22,14 @@ interface NavLink {
   href: string;
 }
 
+// Methodology routes via #about — HomePage hash listener watches for
+// '#about' and swaps view to MethodologyPage. Previously had a separate
+// 'Methodology' entry pointing at the dead '#methodology' anchor (no
+// element with that id exists + handler doesn't watch it). Collapsed to
+// one entry so both labels can't disagree about destination.
 const NAV_LINKS: NavLink[] = [
   { label: 'Region', href: '#region' },
-  { label: 'Methodology', href: '#methodology' },
-  { label: 'About', href: '#about' },
+  { label: 'Methodology', href: '#about' },
 ];
 
 export default function Navbar() {
