@@ -27,7 +27,8 @@ hunt — gates HeroStat real number swap + Layer D scrollytelling.
 in commits `8a36c91`, `cac8540`, `ecbb9b8`, `a617346`). Pydantic
 schemas + ProfileService + AnalogService + PathwayService + 4 routes
 live. Outstanding: task **2.7** GeminiService → unblocks RegionQA
-real backend; task **2.9** HybridAuditor → ComplianceLog auto-flips
+real backend; task **2.9** HybridAuditor ✅ DONE 2026-05-04 — HybridAuditor
++ NarrativeCache wired into GeminiService; ComplianceLog auto-flips
 to live mode (frontend ready, demoMode prop is data-aware).
 
 **Phase 3 — Frontend conservative (Stephen):** ✓ DONE. All
@@ -191,9 +192,9 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started · ⛔ blocked · ✂️
 | 2.6 | Routes — `/api/region`, `/api/analogs/{fips}`, `/api/pathway/{fips}` | `backend/routes/*.py` | Vinh | ✅ | 2.3, 2.4, 2.5 | Done 2026-05-03. All 4 routers wired in main.py. `/api/stats/county/{fips}` included (task 0.9 contract). |
 | 2.7 | GeminiService — region narrative | `backend/services/gemini_service.py` | Vinh | ✅ | 2.3 | Done 2026-05-03. Vertex AI structured output (response_schema). enrich_region + enrich_analogs (tradeoff + per-analog narrative). Fallback narratives on Gemini failure. Compliance log entries from parity_check. Wired into /api/region + /api/analogs routes. |
 | 2.8 | GeminiService — test 5 sample counties | `backend/tests/test_gemini.py` | Vinh | ✅ | 2.7 | Done 2026-05-03. 20/20 passed (2m42s). 4 test classes × 5 FIPSes: structured output, analogs, parity, compliance schema. All green against live Vertex AI. |
-| 2.9 | HybridAuditor — deterministic layer | `backend/services/auditor.py` | Vinh | ⬜ | 2.7 | Day 6 AM. Regex for banned phrases, name detection, parity mention check, schema validation. |
-| 2.10 | HybridAuditor — Gemini semantic layer | `backend/services/auditor.py` | Vinh | ⬜ | 2.9 | Day 6 PM. Causal-tone classifier. Rewrite loop. Compliance log emission. |
-| 2.11 | Caching layer | `backend/services/cache.py` | Vinh | ⬜ | 2.7 | Day 6 PM. FIPS-keyed deterministic cache for narratives. Don't recall Gemini for same county. |
+| 2.9 | HybridAuditor — deterministic layer | `backend/services/auditor.py` | Vinh | ✅ | 2.7 | Done 2026-05-04. Deterministic regex: causal verbs, parity mention, name leak. HybridAuditor service in backend/services/auditor.py. |
+| 2.10 | HybridAuditor — Gemini semantic layer | `backend/services/auditor.py` | Vinh | ✅ | 2.9 | Done 2026-05-04. Gemini semantic rewrite loop, max 2 attempts, graceful fallback. Extends auditor.py. |
+| 2.11 | Caching layer | `backend/services/cache.py` | Vinh | ✅ | 2.7 | Done 2026-05-04. FIPS-keyed in-memory TTL cache (24h). backend/services/cache.py. Wired into GeminiService. |
 
 ### Phase 3 — Frontend conservative (Days 1–6, Stephen)
 

@@ -12,6 +12,8 @@ from vertexai.generative_models import GenerationConfig, GenerativeModel
 from config import Settings, get_settings
 from schemas.analog import AnalogEntry, AnalogsResponse
 from schemas.region import ComplianceEntry, RegionResponse
+from services.auditor import get_auditor
+from services.cache import get_narrative_cache
 
 logger = logging.getLogger(__name__)
 
@@ -113,7 +115,12 @@ class GeminiService:
     # ------------------------------------------------------------------
 
     def enrich_region(self, region: RegionResponse) -> RegionResponse:
-        """Fill region.narrative + region.compliance_log from Gemini."""
+        """Fill region.narrative + region.compliance_log from Gemini, with cache + auditor."""
+        cache = get_narrative_cache()
+        cached = cache.get(region.fips, "region")
+        if isinstance(cached, RegionResponse):
+            return cached
+
         packet = _build_region_packet(region)
         try:
             result = self._call(
@@ -127,23 +134,34 @@ class GeminiService:
             narrative = _fallback_region_narrative(region)
             log_entries = _error_log_entry("region_narrative", str(exc))
 
-        return region.model_copy(update={"narrative": narrative, "compliance_log": log_entries})
+        audit_result = get_auditor().audit(narrative)
+        narrative = audit_result.final_narrative
+        log_entries = log_entries + audit_result.entries
+
+        enriched = region.model_copy(update={"narrative": narrative, "compliance_log": log_entries})
+        cache.set(region.fips, "region", enriched)
+        return enriched
 
     def enrich_analogs(self, analogs_response: AnalogsResponse) -> AnalogsResponse:
-        """Fill tradeoff_explanation + per-analog narrative + compliance_log."""
-        analogs = analogs_response.analogs
+        """Fill tradeoff_explanation + per-analog narrative, with cache + auditor."""
+        cache = get_narrative_cache()
+        cached = cache.get(analogs_response.source_fips, "analogs")
+        if isinstance(cached, AnalogsResponse):
+            return cached
 
-        # 1. Tradeoff explanation across all 3 analogs
         tradeoff_text = self._generate_tradeoff(analogs_response)
+        audit_result = get_auditor().audit(tradeoff_text)
+        tradeoff_text = audit_result.final_narrative
 
-        # 2. Per-analog narrative (parallel would be nice but keeping sequential for simplicity)
         enriched: list[AnalogEntry] = []
-        for entry in analogs:
+        for entry in analogs_response.analogs:
             enriched.append(self._enrich_analog_entry(entry))
 
-        return analogs_response.model_copy(
+        result = analogs_response.model_copy(
             update={"analogs": enriched, "tradeoff_explanation": tradeoff_text}
         )
+        cache.set(analogs_response.source_fips, "analogs", result)
+        return result
 
     # ------------------------------------------------------------------
     # Private helpers
