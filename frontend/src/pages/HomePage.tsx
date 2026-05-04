@@ -258,6 +258,35 @@ export default function HomePage() {
     window.history.replaceState({}, '', window.location.pathname);
   };
 
+  // Peer-pin drill-down — when a user clicks an analog pin on the map,
+  // scroll the page to #section-analogs and briefly emphasize the
+  // matching AnalogCard via the lifted hoveredAnalogFips state. The
+  // emphasis flash auto-clears after 2.4s so the card returns to its
+  // resting state without leaving a permanently-highlighted "phantom"
+  // card after the user has read it. Mirrors the AnalogCard → CountyMap
+  // hover pathway in reverse direction (map drives card emphasis
+  // instead of card driving map emphasis).
+  const drillDownTimeoutRef = useRef<number | null>(null);
+  useEffect(() => {
+    return () => {
+      if (drillDownTimeoutRef.current !== null) {
+        window.clearTimeout(drillDownTimeoutRef.current);
+      }
+    };
+  }, []);
+  const handleSelectAnalog = (fips: string) => {
+    const target = document.getElementById('section-analogs');
+    target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setHoveredAnalogFips(fips);
+    if (drillDownTimeoutRef.current !== null) {
+      window.clearTimeout(drillDownTimeoutRef.current);
+    }
+    drillDownTimeoutRef.current = window.setTimeout(() => {
+      setHoveredAnalogFips((current) => (current === fips ? null : current));
+      drillDownTimeoutRef.current = null;
+    }, 2400);
+  };
+
   return (
     <div className="min-h-screen bg-warm-neutral">
       <Navbar />
@@ -420,6 +449,7 @@ export default function HomePage() {
                   analogs={activeAnalogs?.analogs ?? []}
                   hoveredAnalogFips={hoveredAnalogFips}
                   onHoverAnalog={setHoveredAnalogFips}
+                  onSelectAnalog={handleSelectAnalog}
                 />
               </Suspense>
             </div>

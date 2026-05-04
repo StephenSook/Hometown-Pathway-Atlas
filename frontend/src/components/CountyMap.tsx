@@ -38,7 +38,8 @@
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
-import { Minus, Plus, RotateCcw } from 'lucide-react';
+import { Minus, Play, Plus, RotateCcw, Square } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   ComposableMap,
   Geographies,
@@ -48,7 +49,7 @@ import {
   useMapContext,
 } from 'react-simple-maps';
 import countiesTopo from 'us-atlas/counties-10m.json';
-import type { AnalogEntry } from '../lib/api';
+import { api, type AnalogEntry, type CountyStats } from '../lib/api';
 import type { CountyTooltipData } from './CountyTooltip';
 import CountyTooltip from './CountyTooltip';
 // Static data extracted 2026-05-04 from Vinh's
@@ -182,6 +183,11 @@ interface CountyMapProps {
    *  surfaces drive the shared hoveredAnalogFips state and update each
    *  other (pin → card outline + card → pin emphasis). */
   onHoverAnalog?: (fips: string | null) => void;
+  /** Drill-down callback — fires when user CLICKS a peer pin. HomePage
+   *  scrolls to the AnalogList section + briefly emphasizes the
+   *  matching card. Mirrors the existing AnalogCard click pathway in
+   *  reverse direction. */
+  onSelectAnalog?: (fips: string) => void;
   className?: string;
 }
 
@@ -199,6 +205,7 @@ export default function CountyMap({
   analogs,
   hoveredAnalogFips,
   onHoverAnalog,
+  onSelectAnalog,
   className,
 }: CountyMapProps) {
   const [hover, setHover] = useState<HoverState | null>(null);
@@ -219,6 +226,55 @@ export default function CountyMap({
   const handleMoveEnd = useCallback(
     (next: { coordinates: [number, number]; zoom: number }) => {
       setPosition(next);
+    },
+    [],
+  );
+
+  // Reusable camera-tween helper. Used by first-paint arrival + the
+  // auto-tour playback. Returns a Promise that resolves when the tween
+  // completes; rejects with cancellation marker if cancelRef goes true
+  // mid-flight (lets the tour loop bail cleanly between keyframes).
+  const tweenCamera = useCallback(
+    (
+      target: { coordinates: [number, number]; zoom: number },
+      duration: number,
+      cancelRef?: React.MutableRefObject<boolean>,
+    ): Promise<void> => {
+      return new Promise((resolve) => {
+        const start = performance.now();
+        // Snapshot current position at tween-start. Functional setState
+        // would race with concurrent updates; capturing once is fine
+        // since the tween is the sole driver during its duration.
+        let startCoords: [number, number] = [-96, 38];
+        let startZoom = 1;
+        setPosition((current) => {
+          startCoords = current.coordinates;
+          startZoom = current.zoom;
+          return current;
+        });
+        const ease = (t: number) => 1 - Math.pow(1 - t, 3);
+        let raf = 0;
+        const tick = (now: number) => {
+          if (cancelRef?.current) {
+            cancelAnimationFrame(raf);
+            resolve();
+            return;
+          }
+          const elapsed = now - start;
+          const t = Math.min(1, elapsed / duration);
+          const e = ease(t);
+          setPosition({
+            coordinates: [
+              startCoords[0] + (target.coordinates[0] - startCoords[0]) * e,
+              startCoords[1] + (target.coordinates[1] - startCoords[1]) * e,
+            ],
+            zoom: startZoom + (target.zoom - startZoom) * e,
+          });
+          if (t < 1) raf = requestAnimationFrame(tick);
+          else resolve();
+        };
+        raf = requestAnimationFrame(tick);
+      });
     },
     [],
   );
@@ -330,6 +386,83 @@ export default function CountyMap({
     return { source, analogList, byFips };
   }, [sourceFips, sourceCentroid, analogs]);
 
+  // Auto-tour playback — animates camera through 5 keyframes:
+  //   1. US-wide (resets context)
+  //   2. Source county (zoom in, the "where you are")
+  //   3-5. Each peer county (one at a time)
+  //   6. Fit-all (closing overview, all 4 pins visible)
+  // Each keyframe = 1.1s tween + 1.2s pause = ~2.3s × 6 = ~14s total.
+  // Recording aid for Day 9 demo. Press ▶ to start, ■ to stop early.
+  // tourCancelRef.current = true mid-flight bails cleanly.
+  const [isTourPlaying, setIsTourPlaying] = useState(false);
+  const tourCancelRef = useRef(false);
+
+  const stopTour = useCallback(() => {
+    tourCancelRef.current = true;
+    setIsTourPlaying(false);
+  }, []);
+
+  const playTour = useCallback(async () => {
+    if (isTourPlaying) {
+      stopTour();
+      return;
+    }
+    if (!centroids.source) return;
+    setIsTourPlaying(true);
+    tourCancelRef.current = false;
+
+    type Keyframe = { coords: [number, number]; zoom: number; pauseMs: number };
+    const keyframes: Keyframe[] = [
+      { coords: [-96, 38], zoom: 1, pauseMs: 700 },
+      { coords: centroids.source, zoom: 2.4, pauseMs: 1300 },
+    ];
+    centroids.analogList.forEach((x) => {
+      if (x.coords) {
+        keyframes.push({ coords: x.coords, zoom: 2.6, pauseMs: 1200 });
+      }
+    });
+    // Closing overview — fit all 4 pins (mirrors smart Reset logic).
+    const allCoords: [number, number][] = [centroids.source];
+    centroids.analogList.forEach((x) => {
+      if (x.coords) allCoords.push(x.coords);
+    });
+    const lngs = allCoords.map((c) => c[0]);
+    const lats = allCoords.map((c) => c[1]);
+    const finalCenter: [number, number] = [
+      (Math.min(...lngs) + Math.max(...lngs)) / 2,
+      (Math.min(...lats) + Math.max(...lats)) / 2,
+    ];
+    const span = Math.max(
+      Math.max(...lngs) - Math.min(...lngs),
+      Math.max(...lats) - Math.min(...lats),
+    );
+    const finalZoom = Math.min(5, Math.max(1.2, 50 / (span + 5)));
+    keyframes.push({ coords: finalCenter, zoom: finalZoom, pauseMs: 1500 });
+
+    for (const kf of keyframes) {
+      if (tourCancelRef.current) break;
+      await tweenCamera(
+        { coordinates: kf.coords, zoom: kf.zoom },
+        1100,
+        tourCancelRef,
+      );
+      if (tourCancelRef.current) break;
+      await new Promise<void>((r) => {
+        const t = setTimeout(r, kf.pauseMs);
+        // If cancelled during pause, clear the timeout + resolve early.
+        const interval = setInterval(() => {
+          if (tourCancelRef.current) {
+            clearTimeout(t);
+            clearInterval(interval);
+            r();
+          }
+        }, 50);
+        setTimeout(() => clearInterval(interval), kf.pauseMs);
+      });
+    }
+    setIsTourPlaying(false);
+  }, [isTourPlaying, centroids, tweenCamera, stopTour]);
+
   // Reset zoom — smarter than "back to US-wide". Computes bounding
   // box of source + 3 analog centroids, centers on it, picks zoom
   // that fits all 4 with comfortable padding. User naturally wants to
@@ -388,17 +521,29 @@ export default function CountyMap({
     [analogs],
   );
 
+  const queryClient = useQueryClient();
+
   const lookup = useCallback(
     (id: string, name?: string): CountyTooltipData => {
       if (id === sourceFips) return sourceTooltip;
       const a = analogTooltipsByFips.get(id);
       if (a) return a;
-      // Non-highlighted county — return name + state (derived from FIPS
-      // prefix) for the basic hover tooltip. Per-100k metrics null since
-      // we don't have those for arbitrary counties without a /api/stats/
-      // county/{fips} call (Vinh shipped that endpoint but using it here
-      // would mean a fetch on every hover — too aggressive). Click-to-
-      // load could be a future enhancement.
+      // Non-highlighted county — check React Query cache for previously-
+      // fetched CountyStats from a click-to-load action (Vinh's /api/
+      // stats/county/{fips} endpoint). Cache hit = enriched tooltip with
+      // real per-100k metrics. Cache miss = basic tooltip with name +
+      // state only (signals "click to load full metrics" affordance).
+      const cached = queryClient.getQueryData<CountyStats>(['countyStats', id]);
+      if (cached) {
+        return {
+          countyName: cached.county_name,
+          state: FIPS_TO_STATE[id.slice(0, 2)] ?? '',
+          olympicPer100k: cached.olympic_per_100k,
+          paralympicPer100k: cached.paralympic_per_100k,
+          olympicEvidence: cached.olympic_evidence,
+          paralympicEvidence: cached.paralympic_evidence,
+        };
+      }
       return {
         countyName: name ?? 'Unknown',
         state: FIPS_TO_STATE[id.slice(0, 2)] ?? '',
@@ -406,7 +551,35 @@ export default function CountyMap({
         paralympicPer100k: null,
       };
     },
-    [sourceFips, sourceTooltip, analogTooltipsByFips],
+    [sourceFips, sourceTooltip, analogTooltipsByFips, queryClient],
+  );
+
+  // Click-to-load — fetch real per-county metrics from /api/stats/
+  // county/{fips} and store in React Query cache. Subsequent hovers
+  // over the same county pick up the cached data via lookup() →
+  // tooltip auto-enriches with per-100k + evidence labels. Skipped
+  // for source + analogs (already have data inline). 10-minute stale
+  // mirrors useCountyStats hook config.
+  const handleClickFetch = useCallback(
+    async (id: string) => {
+      if (id === sourceFips || analogFipsSet.has(id)) return;
+      try {
+        await queryClient.fetchQuery({
+          queryKey: ['countyStats', id],
+          queryFn: () => api.countyStats(id),
+          staleTime: 10 * 60 * 1000,
+        });
+        // Force the current hover tooltip to re-read from cache —
+        // setHover with a no-op object identity change triggers a
+        // re-render that pulls the new cached CountyStats via lookup().
+        setHover((prev) => (prev?.fips === id ? { ...prev, data: lookup(id, prev.data.countyName) } : prev));
+      } catch (err) {
+        if (import.meta.env.DEV) {
+          console.warn('[CountyMap] countyStats fetch failed for', id, err);
+        }
+      }
+    },
+    [queryClient, sourceFips, analogFipsSet, lookup],
   );
 
   const handleMove = useCallback(
@@ -540,6 +713,7 @@ export default function CountyMap({
                     // the feature is judge-relevant.
                     onMouseMove={(e) => handleMove(e, id, name)}
                     onMouseLeave={clearHover}
+                    onClick={() => handleClickFetch(id)}
                     onFocus={(e) => {
                       if (!isHighlighted) return;
                       const rect = (e.target as SVGElement).getBoundingClientRect();
@@ -632,7 +806,15 @@ export default function CountyMap({
                 onMouseLeave={() => onHoverAnalog?.(null)}
                 onFocus={() => onHoverAnalog?.(x.fips)}
                 onBlur={() => onHoverAnalog?.(null)}
+                onClick={() => onSelectAnalog?.(x.fips)}
+                onKeyDown={(e: React.KeyboardEvent<SVGGElement>) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onSelectAnalog?.(x.fips);
+                  }
+                }}
                 tabIndex={0}
+                aria-label={`Peer county pin — click to scroll to ${labelText} analog card`}
                 style={{
                   default: { cursor: 'pointer' },
                   hover: { cursor: 'pointer' },
@@ -720,6 +902,31 @@ export default function CountyMap({
               <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
             </button>
           )}
+          {/* Auto-tour Play/Stop — recording aid. Day 9 demo capture
+              uses this to deliver the consistent pin-to-pin camera move
+              without a hand-driven mouse path that varies take-to-take.
+              Sits as bottom button, always-visible (zoom controls hide
+              the Reset only when at 1x; tour button is independent of
+              zoom state). Toggles label/icon on play state. */}
+          <button
+            type="button"
+            onClick={playTour}
+            aria-label={isTourPlaying ? 'Stop auto tour' : 'Play auto tour'}
+            aria-pressed={isTourPlaying}
+            title={isTourPlaying ? 'Stop tour' : 'Play tour'}
+            className={cn(
+              'inline-flex items-center justify-center w-8 h-8 rounded-full border shadow-md focus-ring transition-colors mt-1.5',
+              isTourPlaying
+                ? 'bg-navy border-navy text-card-white hover:bg-deep-navy'
+                : 'bg-card-white border-soft-border text-navy hover:bg-warm-neutral',
+            )}
+          >
+            {isTourPlaying ? (
+              <Square className="h-3 w-3 fill-current" aria-hidden="true" />
+            ) : (
+              <Play className="h-3.5 w-3.5 fill-current" aria-hidden="true" />
+            )}
+          </button>
         </div>
       </div>
 

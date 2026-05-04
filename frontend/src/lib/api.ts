@@ -220,6 +220,15 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 // Public API
 // ─────────────────────────────────────────────────────────────────
 
+export interface CountyStats {
+  fips: string;
+  county_name: string;
+  olympic_per_100k: number;
+  paralympic_per_100k: number;
+  olympic_evidence: EvidenceLevel;
+  paralympic_evidence: EvidenceLevel;
+}
+
 export const api = {
   region: (zip: string) =>
     request<RegionResponse>('/api/region', {
@@ -230,4 +239,10 @@ export const api = {
   analogs: (fips: string) => request<AnalogsResponse>(`/api/analogs/${fips}`),
 
   pathway: (fips: string) => request<PathwayResponse>(`/api/pathway/${fips}`),
+
+  /** Lightweight per-county stats — used for click-to-load tooltip
+   *  enrichment on CountyMap. Single county, fast lookup, no Gemini
+   *  in path (deterministic profile only). Vinh task 0.9 contract. */
+  countyStats: (fips: string) =>
+    request<CountyStats>(`/api/stats/county/${fips}`),
 };
