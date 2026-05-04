@@ -26,6 +26,7 @@
 import { useId } from 'react';
 import { AlertTriangle, Check, Lightbulb } from 'lucide-react';
 import type { GapCategory, PatternGap } from '../lib/api';
+import { BANNED_VERBS } from '../lib/bannedVerbs';
 import { fmtPercentile } from '../lib/format';
 import EvidenceLabel from './EvidenceLabel';
 import { cn } from '../lib/utils';
@@ -56,11 +57,12 @@ const CATEGORY_STYLES: Record<GapCategory, string> = {
 const FALLBACK_BADGE_STYLES =
   'bg-soft-border text-body-text border border-soft-border';
 
-// Defense-in-depth — the hybrid auditor (task 4.4) is the production line of
-// defense for conditional phrasing. This regex catches obvious causal verbs
-// that slip past it and surfaces an [unhedged] badge in dev builds only.
-const CAUSAL_VERBS =
-  /\b(produces?|creates?|guarantees?|causes?|makes?|leads?\s+to|results?\s+in)\b/i; // atlas-phrasing-allow
+// BANNED_VERBS imported from lib/bannedVerbs (single source of truth shared
+// with RegionNarrative). Trunk review 2026-05-04 aligned the two consumers;
+// see lib/bannedVerbs for the canonical list + rationale. GapCard surfaces
+// an [unhedged] dev badge on a hit (lighter action than RegionNarrative's
+// render suppression — gap claims are typically deterministic prose from
+// pathway_service, less likely to drift than Gemini narratives).
 
 // Coerce typed PatternGapEvidence (backend) to free-form record so the
 // existing key-value rendering loop in <EvidenceBlock> works unchanged.
@@ -69,7 +71,7 @@ type EvidenceRecord = Record<string, unknown>;
 export default function GapCard({ gap, className }: GapCardProps) {
   const badgeId = useId();
   const causalViolation =
-    import.meta.env.DEV && CAUSAL_VERBS.test(gap.claim);
+    import.meta.env.DEV && BANNED_VERBS.test(gap.claim);
   if (causalViolation) {
     console.warn(
       `[GapCard] Causal phrasing detected in gap.claim. ` +

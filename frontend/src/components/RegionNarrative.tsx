@@ -37,15 +37,17 @@
 
 import { useId } from 'react';
 import SourceTooltip from './SourceTooltip';
+import { BANNED_VERBS } from '../lib/bannedVerbs';
 import { cn } from '../lib/utils';
 
-// Mirror the EXACT banned-verb list from scripts/check-conditional-phrasing.mjs
-// PLUS the broader set in GapCard.tsx (causes/makes/results in). Cold-check
-// 2026-05-04 caught that this list was narrower than GapCard's, leaving a
-// gap where Gemini drift on "causes"/"makes"/"results in" would slip past
-// the frontend safety net even though those phrases are caught at backend
-// HybridAuditor (Vinh task 2.9). Aligned with GapCard for defense in depth.
-const BANNED_VERBS = /\b(produces?|producing|creates?|creating|guarantees?|leads?\s+to|led\s+to|causes?|makes?|results?\s+in)\b/i; // atlas-phrasing-allow — regex pattern source intentionally contains the verbs
+// BANNED_VERBS imported from lib/bannedVerbs (single source of truth shared
+// with GapCard). Trunk review 2026-05-04 caught regex drift between the two
+// frontend consumers; lib extraction removes the drift surface permanently.
+// Action on a verb hit here: suppress render entirely (return null) +
+// DEV-mode console.warn. GapCard takes the lighter action (surface
+// [unhedged] dev badge); RegionNarrative is fail-closed because a missing
+// narrative card is judge-acceptable while a banned-verb-in-prose narrative
+// is a Pillar 4 DQ violation.
 
 interface RegionNarrativeProps {
   /** Gemini-generated 2-3 sentence prose. Empty string when backend
