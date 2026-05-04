@@ -5,12 +5,17 @@ Web app for Team USA × Google Cloud Hackathon Challenge 2 (Hometown Success Eng
 Submission deadline: May 11, 2026 at 5pm PT.
 Reference docs in `docs/` — architecture spec is the source of truth for conservative scope, Maximum Scope Addendum extends it.
 
-## Status snapshot (last updated 2026-05-03 PM)
-- Phase 1 ingest pipeline ✓ shipped (Vinh tasks 1.7–1.10).
-- Phase 2 backend service layer + 4 API routes ✓ shipped (Vinh tasks 2.2–2.6).
-- Frontend ↔ backend wire ✓ shipped — React Query hooks live, schemas reconciled, all 3 sentinel ZIPs (30060 / 00000 / 11111) end-to-end verified.
-- Cloud Run deploy still pending (Day 8 ops work). Backend Dockerfile + .dockerignore in place to unblock.
-- Outstanding Vinh deps: task 1.11 (Layer A stat) → unblocks A1 + Layer D; task 2.7 (GeminiService) → unblocks RegionQA real backend; task 2.9 (HybridAuditor) → ComplianceLog auto-flips to live mode.
+## Status snapshot (last updated 2026-05-04 EOD-1)
+- Phase 1 ingest pipeline ✓ shipped (Vinh tasks 1.7–1.11 incl. Layer A stat hunt).
+- Phase 2 backend ✓ FULLY shipped — Vinh tasks 2.2–2.11 (services + routes + GeminiService + HybridAuditor + NarrativeCache).
+- Frontend ↔ backend wire ✓ shipped — React Query hooks live, schemas reconciled (incl. ComplianceEntry before/after), all 3 sentinel ZIPs end-to-end verified, RegionNarrative renderer wired post-Gemini-ship.
+- **Cloud Run deploy ✓ LIVE.**
+  - Frontend: https://atlas-frontend-635524063449.us-central1.run.app
+  - Backend:  https://atlas-backend-635524063449.us-central1.run.app
+  - Vertex AI IAM (`roles/aiplatform.user`) granted to compute SA. Live smoke 2026-05-04: POST /api/region 30060 → 8.78s with HybridAuditor producing 10 audit entries, narrative live (not fallback signature).
+- HeroStat → "4 in 5" Layer A stat (4 in 5 U.S. counties show no Team USA athlete representation in our 2016–2024 indexed sources; 555 of 3,222 counties).
+- Outstanding optional Vinh items: B3 (`/api/region/qa` for RegionQA live wire), B7 (`/api/region/by-fips/{fips}` for map drill-down), B4 (`data_confidence` flag for hatch pattern). All cuttable; conservative version is shipped + live.
+- Open coordination: B5b ComplianceLog demo drama — HybridAuditor doesn't naturally produce dramatic catch+rewrite entries on a clean Gemini call (Gemini doesn't drift on its own well-tuned prompts). Three options for Beat 4 demo: A. Force `demoMode={true}` in HomePage.tsx (1-line frontend); B. Backend `?demo=true` injects a deliberately causal phrase to trigger the auditor catch (Vinh-action ~1hr); C. Drop catch+rewrite narration. Decision deadline Day 9 8am.
 
 ## Team
 - Stephen Sookra: frontend (React/Vite/TS/Tailwind), pitch, project architect

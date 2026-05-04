@@ -251,7 +251,7 @@ react, vite, typescript, tailwind-css, framer-motion, react-simple-maps, tanstac
 ### "Try it out" links
 
 ```
-Live demo: {{Day 8: Cloud Run frontend URL — https://atlas-frontend-xxxxxx-uc.a.run.app}}
+Live demo: https://atlas-frontend-635524063449.us-central1.run.app
 GitHub repo: https://github.com/StephenSook/Hometown-Pathway-Atlas
 ```
 
@@ -349,33 +349,28 @@ to skip typing.
 
 ### Prove your Project's backend is running on Google Cloud *(REQUIRED — URL)*
 
-**Primary (preferred):** `{{Day 8: Vinh's backend Cloud Run URL — https://atlas-backend-xxxxxx-uc.a.run.app}}`
+**Primary:** `https://atlas-backend-635524063449.us-central1.run.app`
 
-**Fallback (use if backend deploy is delayed):**
-```
-https://hello-gemini-635524063449.us-central1.run.app/
-```
+Health endpoint: `https://atlas-backend-635524063449.us-central1.run.app/health` returns `{"status":"ok"}`.
 
-The hello-gemini Cloud Run service was deployed Day 2 as the GCP
-toolchain end-to-end verification. It returns a Gemini-generated
-welcome message via Vertex AI:
-`{"message":"Welcome, and we're thrilled to share our hack!"}`
+Live test of the full Gemini-enriched region path:
+```
+curl -X POST https://atlas-backend-635524063449.us-central1.run.app/api/region \
+  -H "Content-Type: application/json" \
+  -d '{"zip":"30060"}'
+```
+Returns Cobb County GA region profile with live Gemini-generated `narrative` + 10-entry `compliance_log` from the HybridAuditor (deterministic regex layer + Gemini semantic causal-tone layer + NarrativeCache).
 
 **Code-file alternative** (if Devpost wants a code link not a live URL):
 ```
 https://github.com/StephenSook/Hometown-Pathway-Atlas/tree/main/backend
 ```
-The full FastAPI backend is in `backend/` — `main.py` initializes
-Vertex AI at startup, `routes/` exposes the four endpoints,
-`services/` holds the Pydantic-typed business logic, `schemas/` is
-the authoritative shared contract that frontend `lib/api.ts` mirrors.
-GeminiService (task 2.7 — narrative + auditor) ships into
-`backend/services/gemini_service.py` when Vinh wires it.
+The full FastAPI backend is in `backend/` — `main.py` initializes Vertex AI at startup, `routes/` exposes the four endpoints, `services/` holds the Pydantic-typed business logic + GeminiService + HybridAuditor + NarrativeCache, `schemas/` is the authoritative shared contract that frontend `lib/api.ts` mirrors.
 
 ### URL to the hosted Project for judging *(optional — but include it!)*
 
 ```
-{{Day 8: Cloud Run frontend URL — https://atlas-frontend-xxxxxx-uc.a.run.app}}
+https://atlas-frontend-635524063449.us-central1.run.app
 ```
 
 ### Which datasets did you use? *(REQUIRED — list/name)*
