@@ -365,7 +365,13 @@ export default function HomePage() {
             <MethodologyPage onBack={handleMethodologyBack} />
           </Suspense>
         ) : view === 'hero' ? (
-          <div className="relative overflow-hidden">
+          // overflow-hidden REMOVED 2026-05-04 PM — broke `position: sticky`
+          // on the inner ScrollyMap. Ancestor with overflow:hidden between a
+          // sticky element and the scroll-context body causes the sticky to
+          // stick within that ancestor's bounds rather than the viewport,
+          // which made Ch 2/3/4 maps scroll out of view (only Ch 1 worked
+          // because sticky hadn't engaged yet at that scroll position).
+          <div className="relative">
             <ScrollytellingHero
               ctaSlot={
                 <div className="relative">

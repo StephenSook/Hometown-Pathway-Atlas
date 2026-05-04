@@ -78,7 +78,12 @@ export default function RotatingGlobe({
         width: size,
         height: size,
         pointerEvents: 'none',
-        opacity: 0.18,
+        // Bumped 0.18 → 0.32 on 2026-05-04 PM — at the lower opacity the
+        // globe was nearly invisible against warm-neutral background per
+        // Stephen's CTA-chapter visual review. 0.32 keeps it ambient
+        // (still recedes behind HeroStat / ZipInput) while reading as
+        // clearly present rather than ghosted.
+        opacity: 0.32,
       }}
     >
       <ComposableMap
