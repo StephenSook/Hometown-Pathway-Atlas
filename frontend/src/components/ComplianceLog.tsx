@@ -125,7 +125,10 @@ export default function ComplianceLog({
   // localStorage — clean slate each session.
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
-  const dragStartRef = useRef<{ px: number; py: number; ox: number; oy: number } | null>(null);
+  // hasMoved disambiguates click-vs-drag on the chip — chip is a button
+  // (click expands), but Stephen wants drag-from-chip too. Threshold is
+  // 5px of movement before the gesture is treated as a drag.
+  const dragStartRef = useRef<{ px: number; py: number; ox: number; oy: number; hasMoved: boolean } | null>(null);
   const [srMessage, setSrMessage] = useState('');
   // Replay counter — incrementing it forces the demo useEffect to re-run
   // (counter is in the dep array), which replays the scripted scheduled
@@ -258,7 +261,14 @@ export default function ComplianceLog({
   // so button clicks aren't hijacked into drag-start.
   const handleDragPointerDown = useCallback(
     (e: React.PointerEvent<HTMLElement>) => {
-      if ((e.target as HTMLElement).closest('button')) return;
+      // Skip drag-start when pointer-down lands on a button (Minus /
+      // Reset / Replay) so button clicks aren't hijacked into drag.
+      // The chip itself IS a button — the closest('button') check there
+      // would short-circuit drag-from-chip. Bypass via the
+      // data-allow-drag attribute set on the chip below.
+      const target = e.target as HTMLElement;
+      const allowDrag = e.currentTarget.dataset.allowDrag === 'true';
+      if (!allowDrag && target.closest('button')) return;
       e.preventDefault();
       setIsDragging(true);
       dragStartRef.current = {
@@ -266,6 +276,7 @@ export default function ComplianceLog({
         py: e.clientY,
         ox: dragOffset.x,
         oy: dragOffset.y,
+        hasMoved: false,
       };
       e.currentTarget.setPointerCapture(e.pointerId);
     },
@@ -277,10 +288,17 @@ export default function ComplianceLog({
       if (!isDragging || !dragStartRef.current) return;
       const dx = e.clientX - dragStartRef.current.px;
       const dy = e.clientY - dragStartRef.current.py;
-      setDragOffset({
-        x: dragStartRef.current.ox + dx,
-        y: dragStartRef.current.oy + dy,
-      });
+      // Mark as drag once the pointer has moved >5px from origin —
+      // disambiguates intentional drag from click jitter on the chip.
+      if (!dragStartRef.current.hasMoved && Math.hypot(dx, dy) > 5) {
+        dragStartRef.current.hasMoved = true;
+      }
+      if (dragStartRef.current.hasMoved) {
+        setDragOffset({
+          x: dragStartRef.current.ox + dx,
+          y: dragStartRef.current.oy + dy,
+        });
+      }
     },
     [isDragging],
   );
@@ -295,6 +313,18 @@ export default function ComplianceLog({
       }
     },
     [isDragging],
+  );
+
+  // Chip-specific pointer-up: same cleanup as the header drag PLUS
+  // expand-on-click semantics. If the gesture was a drag (>5px moved),
+  // do NOT expand; if it was a click, expand to full sidebar.
+  const handleChipPointerUp = useCallback(
+    (e: React.PointerEvent<HTMLElement>) => {
+      const wasDrag = dragStartRef.current?.hasMoved ?? false;
+      handleDragPointerUp(e);
+      if (!wasDrag) setIsCollapsed(false);
+    },
+    [handleDragPointerUp],
   );
 
   const resetPosition = useCallback(() => {
@@ -345,11 +375,18 @@ export default function ComplianceLog({
       {isCollapsed && (
         <button
           type="button"
-          onClick={() => setIsCollapsed(false)}
-          aria-label={`Expand live audit (${passCount} of ${totalCount} checks passed)`}
-          title="Expand live audit"
+          data-allow-drag="true"
+          onPointerDown={handleDragPointerDown}
+          onPointerMove={handleDragPointerMove}
+          onPointerUp={handleChipPointerUp}
+          onPointerCancel={handleDragPointerUp}
+          aria-label={`Expand live audit (${passCount} of ${totalCount} checks passed). Drag to reposition.`}
+          title="Click to expand · drag to reposition"
           style={dragTransform}
-          className="hidden md:inline-flex fixed right-4 top-24 z-30 items-center gap-2 rounded-full bg-card-white border border-soft-border shadow-lg px-3 py-2 text-eyebrow font-mono uppercase tracking-wider text-navy hover:bg-warm-neutral focus-ring transition-colors"
+          className={cn(
+            'hidden md:inline-flex fixed right-4 top-24 z-30 items-center gap-2 rounded-full bg-card-white border border-soft-border shadow-lg px-3 py-2 text-eyebrow font-mono uppercase tracking-wider text-navy hover:bg-warm-neutral focus-ring transition-colors select-none',
+            isDragging ? 'cursor-grabbing' : 'cursor-grab',
+          )}
         >
           <Activity className="h-3.5 w-3.5" aria-hidden="true" />
           <span>Audit</span>
