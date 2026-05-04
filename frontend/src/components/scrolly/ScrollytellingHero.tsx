@@ -441,7 +441,7 @@ function DecorationAnalogNetwork() {
       <p className="font-mono uppercase tracking-wider text-eyebrow text-navy mb-3">
         Similarity surface
       </p>
-      <svg viewBox="0 0 280 280" width="100%" height="auto" aria-hidden="true">
+      <svg viewBox="0 0 280 280" style={{ width: '100%', height: 'auto' }} aria-hidden="true">
         {/* Connection arcs */}
         <g stroke="#B96B5C" strokeWidth="1.2" strokeDasharray="3 3" fill="none" opacity="0.6">
           <path d="M 140 140 Q 80 70 60 60" />
