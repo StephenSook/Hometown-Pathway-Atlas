@@ -208,9 +208,23 @@ export default function CountyMap({
   const centroids = useMemo(() => {
     const source: [number, number] | null =
       sourceCentroid ?? FALLBACK_CENTROIDS[sourceFips] ?? null;
+    // byFips: O(1) lookup keyed by FIPS, used by arc render + label render.
+    // Replaces O(n²) `analogList.find(...)` + `analogs.find(...)` pattern
+    // that ran on every parent render of those JSX expressions. n is always
+    // 3 per locked decision #10, so the asymptotic win is small (9 → 3
+    // comparisons), but the consistency with `analogTooltipsByFips`
+    // (already a Map below) matters more than the perf delta. (Codex
+    // review 2026-05-04 caught the asymmetry.)
+    const byFips = new Map<string, { coords: [number, number] | null; analog: AnalogEntry }>();
+    for (const a of analogs) {
+      byFips.set(a.fips, {
+        coords: a.centroid ?? FALLBACK_CENTROIDS[a.fips] ?? null,
+        analog: a,
+      });
+    }
     const analogList = analogs.map((a) => ({
       fips: a.fips,
-      coords: a.centroid ?? FALLBACK_CENTROIDS[a.fips] ?? null,
+      coords: byFips.get(a.fips)?.coords ?? null,
     }));
     if (import.meta.env.DEV) {
       if (!source) {
@@ -228,7 +242,7 @@ export default function CountyMap({
         }
       });
     }
-    return { source, analogList };
+    return { source, analogList, byFips };
   }, [sourceFips, sourceCentroid, analogs]);
 
   const totalCount = 1 + analogs.length;
@@ -410,7 +424,7 @@ export default function CountyMap({
 
           {analogs.map((a, index) => {
             const from = centroids.source;
-            const to = centroids.analogList.find((x) => x.fips === a.fips)?.coords ?? null;
+            const to = centroids.byFips.get(a.fips)?.coords ?? null;
             if (!from || !to) return null;
             return (
               <BezierArc
@@ -447,9 +461,9 @@ export default function CountyMap({
 
           {centroids.analogList.map((x) => {
             if (!x.coords) return null;
-            // Find the matching analog entry to get the county name for
-            // the label. Analog list is small (3) so .find is fine.
-            const analog = analogs.find((a) => a.fips === x.fips);
+            // Look up matching analog entry for label text via byFips Map
+            // (O(1) — was O(n) .find before 2026-05-04 refactor).
+            const analog = centroids.byFips.get(x.fips)?.analog;
             // Truncate "Greater Bridgeport Planning Region" → "Greater
             // Bridgeport" so labels don't overlap each other on the map.
             // Take first 2 words max; for "Alexandria city" → "Alexandria"
