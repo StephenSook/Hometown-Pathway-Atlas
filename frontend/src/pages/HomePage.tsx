@@ -54,6 +54,7 @@ import HeroStat from '../components/HeroStat';
 // the methodology-prose JS only downloads when a judge clicks About.
 const MethodologyPage = lazy(() => import('../components/MethodologyPage'));
 import RegionQA from '../components/RegionQA';
+import RegionNarrative from '../components/RegionNarrative';
 import SectionNav from '../components/SectionNav';
 
 const RESULTS_SECTIONS = [
@@ -348,7 +349,7 @@ export default function HomePage() {
               <ResultsSkeleton />
             ) : (
             <>
-            <div id="section-region" className="mb-10 scroll-mt-32">
+            <div id="section-region" className="mb-6 scroll-mt-32">
               <RegionHeader
                 countyName={activeRegion.county_name}
                 state={activeRegion.state}
@@ -356,6 +357,16 @@ export default function HomePage() {
                 population={activeRegion.population}
               />
             </div>
+
+            {/* RegionNarrative — Gemini-generated prose framing for the
+                region. Renders ABOVE the map so Beat 3 narration opens
+                with Gemini's interpretation before the visual reveal.
+                Empty-string narrative or banned-verb drift → component
+                returns null cleanly, no layout pop-in. */}
+            <RegionNarrative
+              narrative={activeRegion.narrative}
+              className="mb-10 max-w-3xl"
+            />
 
             <div id="section-map" className="mb-10 scroll-mt-32">
               <Suspense fallback={<CountyMapSkeleton />}>
