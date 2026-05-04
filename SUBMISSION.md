@@ -117,19 +117,23 @@ frontend TypeScript mirrors them 1:1.
 
 **AI:** Vertex AI Gemini 2.5 Flash is wired into the backend via
 the official Python SDK and initialized at FastAPI startup
-(`backend/main.py` lifespan). The Pillar 4 demo moment surfaces a
-scripted hybrid-auditor sequence (deterministic regex + Gemini
-self-review schema, both spec'd in README "API contract" section)
-that demonstrates the audit pattern live. The RegionQA Layer C
-panel renders Gemini reasoning + answer surfaces today via a hand-
-authored conditional-phrased fixture; the live Vertex AI inference
-swap is a one-line change at the marked integration point in
-`RegionQA.tsx` when the GeminiService backend service ships
-(currently in flight). Backend response shape (`narrative`,
-`tradeoff_explanation`, `compliance_log`) is the authoritative
-contract — frontend renders whatever the backend emits, falling
-back to demo fixtures while the GeminiService + HybridAuditor
-backend services are under construction.
+(`backend/main.py` lifespan). GeminiService (`backend/services/
+gemini_service.py`) calls `enrich_region` + `enrich_analogs` on
+every region/analogs route response — generates narrative prose +
+tradeoff_explanation + per-analog narrative under structured-output
+JSON schemas. HybridAuditor (`backend/services/auditor.py`) wraps
+each Gemini output with a deterministic regex layer + a Gemini
+semantic causal-tone layer, rewriting drift before serving. Frontend
+renders whatever the backend emits — the Compliance Log streams the
+live audit entries. RegionQA Layer C currently uses 3 hand-authored
+conditional-phrased fixtures keyed by suggested question; live
+inference is a one-line swap at the marked integration point in
+`RegionQA.tsx` when a `qa()` method + `/api/region/qa` route ship
+(GeminiService has `enrich_region` + `enrich_analogs` only as of
+2026-05-04). Backend response shape (`narrative`,
+`tradeoff_explanation`, `compliance_log`, before/after fields on
+fixed entries) is the authoritative contract — frontend
+TypeScript mirrors it 1:1.
 
 **Hosting:** Google Cloud Run in us-central1 (frontend nginx:alpine,
 backend python:3.12-slim). Artifact Registry + Cloud Build CI.
@@ -173,11 +177,12 @@ issues that would have shipped to judges otherwise.
 ## Accomplishments we're proud of
 
 - **Compliance Log ★** — Pillar 4 demo moment. Live judge-visible AI
-  safety surface. Demo mode auto-plays the canonical fail→fixed
-  sequence; the prop is data-aware so the moment Vinh's HybridAuditor
-  ships and the backend populates `compliance_log`, the panel flips
-  to streaming the live audit events. Zero code change needed at the
-  flip.
+  safety surface. HybridAuditor (Vinh task 2.9, shipped 2026-05-03)
+  populates `compliance_log` on every region call — deterministic
+  regex layer + Gemini semantic causal-tone analysis + rewrite loop.
+  Frontend renders entries live with FLAGGED/REWRITTEN badges on
+  fail→fixed transitions. Zero code change at the flip from scripted
+  demo to live audit; the prop was data-aware from day one.
 - **Source-citation tooltip system** — every visible number on the
   results view (17 metrics) hover-reveals its source citation: per-
   pillar parity methodology, Climate / Sport mix / Adaptive Access
@@ -224,13 +229,15 @@ issues that would have shipped to judges otherwise.
   document.title sync. Replay-audit button on the Compliance Log
   header. /about methodology page. Sound design recipe in
   docs/sound_design.md for Day 9 recording.
-- **Layer C — Gemini region Q&A (shipped via stub).** RegionQA panel
-  is live in the results view. Question input + visible reasoning
-  chain + final conditional-phrased answer + suggested-question chips.
-  Currently demos against a hand-authored fixture; the swap to the
-  live Vertex AI Gemini call is a one-line change at the marked
-  integration point in RegionQA.tsx when the GeminiService backend
-  endpoint ships.
+- **Layer C — Gemini region Q&A (shipped via 3-fixture stub).**
+  RegionQA panel is live in the results view. Question input +
+  visible reasoning chain + final conditional-phrased answer +
+  suggested-question chips. 3 distinct stub fixtures keyed by
+  suggested question (climate/parity-gap/analog-comparison) so each
+  chip yields different reasoning. The swap to the live Vertex AI
+  Gemini call is a one-line change at the marked integration point
+  in RegionQA.tsx when a `qa()` method + `/api/region/qa` route ship
+  on the backend.
 - **Layer D — Embedded scrollytelling editorial.** 3–4 chapters
   walking through the most surprising findings, anchored on Layer A.
 

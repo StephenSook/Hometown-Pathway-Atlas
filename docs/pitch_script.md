@@ -12,8 +12,8 @@ presenter, not spoken aloud.
 
 ## Pre-pitch setup
 
-- Browser at `https://atlas-frontend-xxxxxx-uc.a.run.app/` (Day 8 deploy
-  URL — pin in CLAUDE.md once captured)
+- Browser at `https://atlas-frontend-635524063449.us-central1.run.app/`
+  (live as of 2026-05-04). Hard-refresh before recording to bust cache.
 - Hero view loaded, ZIP input visible, focused
 - Window resized to 1280×720 (or judge's screen native — verify before)
 - Sound off, no music
@@ -73,30 +73,61 @@ demo cycle is complete and ComplianceLog has settled at the visual
 *Screen: results view fully rendered. CountyMap shows source pin (navy)
 + 3 analog pins (olympic-blue) + paralympic-clay arcs.*
 
-> "Cobb County, Georgia. Population 766,000. The map plots us in navy.
+> "Cobb County, Georgia. Population 769,000. The map plots us in navy.
 > Three peer counties our similarity model could be associated with —
-> Mecklenburg, Wake, Jefferson. Not 'similar populations.' Similar
-> athlete profile, similar sport mix, similar climate, three weighted
-> dimensions."
+> Alexandria, Charleston, Greater Bridgeport. Not 'similar populations.'
+> Similar athlete profile, similar sport mix, similar climate, three
+> weighted dimensions."
 
 *Pan to ParityPanel.*
 
-> "Olympic representation: 1.83 per 100k. 76th percentile nationally.
-> Paralympic: 0.39 per 100k. 68th percentile. Side by side. Per capita.
+> "Olympic representation: 1.17 per 100k. 94th percentile nationally.
+> Paralympic: 0.00 per 100k. 1st percentile. Side by side. Per capita.
 > Auditor-confirmed."
 
 *Pan to PatternGapPanel.*
 
-> "Three pattern gaps. Observed strength: swimming over-indexes. Public
-> access signal: adaptive aquatics presence is sparse in our indexed
-> sources. Opportunity hypothesis: where strong representation
-> coexists with limited access, a pattern gap may exist —
+> "Three pattern gaps. Observed strength: football over-indexes — top
+> six percent of US counties for Olympic hometowns. Public access
+> signal: three Move United chapters within 50 miles, indicating
+> existing adaptive infrastructure. Opportunity hypothesis: counties
+> with similar climate could show higher Paralympic representation —
 > interpretation only, not causation. Every claim conditionally phrased.
 > Locked rule, not aspiration."
+
+*[VALUES VERIFIED 2026-05-04 against live backend rev 00005-2rk smoke
+test on FIPS 13067. Population 769,152. Olympic per_100k 1.17 / pct
+94.4. Paralympic per_100k 0.00 / pct 0.8. Top 3 analogs from
+similarity matrix: Alexandria city VA / Charleston County SC / Greater
+Bridgeport Planning Region CT. Pattern gap top sport: football (top 6%
+of US counties for Olympic hometowns). Move United chapters within
+50mi: 3.]*
 
 ---
 
 ## Beat 4 — Compliance Log ★ (Pillar 4 demo moment) (1:35 — 2:05)
+
+**B5b note (2026-05-04):** Vinh's HybridAuditor is now LIVE on the
+deployed backend (rev 00005-2rk). On a clean Gemini draft the audit
+fires 6 pass entries (no drama). On a drift draft Gemini occasionally
+generates causal-tone prose that the auditor catches and rewrites,
+producing a real fail→fixed entry with before/after fields populated.
+Beat 4 narration below assumes the SCRIPTED demoMode runs (frontend
+HomePage.tsx:445 sets `demoMode={!compliance_log?.length}` — flips to
+TRUE when live audit log is empty, FALSE when populated). With Vinh's
+backend always populating compliance_log, demoMode is currently FALSE
+in production and the scripted demo does NOT play. Three options
+before recording:
+- A. 1-line override (force `demoMode={true}`) — guarantees scripted
+     drama lands every recording attempt.
+- B. Multiple recording takes — capture one where Gemini drifts
+     organically and the auditor's real catch+rewrite plays.
+- C. Rewrite Beat 4 narration to describe the silent-pass audit
+     stream ("3 rules checks pass, 3 Gemini checks pass, all
+     conditional, real-time").
+
+Decision before recording (Day 9 morning).
+
 
 **Word count: ~75 words → ~30s spoken.**
 
