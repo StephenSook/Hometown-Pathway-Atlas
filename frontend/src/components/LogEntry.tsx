@@ -137,13 +137,35 @@ export default function LogEntry({
             className="ml-4 pl-3 border-l border-soft-border flex flex-col gap-1 overflow-hidden"
           >
             {entry.before && (
-              <p className="font-mono text-eyebrow text-body-text line-through decoration-status-amber decoration-2 leading-snug">
+              <p className="font-mono text-eyebrow text-body-text leading-snug">
+                {/* Visible "FLAGGED" prefix so sighted users see this is the
+                    auditor's CATCH, not Atlas's claim. sr-only "Banned
+                    phrase, rewritten:" carries the same meaning for AT. The
+                    strikethrough on the catch text reinforces the visual
+                    "this got rewritten" signal. (Cold-check review 2026-05-04
+                    flagged the bare strikethrough as ambiguous DQ exposure —
+                    judges screenshotting mid-demo might not parse the
+                    decoration as "caught" without an explicit label.) */}
+                <span
+                  aria-hidden="true"
+                  className="inline-block mr-1.5 px-1 py-0.5 rounded text-[10px] uppercase tracking-wider bg-status-amber/20 text-status-amber font-semibold"
+                >
+                  Flagged
+                </span>
                 <span className="sr-only">Banned phrase, rewritten: </span>
-                {entry.before}
+                <span className="line-through decoration-status-amber decoration-2">
+                  {entry.before}
+                </span>
               </p>
             )}
             {entry.after && (
               <p className="font-mono text-eyebrow text-accent-teal leading-snug">
+                <span
+                  aria-hidden="true"
+                  className="inline-block mr-1.5 px-1 py-0.5 rounded text-[10px] uppercase tracking-wider bg-accent-teal/20 font-semibold"
+                >
+                  Rewritten
+                </span>
                 <span className="sr-only">Approved rewrite: </span>
                 {entry.after}
               </p>
