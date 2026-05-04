@@ -93,8 +93,8 @@ Vinh's GeminiService shipped 2026-05-03 (commit 7893fa7) with `enrich_region` + 
 
 CUT TRIGGER (preserved): if backend QA endpoint doesn't ship by Day 9 EOD, stub stays through recording. Stub is honest as a "design preview" — 3 fixtures look + feel real to judges. Component is removable in 1 import + 1 JSX line if you decide to fully cut.
 
-### Layer D — Embedded Scrollytelling Editorial (Days 6–7, Stephen) [PENDING — depends on Layer A]
-Anchored on Layer A's discovered stat. Cut trigger: if Layer A fails to surface a genuinely surprising stat, scrollytelling has nothing to anchor on. Cut.
+### Layer D — Embedded Scrollytelling Editorial [SHIPPED 2026-05-04 PM]
+Five chapter scroll-triggered narrative anchored on Vinh's `/api/stats/global` (gap + underdog). Sticky-map ScrollyMap variant + react-scrollama orchestrator (commit f6dfb67). Replaces static HeroStat opener with 35-40s scrollytelling walkthrough: INTRO → GAP (4 in 5) → UNDERDOG (68%) → PATHWAY (Cobb + 3 analogs) → CTA (HeroStat + ZipInput + globe + CountyNameSearch). Reduced-motion fallback renders static stack. Pitch script needs Beat 1 re-storyboard + demo re-record around new opener (~25-27s added; fits 3:00 budget if Beats 3-5 trim 5s each). Cut trigger: revert commit f6dfb67 if scrolly causes pitch issues — conservative version still ships cleanly.
 
 ### Layer E — Temporal Layer (Day 8, both, only if Days 1–6 are clean) [CUT 2026-05-02]
 Re-architects similarity matrix. Cost > marginal demo impact. Stays cut.
