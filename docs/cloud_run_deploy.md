@@ -42,6 +42,54 @@ Before deploy day:
 
 ---
 
+## Vertex AI IAM — REQUIRED before backend deploy
+
+Vinh task 2.7 ship (commit 7893fa7) wired GeminiService into every
+`/api/region` + `/api/analogs/{fips}` call via `enrich_region` +
+`enrich_analogs`. Backend `vertexai.init(project, location)` runs
+in the Cloud Run lifespan handler (backend/main.py:21). Auth is
+Application Default Credentials → on Cloud Run that's the service
+account ADC. Without `roles/aiplatform.user` on the SA, `vertexai.init`
+succeeds but `model.generate_content()` 403s on first call → backend
+silently falls back to `_fallback_region_narrative` /
+`_fallback_tradeoff_narrative` (still returns 200 OK, but Gemini
+narrative is the static fallback string instead of live AI prose).
+
+Default Cloud Run SA: `PROJECT_NUMBER-compute@developer.gserviceaccount.com`
+(visible via `gcloud run services describe atlas-backend
+--format='value(spec.template.spec.serviceAccountName)'`).
+
+Grant the role:
+
+```bash
+PROJECT_NUMBER=$(gcloud projects describe pathway-atlas-hackathon \
+  --format='value(projectNumber)')
+COMPUTE_SA="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
+
+gcloud projects add-iam-policy-binding pathway-atlas-hackathon \
+  --member="serviceAccount:${COMPUTE_SA}" \
+  --role="roles/aiplatform.user"
+```
+
+Verify:
+
+```bash
+gcloud projects get-iam-policy pathway-atlas-hackathon \
+  --flatten="bindings[].members" \
+  --filter="bindings.members:${COMPUTE_SA} AND bindings.role:roles/aiplatform.user" \
+  --format="value(bindings.role)"
+# Expect: roles/aiplatform.user
+```
+
+If this is missed, post-deploy smoke against `/api/region` will return
+200 but the `narrative` field will read like "Cobb County, GA shows
+representation patterns with associations to ... that may correlate
+with local athletic development. ..." (the deterministic fallback)
+instead of the live Gemini prose. RegionNarrative card still renders
+the fallback content cleanly — silent degradation, no UI break.
+
+---
+
 ## Deploy sequence
 
 ### 1. Verify Vinh's backend URL
@@ -121,9 +169,24 @@ curl -i -H 'Accept-Encoding: gzip' $FRONTEND_URL/ | grep -i content-encoding
 Then open `$FRONTEND_URL` in a browser:
 - Type a real ZIP (e.g. 30060)
 - Verify Network tab → request goes to `$BACKEND_URL/api/region`
-- Verify ComplianceLog ★ demo sequence plays (Pillar 4 demo moment
-  intact post-deploy — `demoMode={true}` set in HomePage.tsx)
-- Verify Pillar5Strip renders with corrected Pillar 5 numbers
+- Expect ~10s for region call + ~15-20s for analogs — full results page
+  ~25-30s end-to-end on a cold cache (Gemini in path post-2.7 ship).
+  Skeleton holds during the wait.
+- Verify RegionNarrative card renders with live Gemini prose between
+  RegionHeader and CountyMap. Check that prose mentions both Olympic
+  AND Paralympic (parity discipline). If the card is missing entirely,
+  either narrative was empty (backend issue) OR frontend safety net
+  caught a banned verb (DEV mode console.warn would log it).
+- Verify TradeoffPanel "Why these three" reveals live Gemini tradeoff
+  prose on click.
+- Verify each AnalogCard renders per-analog narrative.
+- **ComplianceLog behavior post-2.7:** demoMode auto-flips to FALSE
+  when backend populates `compliance_log` (3 parity-check entries).
+  Scripted Beat 4 catch+rewrite drama WILL NOT play until Vinh
+  task 2.9 (HybridAuditor) ships the dramatic fixed entry. See B5b
+  in atlas_layers_pending_vinh.md memory — Path A override is the
+  Day 9 morning fallback if 2.9 doesn't ship by then.
+- Verify Pillar5Strip renders with the locked Pillar 5 numbers
 - Verify no console errors (check Network tab for failed CORS preflights)
 
 ### 5. Tighten backend CORS
@@ -151,14 +214,24 @@ gcloud run deploy atlas-backend \
   --region us-central1 \
   --allow-unauthenticated \
   --port 8080 \
-  --memory 512Mi \
+  --memory 1Gi \
+  --cpu 1 \
+  --timeout 60s \
   --max-instances 5 \
   --set-env-vars="GOOGLE_CLOUD_PROJECT=pathway-atlas-hackathon,FRONTEND_ORIGIN=https://atlas-frontend-xxxxxx-uc.a.run.app"
 ```
 
 Notes:
-- `--memory 512Mi` for backend — pandas + pyarrow + Vertex AI client
-  sit ~150-200MB resident, leaves headroom
+- `--memory 1Gi` (bumped from 512Mi after 2.7 ship) — Vertex AI client
+  adds ~150MB resident on top of pandas + pyarrow + Pydantic + 3
+  lru_cached service singletons. 512Mi will OOM under load. 1Gi
+  leaves comfortable headroom.
+- `--timeout 60s` (default Cloud Run is 300s but explicit is clearer)
+  — POST /api/region takes ~10s with Gemini in path; GET /api/analogs
+  takes ~15-20s (4 Gemini calls: 1 tradeoff + 3 per-analog narratives).
+  Total user-perceived latency for full results page is ~25-30s on a
+  cold cache. Default 300s timeout covers it; explicit 60s catches
+  Gemini latency regressions early.
 - `FRONTEND_ORIGIN` runtime env feeds backend CORSMiddleware
   allow_origins list (see backend/main.py:36 + config.py)
 - Update `FRONTEND_ORIGIN` after frontend deploy captures real URL,
@@ -169,17 +242,38 @@ Smoke test post-deploy:
 BACKEND_URL=$(gcloud run services describe atlas-backend \
   --region us-central1 --format='value(status.url)')
 
-curl -i $BACKEND_URL/health
-curl -i -X POST $BACKEND_URL/api/region \
+# /health is instant (no Gemini)
+curl -i --max-time 5 $BACKEND_URL/health
+
+# /api/region hits Vertex AI — expect ~10s. --max-time 30 covers
+# cold-start container init + Gemini round-trip.
+curl -i --max-time 30 -X POST $BACKEND_URL/api/region \
   -H "Content-Type: application/json" \
   -d '{"zip":"30060"}'
-curl -i $BACKEND_URL/api/analogs/13067
-curl -i $BACKEND_URL/api/pathway/13067
+
+# /api/analogs/{fips} hits Vertex AI 4x — expect ~15-20s.
+# --max-time 60 with safety margin.
+curl -i --max-time 60 $BACKEND_URL/api/analogs/13067
+
+# /api/pathway/{fips} is deterministic, no Gemini — fast.
+curl -i --max-time 5 $BACKEND_URL/api/pathway/13067
 ```
 
-All four should return 200 + valid JSON. Local Docker container
-smoke test 2026-05-03 already verified the same paths against the
-backend image; Cloud Run deploy should just inherit that.
+All four should return 200 + valid JSON. **Verify the `narrative`
+field in /api/region response is live Gemini prose, NOT the fallback**
+("Cobb County, GA shows representation patterns with associations to
+... that may correlate with local athletic development." is the
+fallback signature — if you see it, Vertex AI IAM is misconfigured;
+go back to the IAM section above).
+
+Local Docker container smoke test 2026-05-03 verified the deterministic
+paths against the backend image (pre-2.7); post-2.7 latency profile
+above is from local uvicorn smoke 2026-05-04 (region call: 10.9s
+against live Vertex AI).
+
+**Backend cold-start: 15-20s.** Python import + Vertex AI init +
+parquet load all happen before first request. Set `--min-instances 1`
+during demo recording window OR accept the first-request delay.
 
 ---
 
