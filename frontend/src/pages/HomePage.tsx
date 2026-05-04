@@ -47,7 +47,6 @@ import Pillar5Strip from '../components/Pillar5Strip';
 import Pillar5Defense from '../components/Pillar5Defense';
 import ResultsSkeleton from '../components/ResultsSkeleton';
 import { CountyMapSkeleton } from '../components/CountyMapSkeleton';
-import HeroStat from '../components/HeroStat';
 // MethodologyPage is lazy-loaded — only renders on #about hash route,
 // never on the critical demo path (30060 → results). React.lazy splits
 // it into its own chunk so the initial bundle ships ~6KB lighter and
@@ -72,7 +71,6 @@ import { useRegion } from '../hooks/useRegion';
 import { useRegionByFips } from '../hooks/useRegionByFips';
 import { useAnalogs } from '../hooks/useAnalogs';
 import { usePathway } from '../hooks/usePathway';
-import { HERO_STAT } from '../lib/heroStat';
 import { mockSparseRegion, mockAnalogs, mockPathway } from '../lib/mocks';
 
 const SPARSE_SENTINEL_ZIP = '11111';
