@@ -285,7 +285,13 @@ export default function ComplianceLog({
 
   const handleDragPointerMove = useCallback(
     (e: React.PointerEvent<HTMLElement>) => {
-      if (!isDragging || !dragStartRef.current) return;
+      // Use the ref guard, NOT isDragging state — state has a one-render
+      // commit lag after handleDragPointerDown's setIsDragging(true), so
+      // the very first pointermove event after pointerdown reads stale
+      // false from the closure and no-ops. Ref is set synchronously in
+      // pointerdown so it correctly gates without render-cycle drift.
+      // (Codex review 2026-05-04 caught the 1px jitter at drag-start.)
+      if (!dragStartRef.current) return;
       const dx = e.clientX - dragStartRef.current.px;
       const dy = e.clientY - dragStartRef.current.py;
       // Mark as drag once the pointer has moved >5px from origin —
@@ -300,7 +306,7 @@ export default function ComplianceLog({
         });
       }
     },
-    [isDragging],
+    [],
   );
 
   const handleDragPointerUp = useCallback(
@@ -380,6 +386,16 @@ export default function ComplianceLog({
           onPointerMove={handleDragPointerMove}
           onPointerUp={handleChipPointerUp}
           onPointerCancel={handleDragPointerUp}
+          // Keyboard a11y — Enter/Space expand the chip. Without this,
+          // keyboard + screen-reader users couldn't expand the chip
+          // because pointer events don't fire on keyboard activation.
+          // (Codex review 2026-05-04 caught the dead keyboard path.)
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              setIsCollapsed(false);
+            }
+          }}
           aria-label={`Expand live audit (${passCount} of ${totalCount} checks passed). Drag to reposition.`}
           title="Click to expand · drag to reposition"
           style={dragTransform}
