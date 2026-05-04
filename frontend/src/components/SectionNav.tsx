@@ -85,7 +85,7 @@ export default function SectionNav({ sections, className }: SectionNavProps) {
           <a
             key={id}
             href={`#${id}`}
-            aria-current={isActive ? 'true' : undefined}
+            aria-current={isActive ? 'location' : undefined}
             className={cn(
               'group inline-flex items-center justify-end gap-2 rounded-full',
               'pr-3 pl-2 py-1.5 transition-colors focus-ring',
