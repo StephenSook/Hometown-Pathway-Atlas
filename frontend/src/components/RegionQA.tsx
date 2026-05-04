@@ -97,7 +97,7 @@ const STUBBED_RESPONSE: QAResponse = {
 // auto-fills the textarea. Same questions work for any region thanks to
 // region-agnostic phrasing.
 const SUGGESTED_QUESTIONS = [
-  'Why might this region produce these particular sports?', // atlas-phrasing-allow — quoted natural-language input
+  'What might explain this region’s sport representation pattern?',
   'What signals could explain the Olympic vs Paralympic gap here?',
   'How does this region compare to its analog peers?',
 ] as const;
