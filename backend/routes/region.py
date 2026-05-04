@@ -20,3 +20,14 @@ async def get_region(body: ZipRequest) -> RegionResponse:
         raise HTTPException(status_code=404, detail=str(exc))
 
     return get_gemini_service().enrich_region(region)
+
+
+@router.get("/api/region/by-fips/{fips}", response_model=RegionResponse)
+async def get_region_by_fips(fips: str) -> RegionResponse:
+    """Full region profile by FIPS — for CountyMap drill-down clicks (B7)."""
+    try:
+        region = get_profile_service().get_profile(fips)
+    except ProfileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+
+    return get_gemini_service().enrich_region(region)

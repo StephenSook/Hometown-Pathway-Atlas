@@ -213,6 +213,27 @@ class TestRegionRoute:
         resp = client.post("/api/region", json={})
         assert resp.status_code == 422
 
+    def test_by_fips_valid_returns_200(self, client: TestClient) -> None:
+        region = _make_region()
+        with patch("routes.region.get_profile_service") as mock_factory:
+            svc = MagicMock()
+            svc.get_profile.return_value = region
+            mock_factory.return_value = svc
+            with patch("routes.region.get_gemini_service") as gf:
+                gf.return_value.enrich_region.side_effect = lambda r: r
+                resp = client.get("/api/region/by-fips/13067")
+        assert resp.status_code == 200
+        assert resp.json()["fips"] == "13067"
+
+    def test_by_fips_unknown_returns_404(self, client: TestClient) -> None:
+        from services.profile_service import ProfileNotFoundError
+        with patch("routes.region.get_profile_service") as mock_factory:
+            svc = MagicMock()
+            svc.get_profile.side_effect = ProfileNotFoundError("FIPS '00000' not found")
+            mock_factory.return_value = svc
+            resp = client.get("/api/region/by-fips/00000")
+        assert resp.status_code == 404
+
     def test_sentinel_sparse_zip_00000_returns_404(self, client: TestClient) -> None:
         from services.profile_service import ZipNotFoundError
         with patch("routes.region.get_profile_service") as mock_factory:
@@ -362,6 +383,93 @@ class TestStatsRoute:
         data = resp.json()
         assert data["olympic_evidence"] in ("high", "medium", "low")
         assert data["paralympic_evidence"] in ("high", "medium", "low")
+
+
+# ---------------------------------------------------------------------------
+# GET /api/stats/global
+# ---------------------------------------------------------------------------
+
+def _make_global_profiles_df() -> "pd.DataFrame":
+    """Minimal county_profiles DataFrame for /api/stats/global unit tests."""
+    import numpy as np
+    import pandas as pd
+
+    # 10 rows: 2 with athletes, 8 without
+    data = {
+        "fips": [f"{i:05d}" for i in range(10)],
+        "olympic_count": [5, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        "paralympic_count": [3, 2, 0, 0, 0, 0, 0, 0, 0, 0],
+        # population: row 0 is a major metro (>250K), rows 1-9 are small (<250K)
+        "population": [5_000_000, 50_000, 80_000, 100_000, 120_000,
+                       30_000, 40_000, 60_000, 90_000, 110_000],
+        # smoothed Paralympic rate — set row 1 high so it beats metro median
+        "paralympic_smoothed": [0.01, 0.50, 0.001, 0.002, 0.001,
+                                0.001, 0.002, 0.001, 0.001, 0.001],
+        "olympic_smoothed": [0.05, 0.00, 0.001, 0.001, 0.001,
+                             0.001, 0.001, 0.001, 0.001, 0.001],
+    }
+    return pd.DataFrame(data)
+
+
+class TestGlobalStatsRoute:
+    def test_returns_200_with_expected_shape(self, client: TestClient) -> None:
+        from routes.stats import _compute_global_stats
+        _compute_global_stats.cache_clear()
+
+        with patch("routes.stats.pd.read_parquet", return_value=_make_global_profiles_df()):
+            resp = client.get("/api/stats/global")
+
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "gap" in data
+        assert "underdog" in data
+
+    def test_gap_stat_fields(self, client: TestClient) -> None:
+        from routes.stats import _compute_global_stats
+        _compute_global_stats.cache_clear()
+
+        with patch("routes.stats.pd.read_parquet", return_value=_make_global_profiles_df()):
+            resp = client.get("/api/stats/global")
+
+        gap = resp.json()["gap"]
+        assert gap["total_counties"] == 10
+        assert gap["counties_with_athletes"] == 2
+        assert gap["counties_no_athletes"] == 8
+        assert isinstance(gap["ratio_display"], str) and gap["ratio_display"]
+        assert isinstance(gap["headline"], str) and "counties" in gap["headline"]
+
+    def test_underdog_stat_fields(self, client: TestClient) -> None:
+        from routes.stats import _compute_global_stats
+        _compute_global_stats.cache_clear()
+
+        with patch("routes.stats.pd.read_parquet", return_value=_make_global_profiles_df()):
+            resp = client.get("/api/stats/global")
+
+        u = resp.json()["underdog"]
+        assert isinstance(u["n_small_counties"], int)
+        assert isinstance(u["n_beating_metro"], int)
+        assert isinstance(u["pct_display"], str) and u["pct_display"].endswith("%")
+        assert isinstance(u["headline"], str) and "250,000" in u["headline"]
+
+    def test_ratio_display_is_4_in_5_for_80pct_gap(self, client: TestClient) -> None:
+        """With 8/10 counties having no athletes (80% gap), ratio_display should be '4 in 5'."""
+        from routes.stats import _compute_global_stats
+        _compute_global_stats.cache_clear()
+
+        with patch("routes.stats.pd.read_parquet", return_value=_make_global_profiles_df()):
+            resp = client.get("/api/stats/global")
+
+        assert resp.json()["gap"]["ratio_display"] == "4 in 5"
+
+    def test_pct_with_athletes_sums_correctly(self, client: TestClient) -> None:
+        from routes.stats import _compute_global_stats
+        _compute_global_stats.cache_clear()
+
+        with patch("routes.stats.pd.read_parquet", return_value=_make_global_profiles_df()):
+            resp = client.get("/api/stats/global")
+
+        gap = resp.json()["gap"]
+        assert gap["pct_with_athletes"] == pytest.approx(20.0, abs=0.1)
 
 
 # ---------------------------------------------------------------------------
