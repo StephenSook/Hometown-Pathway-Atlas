@@ -52,10 +52,10 @@ class PathwayService:
         Highlight the county's strongest representation signal.
         Uses the higher of Olympic vs Paralympic smoothed percentile.
         """
-        o_pct = float(row["olympic_percentile"])
-        p_pct = float(row["paralympic_percentile"])
-        o_count = int(row["olympic_count"])
-        p_count = int(row["paralympic_count"])
+        o_pct = _safe_float(row.get("olympic_percentile"), 0.0)
+        p_pct = _safe_float(row.get("paralympic_percentile"), 0.0)
+        o_count = _safe_int(row.get("olympic_count"), 0)
+        p_count = _safe_int(row.get("paralympic_count"), 0)
 
         if o_pct >= p_pct:
             dominant, count, pct = "Olympic", o_count, o_pct
@@ -138,8 +138,8 @@ class PathwayService:
         Identifies a sport or dimension where the county shows low representation
         relative to its climate/demographic profile — framed as opportunity, not deficiency.
         """
-        o_pct = float(row["olympic_percentile"])
-        p_pct = float(row["paralympic_percentile"])
+        o_pct = _safe_float(row.get("olympic_percentile"), 0.0)
+        p_pct = _safe_float(row.get("paralympic_percentile"), 0.0)
         climate_zone = str(row.get("climate_zone", "unknown"))
         top_sports = _parse_top_sports(str(row.get("top_sports", "")))
 
@@ -147,11 +147,11 @@ class PathwayService:
         if p_pct <= o_pct:
             weak_track = "Paralympic"
             weak_pct = p_pct
-            weak_count = int(row["paralympic_count"])
+            weak_count = _safe_int(row.get("paralympic_count"), 0)
         else:
             weak_track = "Olympic"
             weak_pct = o_pct
-            weak_count = int(row["olympic_count"])
+            weak_count = _safe_int(row.get("olympic_count"), 0)
 
         sport_context = (
             f" The county's strongest sport associations are {', '.join(top_sports[:2])}."
@@ -186,6 +186,24 @@ class PathwayService:
 # ------------------------------------------------------------------
 # Private helpers
 # ------------------------------------------------------------------
+
+def _safe_float(val: object, default: float = 0.0) -> float:
+    try:
+        import math
+        v = float(val)  # type: ignore[arg-type]
+        return default if math.isnan(v) else v
+    except (TypeError, ValueError):
+        return default
+
+
+def _safe_int(val: object, default: int = 0) -> int:
+    try:
+        import math
+        v = float(val)  # type: ignore[arg-type]
+        return default if math.isnan(v) else int(v)
+    except (TypeError, ValueError):
+        return default
+
 
 def _parse_top_sports(raw: str) -> list[str]:
     return [s.strip() for s in raw.split(",") if s.strip()]

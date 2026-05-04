@@ -110,6 +110,12 @@ class AnalogService:
             selected.append(pd.Series(pick))
             seen_msas.add(_msa_of(str(pick["analog_fips"])))
 
+        if len(selected) < _TARGET_ANALOGS:
+            raise ProfileNotFoundError(
+                f"Only {len(selected)} analog(s) found for FIPS {source_fips!r} after MSA "
+                f"diversity filtering (expected {_TARGET_ANALOGS}). County may be too isolated."
+            )
+
         return selected
 
     def _build_entry(self, row: pd.Series, rank: int) -> AnalogEntry:

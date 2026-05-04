@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import logging
 import math
 from functools import lru_cache
 
 import pandas as pd
+
+logger = logging.getLogger(__name__)
 
 from config import Settings, get_settings
 from schemas.region import (
@@ -106,7 +109,10 @@ def _build_metrics(row: pd.Series) -> MetricsBlock:
 
     def _safe_evidence(val: object) -> str:
         s = str(val) if not _is_null(val) else "low"
-        return s if s in ("high", "medium", "low") else "low"
+        if s not in ("high", "medium", "low"):
+            logger.warning("Invalid evidence value %r, defaulting to 'low'", s)
+            return "low"
+        return s
 
     return MetricsBlock(
         olympic=MetricBlock(
@@ -129,9 +135,13 @@ def _build_top_sports(row: pd.Series) -> list[SportEntry]:
     if not raw:
         return []
     sports = [s.strip() for s in raw.split(",") if s.strip()]
-    # Equal-weight share since we only store names, not counts in top_sports string
-    share = round(1.0 / len(sports), 3) if sports else 0.0
-    return [SportEntry(sport=s, share=share) for s in sports]
+    if not sports:
+        return []
+    # Equal-weight share — last entry absorbs rounding remainder so shares sum to exactly 1.0
+    base = round(1.0 / len(sports), 3)
+    shares = [base] * (len(sports) - 1)
+    shares.append(round(1.0 - sum(shares), 3))
+    return [SportEntry(sport=s, share=sh) for s, sh in zip(sports, shares)]
 
 
 def _build_climate(row: pd.Series) -> ClimateBlock:
@@ -149,6 +159,8 @@ def _build_adaptive_access(row: pd.Series) -> AdaptiveAccessBlock:
     # parquet stores "low" for counties with no Move United chapters near them;
     # the UI contract uses "high" | "medium" | "none"
     conf_map = {"high": "high", "medium": "medium", "low": "none", "none": "none"}
+    if conf_raw not in conf_map:
+        logger.warning("Unknown adaptive_access_confidence %r, defaulting to 'none'", conf_raw)
     return AdaptiveAccessBlock(
         chapters_within_50mi=int(row.get("move_united_chapters_50mi", 0)),
         confidence=conf_map.get(conf_raw, "none"),  # type: ignore[arg-type]

@@ -220,7 +220,17 @@ class GeminiService:
                 temperature=0.3,
             ),
         )
-        return json.loads(response.text)
+        result = json.loads(response.text)
+        required = set(schema.get("required", []))
+        missing = required - set(result.keys())
+        if missing:
+            logger.warning(
+                "Gemini response missing required fields %s — schema: %s",
+                sorted(missing),
+                list(required),
+            )
+            raise ValueError(f"Gemini response missing required fields: {sorted(missing)}")
+        return result
 
 
 # ---------------------------------------------------------------------------
