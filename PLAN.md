@@ -19,9 +19,9 @@ PLAN.md fresh.
 
 **Phase 0 — Setup:** ✓ DONE (repo, GCP, hello-gemini Cloud Run smoke).
 
-**Phase 1 — Data ingest pipeline (Vinh):** ✓ DONE (tasks 1.7–1.10 in
-commit `fc0253a`). Outstanding: task **1.11** Layer A shocking-stat
-hunt — gates HeroStat real number swap + Layer D scrollytelling.
+**Phase 1 — Data ingest pipeline (Vinh):** ✓ DONE (all tasks 1.1–1.11).
+Task 1.11 Layer A stat hunt shipped 2026-05-04 — "4 in 5" gap stat,
+heroStat.ts updated with real numbers.
 
 **Phase 2 — Backend services (Vinh):** ✓ DONE. All tasks 2.1–2.11
 complete. Pre-deploy review 2026-05-04 caught + fixed: over-broad
@@ -459,4 +459,4 @@ git commit -m "chore(plan): cut 4.E ✂️ — Day 7 not clean enough"
 
 ---
 
-_Last updated: 2026-05-04 by Vinh (pre-deploy review fixes + linter pass ✅, 40/40 tests green)._
+_Last updated: 2026-05-04 by Stephen (pre-5.1 backend review ✅ — 6 fixes, 40/40 tests green, task 5.1 🟡 ready to deploy)._
