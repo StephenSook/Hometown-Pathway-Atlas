@@ -102,18 +102,12 @@ Capture the URL — referenced as `BACKEND_URL` below.
 
 ### 2. Build + deploy frontend
 
-Vite reads `VITE_API_BASE_URL` at build time from `.env.production`
-(or process env). For Cloud Run `--source` deploy, the cleanest path
-is to write a temporary `.env.production` file before deploy + clean
-up after. This avoids cloudbuild.yaml + --build-arg complexity and
-works with the existing Dockerfile as-is.
+Vite reads `VITE_API_BASE_URL` at build time. The Dockerfile's `ARG
+VITE_API_BASE_URL=...` default is the production Cloud Run backend URL
+(`frontend/Dockerfile:41`); `--source` deploys use that ARG default
+without any extra config.
 
 ```bash
-# Write the production backend URL into Vite's .env.production so
-# the value is baked into the JS bundle during npm run build (which
-# Cloud Build runs inside frontend/Dockerfile's builder stage).
-echo "VITE_API_BASE_URL=$BACKEND_URL" > frontend/.env.production
-
 gcloud run deploy atlas-frontend \
   --source frontend/ \
   --region us-central1 \
@@ -121,9 +115,6 @@ gcloud run deploy atlas-frontend \
   --port 8080 \
   --memory 256Mi \
   --max-instances 5
-
-# Clean up — don't leave a baked production URL in your local tree.
-rm frontend/.env.production
 ```
 
 Notes:
@@ -132,12 +123,19 @@ Notes:
 - `--memory 256Mi` is plenty for nginx serving static files
 - `--max-instances 5` caps cost during the demo; bump to 10 if Cloud
   Run autoscaling matters
-- `.env.production` is gitignored by Vite default + already in
-  Stephen's `.gitignore`; safe to write/delete locally
-- The earlier `--build-env-vars-file=-` heredoc pattern was invalid
-  gcloud syntax (caught Codex 4th-pass 2026-05-03) — that flag
-  expects a YAML file path, not stdin. The .env approach above is
-  verified working with current gcloud SDK 566.0.0.
+- **If the backend URL ever changes** (rare with Cloud Run revisions
+  but possible across service deletes), edit the ARG default in
+  `frontend/Dockerfile:41` and redeploy. URL is public so hardcoding
+  in the Dockerfile doesn't leak anything.
+- **DO NOT use `.env.production`** for `--source` deploys. Two failed
+  attempts pre-2026-05-04: (a) `--build-env-vars-file` is invalid
+  gcloud syntax (Codex 4th-pass), (b) writing `frontend/.env.production`
+  + relying on Vite to read it gets BAKED OVER by the Dockerfile's
+  `ENV VITE_API_BASE_URL=$VITE_API_BASE_URL` line because Vite's
+  loadEnv prioritizes `process.env` over `.env.*` files for `VITE_`-
+  prefixed vars (verified in vite/src/node/env.ts loadEnv loop). The
+  ARG-default pattern is the only path that works reliably without
+  introducing a cloudbuild.yaml.
 
 ### 3. Capture frontend URL
 
