@@ -173,6 +173,14 @@ function styleFor(mode: ScrollyMode, fips: string): GeoStyle {
 }
 
 export default function ScrollyMap({ mode }: ScrollyMapProps) {
+  // CTA mode: drop the map entirely so the RotatingGlobe behind the
+  // hero content reads as the sole visual texture. Earlier iteration
+  // dimmed the map to opacity 0.25 in CTA, but the dimmed US scaffold
+  // competed with the globe — Stephen 2026-05-04 PM visual review.
+  // Returning null also lets the parent sticky layer stop rendering
+  // an SVG that has zero load-bearing visual purpose at this beat.
+  if (mode === 'cta') return null;
+
   // Memoize the geography render fn per mode so React doesn't tear
   // down + remount every <Geography> on each scroll tick.
   const renderGeographies = useMemo(
@@ -197,7 +205,9 @@ export default function ScrollyMap({ mode }: ScrollyMapProps) {
       style={{
         width: '100%',
         height: 'auto',
-        opacity: mode === 'cta' ? 0.25 : 1,
+        // CTA path returns null upstream; type-narrowed mode never
+        // reaches here as 'cta'. opacity: 1 is the only state.
+        opacity: 1,
         transition: 'opacity 0.6s ease-out',
       }}
       aria-hidden="true"
