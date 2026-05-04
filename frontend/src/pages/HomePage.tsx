@@ -185,6 +185,11 @@ export default function HomePage() {
   //   #region → reset to hero view + browser scrolls to id="region"
   //     anchor on the ZipInput section. Clicking Find Region while on
   //     results view returns user to landing so they can submit a new ZIP.
+  // The #region scroll is wrapped in requestAnimationFrame because the
+  // browser's automatic anchor-scroll fires before React commits the view
+  // swap from results → hero, so the id="region" element doesn't exist
+  // yet at hash-change time. RAF defers the scroll to the next paint
+  // when the hero JSX has rendered. (Codex review 2026-05-04 caught.)
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const handler = () => {
@@ -192,10 +197,10 @@ export default function HomePage() {
       if (hash === '#about') {
         setView('methodology');
       } else if (hash === '#region') {
-        // Clicking Find Region from results view → return to hero so the
-        // ZipInput is visible. Browser then scrolls to id="region"
-        // automatically on the next tick.
         if (view !== 'hero') setView('hero');
+        requestAnimationFrame(() => {
+          document.getElementById('region')?.scrollIntoView({ behavior: 'smooth' });
+        });
       } else if (view === 'methodology') {
         setView('hero');
       }
