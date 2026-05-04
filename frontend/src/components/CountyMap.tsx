@@ -335,13 +335,43 @@ export default function CountyMap({
             </Marker>
           )}
 
-          {centroids.analogList.map((x) =>
-            x.coords ? (
+          {centroids.analogList.map((x) => {
+            if (!x.coords) return null;
+            // Find the matching analog entry to get the county name for
+            // the label. Analog list is small (3) so .find is fine.
+            const analog = analogs.find((a) => a.fips === x.fips);
+            // Truncate "Greater Bridgeport Planning Region" → "Greater
+            // Bridgeport" so labels don't overlap each other on the map.
+            // Take first 2 words max; for "Alexandria city" → "Alexandria"
+            // works naturally.
+            const fullName = analog?.county_name ?? '';
+            const labelText = fullName
+              .split(/\s+/)
+              .slice(0, 2)
+              .join(' ');
+            return (
               <Marker key={`pin-${x.fips}`} coordinates={x.coords}>
-                <circle r={5} fill="#5B7DB1" stroke="#FFFFFF" strokeWidth={1.25} />
+                <circle
+                  r={5}
+                  fill="#5B7DB1"
+                  stroke="#FFFFFF"
+                  strokeWidth={1.25}
+                />
+                {labelText && (
+                  <text
+                    x={9}
+                    y={4}
+                    fontFamily="JetBrains Mono, ui-monospace, monospace"
+                    fontSize={9}
+                    fontWeight={500}
+                    fill="#1F3A5F"
+                  >
+                    {labelText.toUpperCase()}
+                  </text>
+                )}
               </Marker>
-            ) : null,
-          )}
+            );
+          })}
         </ComposableMap>
       </div>
 
