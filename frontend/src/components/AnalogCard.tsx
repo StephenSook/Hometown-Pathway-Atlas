@@ -17,12 +17,18 @@ import { cn } from '../lib/utils';
 interface AnalogCardProps {
   analog: AnalogEntry;
   onSelect?: (fips: string) => void;
+  /** Cross-component highlight — fires onHover(fips) on
+   *  mouseenter/focus, onHover(null) on leave/blur. Lifted to
+   *  HomePage → CountyMap so the matching pin on the map gets
+   *  emphasized while user is hovering this card. */
+  onHover?: (fips: string | null) => void;
   className?: string;
 }
 
 export default function AnalogCard({
   analog,
   onSelect,
+  onHover,
   className,
 }: AnalogCardProps) {
   const headingId = useId();
@@ -31,6 +37,10 @@ export default function AnalogCard({
   return (
     <article
       aria-labelledby={headingId}
+      onMouseEnter={() => onHover?.(analog.fips)}
+      onMouseLeave={() => onHover?.(null)}
+      onFocus={() => onHover?.(analog.fips)}
+      onBlur={() => onHover?.(null)}
       className={cn(
         'group relative rounded-2xl bg-card-white border border-soft-border shadow-card-resting',
         'p-6 flex flex-col gap-4',

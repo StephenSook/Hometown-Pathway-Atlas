@@ -143,6 +143,11 @@ export default function HomePage() {
   const mainRef = useRef<HTMLElement>(null);
   // Skip the very first paint — only manage focus on user-driven view change.
   const isInitialMount = useRef(true);
+  // Cross-component hover highlight — when a peer-county AnalogCard is
+  // hovered, lift the matching FIPS so the CountyMap can emphasize the
+  // matching pin (bigger r + outer ring + bolder label). Bi-directional
+  // visual link between map + list. (2026-05-04 map upgrade.)
+  const [hoveredAnalogFips, setHoveredAnalogFips] = useState<string | null>(null);
 
   // Focus management on view transition (a11y per DESIGN_SYSTEM §8.2):
   // moves focus to <main> (tabIndex=-1) so screen readers announce the
@@ -396,6 +401,7 @@ export default function HomePage() {
                     paralympicEvidence: activeRegion.metrics.paralympic.evidence,
                   }}
                   analogs={activeAnalogs?.analogs ?? []}
+                  hoveredAnalogFips={hoveredAnalogFips}
                 />
               </Suspense>
             </div>
@@ -417,7 +423,10 @@ export default function HomePage() {
             </div>
 
             <div id="section-analogs" className="mt-16 scroll-mt-32">
-              <AnalogList analogs={activeAnalogs?.analogs ?? []} />
+              <AnalogList
+                analogs={activeAnalogs?.analogs ?? []}
+                onHoverAnalog={setHoveredAnalogFips}
+              />
             </div>
 
             <div className="mt-12">
