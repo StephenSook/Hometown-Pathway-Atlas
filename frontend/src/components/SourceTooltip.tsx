@@ -73,7 +73,7 @@ export default function SourceTooltip({
         role="tooltip"
         className={cn(
           'absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-30',
-          'min-w-[220px] max-w-[300px]',
+          'min-w-[240px] max-w-[380px]',
           'rounded-xl bg-card-white border border-soft-border shadow-md p-3',
           'text-left',
           'opacity-0 invisible',
@@ -98,7 +98,7 @@ export default function SourceTooltip({
         <span className="block font-mono uppercase tracking-wider text-eyebrow text-navy mb-1">
           Source
         </span>
-        <span className="block font-serif italic text-caption text-muted-text leading-snug">
+        <span className="block font-serif italic text-caption text-muted-text leading-relaxed tracking-normal">
           {source}
         </span>
         {href && (
