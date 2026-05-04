@@ -171,15 +171,29 @@ function EvidenceBlock({ evidence }: { evidence: Record<string, unknown> }) {
     );
   }
 
+  // Guard against null/empty framing from backend — some pathway gaps land
+  // with `evidence: { framing: null }` (Vinh's pathway_service emits null
+  // framing when the gap has structured-metric evidence instead of prose).
+  // String(null) renders the literal text "null" which is what Stephen
+  // caught in production 2026-05-04. Treat null/empty/whitespace-only
+  // framing as "absent" and fall through to the entries-based renderer.
   if ('framing' in evidence) {
-    return (
-      <p className="font-serif italic text-caption text-muted-text leading-snug">
-        {String(evidence.framing)}
-      </p>
-    );
+    const framing = evidence.framing;
+    if (framing != null && String(framing).trim() !== '') {
+      return (
+        <p className="font-serif italic text-caption text-muted-text leading-snug">
+          {String(framing)}
+        </p>
+      );
+    }
+    // framing key present but null/empty — fall through to entries logic
   }
 
-  const entries = Object.entries(evidence);
+  // Filter out the null framing key so it doesn't get rendered as an
+  // EvidenceRow with display="null" — entries here are real metrics only.
+  const entries = Object.entries(evidence).filter(
+    ([k]) => k !== 'framing',
+  );
   if (entries.length === 0) {
     if (import.meta.env.DEV) {
       console.warn('[GapCard] evidence object has no keys');
