@@ -4,15 +4,12 @@
 #   1. builder — node:22-alpine, npm ci, npm run build
 #   2. runtime — nginx:alpine serving dist/ on port 8080 (Cloud Run default)
 #
-# Day 8 deploy:
-#   gcloud run deploy atlas-frontend \
-#     --source frontend/ \
-#     --region us-central1 \
-#     --allow-unauthenticated \
-#     --port 8080 \
-#     --build-env-vars-file .env.production
-#
-# See docs/cloud_run_deploy.md for the full runbook.
+# Production deploy: write frontend/.env.production with the backend
+# URL BEFORE running `gcloud run deploy --source frontend/ ...`.
+# .env.production is NOT gitignored (only `.env` is) so the source
+# upload includes it, the Docker build COPY pulls it in, and Vite's
+# loadEnv reads it at build time. See docs/cloud_run_deploy.md for
+# the full runbook + the .env-precedence trap that bit us 2026-05-04.
 
 # ─────── builder ───────
 FROM node:22-alpine AS builder
@@ -28,10 +25,28 @@ RUN npm ci --legacy-peer-deps
 # Source after deps so deps layer caches across source-only changes
 COPY . .
 
-# Vite resolves env vars at build time. Override per environment via
-# `--build-arg VITE_API_BASE_URL=https://...`. Default value lets the
-# image build standalone for local smoke tests.
-ARG VITE_API_BASE_URL=http://localhost:8000
+# Vite reads VITE_API_BASE_URL at build time. ARG default IS the
+# production Cloud Run backend URL — `gcloud run deploy --source
+# frontend/` uses the ARG default without extra config, so the
+# bundle ships with the right backend URL on every deploy.
+#
+# Local Docker test: pass --build-arg VITE_API_BASE_URL=http://...
+#   to override (e.g. http://localhost:8000 when the backend is
+#   running locally on the same Docker network).
+# Local `npm run dev`: doesn't use this Dockerfile; api.ts falls
+#   back to http://localhost:8000 via import.meta.env.DEV branch.
+#
+# History: the .env.production approach (write file, gcloud uploads,
+# Vite reads) was attempted 2026-05-04 but kept baking localhost:8000.
+# Root cause: Vite's loadEnv prioritizes process.env over .env.* files
+# for VITE_ prefixed vars (verified in vite/src/node/env.ts loadEnv
+# loop), so the ENV statement here silently overrode .env.production
+# even when the file was correctly uploaded. ARG default + ENV bridge
+# is the simplest reliable path for `--source` deploys, which don't
+# support --build-arg without a cloudbuild.yaml. URL is public (linked
+# from README + SUBMISSION.md + CLAUDE.md) so hardcoding here is
+# acceptable for hackathon scope.
+ARG VITE_API_BASE_URL=https://atlas-backend-635524063449.us-central1.run.app
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 
 RUN npm run build
