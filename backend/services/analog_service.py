@@ -28,7 +28,7 @@ def _match_quality(score: float) -> Literal["high", "medium", "low"]:
 class AnalogService:
     def __init__(self, settings: Settings | None = None) -> None:
         s = settings or get_settings()
-        self._matrix: pd.DataFrame = pd.read_parquet(s.similarity_matrix_path)
+        self._matrix: pd.DataFrame = pd.read_parquet(s.similarity_matrix_path).set_index("source_fips")
         self._profiles: pd.DataFrame = pd.read_parquet(s.county_profiles_path).set_index("fips")
 
     # ------------------------------------------------------------------
@@ -52,7 +52,10 @@ class AnalogService:
     # ------------------------------------------------------------------
 
     def _fetch_candidates(self, source_fips: str) -> list[pd.Series]:
-        pool = self._matrix[self._matrix["source_fips"] == source_fips].copy()
+        try:
+            pool = self._matrix.loc[[source_fips]].copy()
+        except KeyError:
+            pool = pd.DataFrame()
         if pool.empty:
             raise ProfileNotFoundError(
                 f"No similarity rows found for FIPS {source_fips!r}. "
@@ -78,9 +81,13 @@ class AnalogService:
 
         def _msa_of(analog_fips: str) -> str:
             try:
-                return str(self._profiles.loc[analog_fips, "msa_label"])
+                val = self._profiles.loc[analog_fips, "msa_label"]
+                label = str(val).strip()
+                # Rural counties with no MSA affiliation get a unique sentinel so they
+                # don't all collapse to the same "" bucket and fail diversity filtering.
+                return label if label and label.lower() not in ("nan", "none", "") else f"no-msa-{analog_fips}"
             except KeyError:
-                return ""
+                return f"no-msa-{analog_fips}"
 
         # Convert to list of dicts so we can pop by index safely (avoids pandas Series ambiguity)
         remaining: list[dict] = [r.to_dict() for r in candidates]

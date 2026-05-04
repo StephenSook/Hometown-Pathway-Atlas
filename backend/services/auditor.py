@@ -149,9 +149,10 @@ class HybridAuditor:
             entries=entries,
         )
 
-    def semantic_check(self, narrative: str) -> tuple[str, list[ComplianceEntry]]:
+    def semantic_check(self, narrative: str) -> tuple[str | None, list[ComplianceEntry]]:
         """Call Gemini to classify and optionally rewrite causal tone.
-        Never raises — failure returns original narrative with a fail entry.
+        Never raises. Returns (None, entries) when all rewrite attempts fail so the
+        caller can substitute a safe fallback rather than serving causal language.
         """
         entries: list[ComplianceEntry] = []
         current = narrative
@@ -203,16 +204,27 @@ class HybridAuditor:
             details=f"Causal tone persisted after {_MAX_REWRITE_ATTEMPTS} rewrite attempts.",
             ts=_now_iso(),
         ))
-        return current, entries
+        # All rewrite attempts exhausted — signal failure by returning None so audit()
+        # can substitute a safe fallback rather than serving causal language.
+        return None, entries
 
-    def audit(self, narrative: str) -> AuditResult:
-        """Run deterministic pass; if causal fail, run Gemini semantic rewrite."""
+    def audit(self, narrative: str, fallback: str | None = None) -> AuditResult:
+        """Run deterministic pass; if causal fail, run Gemini semantic rewrite.
+
+        If all rewrite attempts fail, uses `fallback` text (if provided) to avoid
+        serving causal language. Falls back to the original narrative if no fallback given.
+        """
         det_result = self.deterministic_check(narrative)
 
         if not det_result.causal_pass:
             # Only invoke Gemini when deterministic found a banned phrase.
             semantic_narrative, semantic_entries = self.semantic_check(narrative)
             all_entries = det_result.entries + semantic_entries
+
+            if semantic_narrative is None:
+                # All rewrites failed — use safe fallback rather than original causal text.
+                semantic_narrative = fallback if fallback is not None else narrative
+
             # Re-evaluate parity/name on the final (possibly rewritten) narrative.
             final_det = self.deterministic_check(semantic_narrative)
             return AuditResult(

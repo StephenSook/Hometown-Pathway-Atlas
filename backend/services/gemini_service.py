@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from functools import lru_cache
 from typing import Any
@@ -134,7 +135,7 @@ class GeminiService:
             narrative = _fallback_region_narrative(region)
             log_entries = _error_log_entry("region_narrative", str(exc))
 
-        audit_result = get_auditor().audit(narrative)
+        audit_result = get_auditor().audit(narrative, fallback=_fallback_region_narrative(region))
         narrative = audit_result.final_narrative
         log_entries = log_entries + audit_result.entries
 
@@ -153,9 +154,17 @@ class GeminiService:
         tradeoff_audit = get_auditor().audit(tradeoff_text)
         tradeoff_text = tradeoff_audit.final_narrative
 
+        # Enrich all analog entries in parallel — each is an independent Gemini call.
+        entries = analogs_response.analogs
+        with ThreadPoolExecutor(max_workers=len(entries)) as pool:
+            futures = {pool.submit(self._enrich_analog_entry, e): i for i, e in enumerate(entries)}
+            results: dict[int, AnalogEntry] = {}
+            for fut in as_completed(futures):
+                results[futures[fut]] = fut.result()
+        ordered = [results[i] for i in range(len(entries))]
+
         enriched: list[AnalogEntry] = []
-        for i, entry in enumerate(analogs_response.analogs):
-            analog = self._enrich_analog_entry(entry)
+        for i, analog in enumerate(ordered):
             # Attach tradeoff audit entries to the first analog so they surface in the UI.
             if i == 0 and tradeoff_audit.entries:
                 analog = analog.model_copy(
@@ -205,7 +214,7 @@ class GeminiService:
             narrative = _fallback_analog_narrative(entry)
             log_entries = _error_log_entry("analog_narrative", str(exc))
 
-        audit_result = get_auditor().audit(narrative)
+        audit_result = get_auditor().audit(narrative, fallback=_fallback_analog_narrative(entry))
         narrative = audit_result.final_narrative
         log_entries = log_entries + audit_result.entries
 

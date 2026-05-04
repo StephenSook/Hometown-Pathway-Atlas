@@ -1,15 +1,16 @@
 from __future__ import annotations
 
-import os
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+
     # GCP / Vertex AI
-    gcp_project: str = os.getenv("GOOGLE_CLOUD_PROJECT", "pathway-atlas-hackathon")
+    gcp_project: str = "pathway-atlas-hackathon"
     gcp_location: str = "us-central1"
     gemini_model: str = "gemini-2.5-flash"
 
@@ -29,11 +30,7 @@ class Settings(BaseSettings):
         return self.data_dir / "zip_county_crosswalk.parquet"
 
     # CORS
-    frontend_origin: str = os.getenv("FRONTEND_ORIGIN", "http://localhost:5173")
-
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
+    frontend_origin: str = "http://localhost:5173"
 
 
 @lru_cache(maxsize=1)
