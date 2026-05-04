@@ -57,6 +57,7 @@ import RegionQA from '../components/RegionQA';
 import RegionNarrative from '../components/RegionNarrative';
 import RotatingGlobe from '../components/RotatingGlobe';
 import SectionNav from '../components/SectionNav';
+import CountyNameSearch from '../components/CountyNameSearch';
 
 const RESULTS_SECTIONS = [
   { id: 'section-region', label: 'Region' },
@@ -427,6 +428,20 @@ export default function HomePage() {
                   Cobb County, GA →
                 </button>
               </p>
+
+              {/* County-name search — alternate hero entry path for
+                  judges who don't know specific ZIPs. Routes through
+                  the same handleSelectCounty pathway map-click drill-
+                  down uses, hitting /api/region/by-fips/{fips}.
+                  Positioned below the ZIP form + tour CTA so the
+                  ZIP path stays primary (matches pitch script Beat 2
+                  ZIP-submit moment). */}
+              <div className="mt-8 max-w-md mx-auto">
+                <CountyNameSearch
+                  onSelect={handleSelectCounty}
+                  disabled={loading}
+                />
+              </div>
             </section>
 
             <section

@@ -18,6 +18,13 @@
 import { ArrowLeft } from 'lucide-react';
 import { useGlobalStats } from '../hooks/useGlobalStats';
 
+// Public NotebookLM link — Stephen creates the public notebook
+// (architecture spec + CLAUDE.md + methodology docs uploaded; share
+// set to "Anyone with link"), then pastes the URL here. Empty string
+// hides the affordance, so deploying this code before the notebook
+// exists doesn't surface a broken link to judges.
+const NOTEBOOKLM_PUBLIC_URL = '';
+
 interface MethodologyPageProps {
   onBack: () => void;
 }
@@ -260,6 +267,33 @@ export default function MethodologyPage({ onBack }: MethodologyPageProps) {
           Both surfaced via `/api/stats/global`; numerators + denominators
           shown so the math is verifiable.
         </p>
+      </Section>
+
+      <Section heading="Talk to the methodology in NotebookLM" eyebrow="Deeper dive">
+        <p>
+          For judges and researchers who want to interrogate Atlas's
+          methodology beyond this page: the same source material —
+          architecture spec, locked decisions, data sources, sourcing
+          appendix — is mirrored in a public Google NotebookLM. Open it
+          to ask questions, generate audio overviews, or surface
+          cross-document tradeoffs that this page summarizes.
+        </p>
+        {/* Public link populated once Stephen creates the NotebookLM
+            and toggles "Anyone with link". Until then, the anchor is
+            disabled. Hidden when NOTEBOOKLM_PUBLIC_URL is empty so
+            judges don't see a broken affordance. */}
+        {NOTEBOOKLM_PUBLIC_URL && (
+          <p className="not-prose mt-3">
+            <a
+              href={NOTEBOOKLM_PUBLIC_URL}
+              target="_blank"
+              rel="noreferrer noopener"
+              className="inline-flex items-center gap-2 rounded-xl bg-navy text-card-white px-4 py-2.5 font-mono uppercase tracking-wider text-eyebrow hover:bg-olympic-blue focus-ring transition-colors"
+            >
+              Open Atlas in NotebookLM →
+            </a>
+          </p>
+        )}
       </Section>
 
       <Section heading="Limits + open questions" eyebrow="Honest framing">

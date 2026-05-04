@@ -33,6 +33,13 @@ export default function ZipInput({ onSubmit, loading = false, className }: ZipIn
   };
 
   const isInvalid = error !== null;
+  // Valid-state cue: when the user has typed exactly 5 digits, the
+  // submit button briefly shifts color from navy → olympic-blue +
+  // scales 1.02 so the affordance reads as "ready to fire". Pure
+  // CSS via Tailwind transitions; no JS animation. Disabled state
+  // (loading) overrides the cue so submit-in-flight doesn't double-up
+  // visual weight.
+  const isReady = ZIP_PATTERN.test(zip) && !loading;
 
   return (
     <form
@@ -81,9 +88,12 @@ export default function ZipInput({ onSubmit, loading = false, className }: ZipIn
           // 2026-05-02) AND violated DESIGN_SYSTEM §1.1's clay-only-on-
           // ≥24px-text rule. Navy is unrestricted.
           className={cn(
-            'inline-flex items-center gap-2 rounded-full bg-navy px-6 py-2.5 text-body text-card-white font-medium',
-            'transition-opacity disabled:opacity-50 disabled:cursor-not-allowed',
-            'hover:bg-navy/90 focus-ring',
+            'inline-flex items-center gap-2 rounded-full px-6 py-2.5 text-body text-card-white font-medium',
+            'transition-all duration-200 ease-out disabled:opacity-50 disabled:cursor-not-allowed',
+            'focus-ring',
+            isReady
+              ? 'bg-olympic-blue scale-[1.03] shadow-md hover:bg-olympic-blue'
+              : 'bg-navy hover:bg-navy/90',
           )}
         >
           {loading ? (
