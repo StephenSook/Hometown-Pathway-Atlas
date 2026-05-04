@@ -380,8 +380,16 @@ export default function CountyMap({
                     tabIndex={isHighlighted ? 0 : -1}
                     role={isHighlighted ? 'img' : undefined}
                     aria-label={tip ? formatGeographyLabel(tip) : undefined}
-                    onMouseMove={(e) => handleMove(e, id, name)}
-                    onMouseLeave={clearHover}
+                    // Hover handlers ONLY on highlighted counties (source +
+                    // 3 analogs). Attaching onMouseMove to all 3,222
+                    // counties causes a re-render storm during zoom/pan —
+                    // every cursor pixel triggers setHover even on
+                    // background counties that have no tooltip data.
+                    // (Codex review 2026-05-04 caught the perf risk that
+                    // also explains the 5s screenshot timeout in cold-
+                    // check Playwright runs.)
+                    onMouseMove={isHighlighted ? (e) => handleMove(e, id, name) : undefined}
+                    onMouseLeave={isHighlighted ? clearHover : undefined}
                     onFocus={(e) => {
                       if (!isHighlighted) return;
                       const rect = (e.target as SVGElement).getBoundingClientRect();
