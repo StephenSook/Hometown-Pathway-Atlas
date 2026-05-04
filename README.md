@@ -85,22 +85,9 @@ Vertex AI Gemini call when the GeminiService backend lands.
 
 ## Architecture
 
-```mermaid
-flowchart LR
-  ZIP[ZIP code input] --> FE[React + Vite frontend]
-  FE -->|/api/region| API[FastAPI backend]
-  FE -->|/api/analogs/fips| API
-  FE -->|/api/pathway/fips| API
-  API --> P1[county_profiles.parquet]
-  API --> P2[similarity_matrix.parquet]
-  API --> GEM[Vertex AI Gemini 2.5 Flash<br/>structured output]
-  GEM --> AUD[Hybrid Auditor<br/>regex + semantic]
-  AUD -->|pass / fixed| FE
-  AUD -->|stream events| LOG[Compliance Log UI]
-```
+![Architecture diagram](docs/architecture.svg)
 
-*Full architecture spec: `docs/01_architecture_spec.docx`. SVG diagram
-ships with task 5.8 — replaces this Mermaid placeholder.*
+*Full architecture spec: `docs/01_architecture_spec.docx`.*
 
 ---
 
