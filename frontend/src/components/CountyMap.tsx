@@ -36,7 +36,7 @@
  * to `@nivo/geo` per PLAN.md task 3.9.
  */
 
-import { useCallback, useId, useMemo, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Minus, Plus, RotateCcw } from 'lucide-react';
 import {
@@ -152,6 +152,12 @@ interface CountyMapProps {
   sourceCentroid?: [number, number] | null;
   sourceTooltip: CountyTooltipData;
   analogs: AnalogEntry[];
+  /** FIPS of the analog the user is currently hovering OUTSIDE the map
+   *  (typically AnalogList card hover). Map emphasizes the matching pin
+   *  with ring + scale to provide cross-component visual link. Lifted
+   *  to HomePage so AnalogList → CountyMap state flows up + back down.
+   *  Null when nothing hovered. */
+  hoveredAnalogFips?: string | null;
   className?: string;
 }
 
@@ -167,6 +173,7 @@ export default function CountyMap({
   sourceCentroid,
   sourceTooltip,
   analogs,
+  hoveredAnalogFips,
   className,
 }: CountyMapProps) {
   const [hover, setHover] = useState<HoverState | null>(null);
@@ -174,11 +181,14 @@ export default function CountyMap({
   // internally; we maintain coordinates + zoom so external buttons
   // (+ / − / reset) can drive the same state. Initial centered on
   // continental US (lng -96, lat 38) at 1x — matches default
-  // geoAlbersUsa rendering of the static map.
+  // geoAlbersUsa rendering of the static map. A useEffect below
+  // animates this state from US-wide → source-county-focused on first
+  // mount once the source centroid is known (cinematic arrival).
   const [position, setPosition] = useState<{ coordinates: [number, number]; zoom: number }>({
     coordinates: [-96, 38],
     zoom: 1,
   });
+  const reduceMotion = useReducedMotion() ?? false;
   const arrowMarkerId = useId();
 
   const handleMoveEnd = useCallback(
@@ -187,6 +197,60 @@ export default function CountyMap({
     },
     [],
   );
+
+  // Camera transition on first paint — animate position from US-wide
+  // (zoom 1 centered at [-96, 38]) → source-county-focused (zoom 1.8
+  // centered at source centroid) over 1.4s with eased curve. Triggers
+  // when the source centroid first becomes known and only fires once
+  // (hasAnimatedRef guard). User can still manually pan/zoom afterward
+  // via existing controls; this is just the dramatic arrival.
+  //
+  // Sync narrative: pitch_script Beat 3 narration starts with "Cobb
+  // County, Georgia. Population 769,000." — camera tween coincides
+  // with the first ~1s of that line for the cinematic-arrival feel
+  // Vinh requested ("more lively"). Honors prefers-reduced-motion
+  // (skips the tween, snaps to final position).
+  const hasAnimatedRef = useRef(false);
+  useEffect(() => {
+    if (hasAnimatedRef.current) return;
+    const target = sourceCentroid ?? FALLBACK_CENTROIDS[sourceFips] ?? null;
+    if (!target) return;
+    hasAnimatedRef.current = true;
+    if (reduceMotion) {
+      setPosition({ coordinates: target, zoom: 1.8 });
+      return;
+    }
+    const startTime = performance.now();
+    const duration = 1400;
+    const startCoords: [number, number] = [-96, 38];
+    const startZoom = 1;
+    const targetZoom = 1.8;
+    // Easing — same cubic-bezier as Atlas motion presets: [0.16, 1, 0.3, 1]
+    // (a snappy ease-out that lands cleanly without overshoot).
+    const ease = (t: number): number => {
+      // Cubic-bezier approximation via polynomial fit (avoids importing
+      // a bezier solver lib). Output matches [0.16, 1, 0.3, 1] within
+      // a few % across the 0..1 range — close enough that human
+      // perception treats it as the same curve.
+      return 1 - Math.pow(1 - t, 3);
+    };
+    let raf: number;
+    const tick = (now: number) => {
+      const elapsed = now - startTime;
+      const t = Math.min(1, elapsed / duration);
+      const eased = ease(t);
+      setPosition({
+        coordinates: [
+          startCoords[0] + (target[0] - startCoords[0]) * eased,
+          startCoords[1] + (target[1] - startCoords[1]) * eased,
+        ],
+        zoom: startZoom + (targetZoom - startZoom) * eased,
+      });
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [sourceCentroid, sourceFips, reduceMotion]);
 
   const zoomIn = useCallback(() => {
     setPosition((p) => ({ ...p, zoom: Math.min(5, p.zoom * 1.5) }));
@@ -481,13 +545,30 @@ export default function CountyMap({
             // right-side (Alexandria ~-77°, Charleston ~-79.9°).
             const lng = x.coords[0];
             const labelOnLeft = lng > -74;
+            // Cross-component highlight — when an AnalogCard below the
+            // map is hovered, lifted hoveredAnalogFips state matches
+            // this pin → emphasize with bigger radius + outer ring +
+            // bolder label. Bi-directional link makes the map ↔ analog
+            // list feel like one connected surface to judges who poke
+            // around. (2026-05-04 upgrade.)
+            const isHovered = hoveredAnalogFips === x.fips;
             return (
               <Marker key={`pin-${x.fips}`} coordinates={x.coords}>
+                {isHovered && (
+                  <circle
+                    r={11}
+                    fill="none"
+                    stroke="#1F3A5F"
+                    strokeWidth={1.5}
+                    strokeOpacity={0.45}
+                  />
+                )}
                 <circle
-                  r={5}
-                  fill="#5B7DB1"
+                  r={isHovered ? 7 : 5}
+                  fill={isHovered ? '#1F3A5F' : '#5B7DB1'}
                   stroke="#FFFFFF"
-                  strokeWidth={1.25}
+                  strokeWidth={1.5}
+                  style={{ transition: 'r 0.18s ease-out, fill 0.18s ease-out' }}
                 />
                 {labelText && (
                   <text
@@ -495,9 +576,10 @@ export default function CountyMap({
                     y={4}
                     textAnchor={labelOnLeft ? 'end' : 'start'}
                     fontFamily="JetBrains Mono, ui-monospace, monospace"
-                    fontSize={9}
-                    fontWeight={500}
+                    fontSize={isHovered ? 10 : 9}
+                    fontWeight={isHovered ? 700 : 500}
                     fill="#1F3A5F"
+                    style={{ transition: 'font-size 0.18s ease-out, font-weight 0.18s ease-out' }}
                   >
                     {labelText.toUpperCase()}
                   </text>
@@ -715,22 +797,52 @@ function BezierArc({
   const lift = Math.min(60, norm * 0.25);
   const cx = mx + (-dy / norm) * lift;
   const cy = my + (dx / norm) * lift;
+  const pathD = `M ${x1} ${y1} Q ${cx} ${cy} ${x2} ${y2}`;
+  // Traveling dot duration scales with arc length so longer arcs (e.g.
+  // Cobb GA → Bridgeport CT) don't whoosh past faster than shorter
+  // ones (Cobb GA → Charleston SC). Base ~2.5s for the average
+  // continental US arc; clamp so very short arcs aren't instant and
+  // very long arcs aren't sluggish.
+  const dotDuration = Math.max(1.8, Math.min(4, norm / 100));
   return (
-    <motion.path
-      d={`M ${x1} ${y1} Q ${cx} ${cy} ${x2} ${y2}`}
-      fill="none"
-      stroke="#B96B5C"
-      strokeWidth={1.5}
-      strokeDasharray="4 3"
-      strokeLinecap="round"
-      markerEnd={`url(#${markerId})`}
-      initial={reduceMotion ? false : { pathLength: 0, opacity: 0 }}
-      animate={{ pathLength: 1, opacity: 1 }}
-      transition={{
-        pathLength: { duration: 1.2, delay: 0.3 + index * 0.18, ease: [0.16, 1, 0.3, 1] },
-        opacity: { duration: 0.4, delay: 0.3 + index * 0.18 },
-      }}
-    />
+    <g>
+      <motion.path
+        d={pathD}
+        fill="none"
+        stroke="#B96B5C"
+        strokeWidth={1.5}
+        strokeDasharray="4 3"
+        strokeLinecap="round"
+        markerEnd={`url(#${markerId})`}
+        initial={reduceMotion ? false : { pathLength: 0, opacity: 0 }}
+        animate={{ pathLength: 1, opacity: 1 }}
+        transition={{
+          pathLength: { duration: 1.2, delay: 0.3 + index * 0.18, ease: [0.16, 1, 0.3, 1] },
+          opacity: { duration: 0.4, delay: 0.3 + index * 0.18 },
+        }}
+      />
+      {/* Traveling dot — pulses along the arc continuously source → peer
+          to reinforce the "data flow direction" reading of the arc.
+          Subtle (small radius, low opacity) so it doesn't compete with
+          the source pin pulse or the analog pin emphasis. SVG
+          <animateMotion> is the cheapest path-following pattern (no JS
+          loop needed, runs at compositor rate). begin attribute
+          syncs each dot's first lap to the arc's draw-on completion +
+          a small offset so the 3 dots fire in staggered sequence,
+          matching the arc draw-on stagger. Skip entirely under
+          prefers-reduced-motion. */}
+      {!reduceMotion && (
+        <circle r={2.2} fill="#B96B5C" opacity={0.7}>
+          <animateMotion
+            dur={`${dotDuration}s`}
+            repeatCount="indefinite"
+            begin={`${1.5 + index * 0.5}s`}
+            path={pathD}
+            rotate="auto"
+          />
+        </circle>
+      )}
+    </g>
   );
 }
 
