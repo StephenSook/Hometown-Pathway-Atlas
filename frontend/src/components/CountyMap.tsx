@@ -158,6 +158,11 @@ interface CountyMapProps {
    *  to HomePage so AnalogList → CountyMap state flows up + back down.
    *  Null when nothing hovered. */
   hoveredAnalogFips?: string | null;
+  /** Bidirectional callback — fires when user hovers a peer pin on the
+   *  map directly. HomePage uses the SAME setter as AnalogList, so both
+   *  surfaces drive the shared hoveredAnalogFips state and update each
+   *  other (pin → card outline + card → pin emphasis). */
+  onHoverAnalog?: (fips: string | null) => void;
   className?: string;
 }
 
@@ -174,6 +179,7 @@ export default function CountyMap({
   sourceTooltip,
   analogs,
   hoveredAnalogFips,
+  onHoverAnalog,
   className,
 }: CountyMapProps) {
   const [hover, setHover] = useState<HoverState | null>(null);
@@ -260,9 +266,38 @@ export default function CountyMap({
     setPosition((p) => ({ ...p, zoom: Math.max(1, p.zoom / 1.5) }));
   }, []);
 
+  // Reset zoom — smarter than "back to US-wide". Computes the bounding
+  // box of source + 3 analog centroids, centers on it, picks a zoom
+  // that fits all 4 with comfortable padding. User naturally wants to
+  // see the data after zooming in to inspect; defaulting back to
+  // US-wide loses the source/peer context. (2026-05-04 upgrade.)
   const resetZoom = useCallback(() => {
-    setPosition({ coordinates: [-96, 38], zoom: 1 });
-  }, []);
+    const allCoords: [number, number][] = [];
+    if (centroids.source) allCoords.push(centroids.source);
+    centroids.analogList.forEach((x) => {
+      if (x.coords) allCoords.push(x.coords);
+    });
+    if (allCoords.length === 0) {
+      setPosition({ coordinates: [-96, 38], zoom: 1 });
+      return;
+    }
+    const lngs = allCoords.map((c) => c[0]);
+    const lats = allCoords.map((c) => c[1]);
+    const minLng = Math.min(...lngs);
+    const maxLng = Math.max(...lngs);
+    const minLat = Math.min(...lats);
+    const maxLat = Math.max(...lats);
+    const center: [number, number] = [
+      (minLng + maxLng) / 2,
+      (minLat + maxLat) / 2,
+    ];
+    // Heuristic: continental US is ~58° wide at zoom 1. Pad span by 5°
+    // on each side. Clamp to maxZoom 5 / minZoom 1.2 so degenerate
+    // cases (single point, all-collapsed-to-one-spot) stay sensible.
+    const span = Math.max(maxLng - minLng, maxLat - minLat);
+    const zoom = Math.min(5, Math.max(1.2, 50 / (span + 5)));
+    setPosition({ coordinates: center, zoom });
+  }, [centroids.source, centroids.analogList]);
 
   // Single source of truth for centroid lookup. Prefers the API-supplied
   // centroid, falls back to FALLBACK_CENTROIDS for mock paths or any
@@ -553,7 +588,16 @@ export default function CountyMap({
             // around. (2026-05-04 upgrade.)
             const isHovered = hoveredAnalogFips === x.fips;
             return (
-              <Marker key={`pin-${x.fips}`} coordinates={x.coords}>
+              <Marker
+                key={`pin-${x.fips}`}
+                coordinates={x.coords}
+                onMouseEnter={() => onHoverAnalog?.(x.fips)}
+                onMouseLeave={() => onHoverAnalog?.(null)}
+                onFocus={() => onHoverAnalog?.(x.fips)}
+                onBlur={() => onHoverAnalog?.(null)}
+                tabIndex={0}
+                style={{ cursor: 'pointer' }}
+              >
                 {isHovered && (
                   <circle
                     r={11}

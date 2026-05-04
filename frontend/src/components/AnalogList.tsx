@@ -20,6 +20,10 @@ interface AnalogListProps {
    *  Lifted to HomePage so CountyMap can emphasize the matching pin
    *  on the map. Bi-directional link between map and list. */
   onHoverAnalog?: (fips: string | null) => void;
+  /** Currently-hovered analog FIPS (from anywhere — map pin OR another
+   *  card hover). Match drives a card-level outline so the user sees
+   *  the bidirectional link when hovering a pin on the map. */
+  hoveredAnalogFips?: string | null;
   className?: string;
 }
 
@@ -29,6 +33,7 @@ export default function AnalogList({
   analogs,
   onSelectAnalog,
   onHoverAnalog,
+  hoveredAnalogFips,
   className,
 }: AnalogListProps) {
   const headingId = useId();
@@ -60,6 +65,7 @@ export default function AnalogList({
             analog={analog}
             onSelect={onSelectAnalog}
             onHover={onHoverAnalog}
+            isHighlighted={hoveredAnalogFips === analog.fips}
           />
         ))}
 

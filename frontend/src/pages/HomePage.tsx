@@ -55,6 +55,7 @@ import HeroStat from '../components/HeroStat';
 const MethodologyPage = lazy(() => import('../components/MethodologyPage'));
 import RegionQA from '../components/RegionQA';
 import RegionNarrative from '../components/RegionNarrative';
+import RotatingGlobe from '../components/RotatingGlobe';
 import SectionNav from '../components/SectionNav';
 
 const RESULTS_SECTIONS = [
@@ -285,7 +286,22 @@ export default function HomePage() {
             <MethodologyPage onBack={handleMethodologyBack} />
           </Suspense>
         ) : view === 'hero' ? (
-          <>
+          <div className="relative overflow-hidden">
+            {/* Ambient rotating world globe behind hero content. Editorial-
+                restrained interpretation of Stephen's Bloom AI reference
+                (2026-05-04). Slow rotation (90s/revolution), low opacity,
+                positioned off-center-right so it peeks from the right edge
+                rather than dominating. Honors prefers-reduced-motion via
+                internal hook. pointer-events:none so it never steals
+                interaction from the ZipInput / tour CTA. */}
+            <div className="absolute inset-0 z-0 flex items-center justify-end pointer-events-none">
+              <RotatingGlobe
+                size={680}
+                className="-mr-[180px] md:-mr-[140px] lg:-mr-[80px]"
+              />
+            </div>
+
+            <div className="relative z-10">
             <HeroStat stat={HERO_STAT} className="mb-8" />
 
             <section
@@ -345,7 +361,8 @@ export default function HomePage() {
                 never merged.
               </p>
             </section>
-          </>
+            </div>
+          </div>
         ) : (
           <section
             aria-labelledby="results-heading"
@@ -402,6 +419,7 @@ export default function HomePage() {
                   }}
                   analogs={activeAnalogs?.analogs ?? []}
                   hoveredAnalogFips={hoveredAnalogFips}
+                  onHoverAnalog={setHoveredAnalogFips}
                 />
               </Suspense>
             </div>
@@ -426,6 +444,7 @@ export default function HomePage() {
               <AnalogList
                 analogs={activeAnalogs?.analogs ?? []}
                 onHoverAnalog={setHoveredAnalogFips}
+                hoveredAnalogFips={hoveredAnalogFips}
               />
             </div>
 
