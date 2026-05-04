@@ -36,7 +36,7 @@ components shipped + wired against real Phase 2 backend. End-to-end
 smoke verified 30060 / 00000 / 11111 sentinels.
 
 **Phase 4 — Maximum Scope ambitious layers:**
-- Layer A — PENDING Vinh task 1.11
+- Layer A — ✓ SHIPPED 2026-05-04 (task 1.11 done; heroStat.ts updated — "4 in 5" gap stat)
 - Layer B — ✓ SHIPPED 2026-05-03 PM (SourceTooltip system + favicon
   + OG image + per-FIPS title + deep-link URLs + tour CTA + replay
   button + sparse-state demo + Pillar5Defense + sound-design recipe
@@ -55,13 +55,12 @@ Demo recording + Devpost submission Day 9–10. NotebookLM oracle pass
 plate.
 
 **Critical-path Vinh deps still open:**
-1. Task 1.11 — Layer A stat → A1 + A2
+1. ~~Task 1.11 — Layer A stat~~ ✅ DONE 2026-05-04
 2. Task 2.7 — GeminiService → RegionQA real backend +
    `RegionResponse.narrative` populating
 3. Task 2.8 — Gemini Live multimodal → optional RegionQA upgrade
-4. Task 2.9 — HybridAuditor → ComplianceLog auto-flips
-5. `data_confidence` flag per FIPS → CountyMap hatch wires up
-6. Backend Cloud Run deploy
+4. `data_confidence` flag per FIPS → CountyMap hatch wires up
+5. Backend Cloud Run deploy (task 5.1)
 
 **Critical-path Stephen ops still open:**
 1. Pitch dry-run with `./scripts/pitch-stopwatch.sh`
@@ -178,7 +177,7 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started · ⛔ blocked · ✂️
 | 1.8 | County profiles aggregation | `backend/ingest/07_aggregate.py` | Vinh | ✅ | 1.7, 1.3, 1.4 | Done 2026-05-03 (re-run with allgames). 3222 county profiles. 555 athlete counties (was 350 on 2024-only). Olympic total 2024, Paralympic 452. Centroids 100% coverage. Output `county_profiles.parquet`. |
 | 1.9 | Similarity matrix precompute | `backend/ingest/08_similarity.py` | Vinh | ✅ | 1.8 | Done 2026-05-03 (re-run with allgames). 555 athlete counties × 50 top analogs = 27,750 rows. Athlete 40 / sport mix 35 / climate 25. Validation passed. Output `similarity_matrix.parquet`. |
 | 1.10 | Move United chapter scrape | `backend/ingest/06_move_united.py` | Vinh | ✅ | 1.5 | Done 2026-05-03. 260 chapters scraped from SSR listing page, 46 states. Nominatim geocoded (260/260, 100%). Haversine 50mi radius: 1154/3222 counties with >=1 chapter. Confidence: high=321 / medium=833 / none=2068. Patched county_profiles.parquet. Display-only. **NOT in similarity matching.** |
-| 1.11 | **Layer A — Shocking stat hunt** | `backend/ingest/09_stat_hunt.py` | **Vinh** | ⬜ | 1.8 | Day 3 EOD ~2hr. 4 hypothesis classes. Pick 1-2 strongest by emotional resonance. Ship to Stephen for pitch. |
+| 1.11 | **Layer A — Shocking stat hunt** | `backend/ingest/09_stat_hunt.py` | Vinh | ✅ | 1.8 | Done 2026-05-04. 4 hypothesis classes run. Winner: **"4 in 5"** — 555/3,222 counties (17%) show any Team USA representation; 2,667 counties with zero pipeline. Runner-up (Layer D ch.1): 68% of sub-250K pop counties beat major-metro Paralympic per-capita rate. `lib/heroStat.ts` updated with real numbers. |
 
 ### Phase 2 — Backend services (Days 4–6, Vinh)
 
@@ -221,7 +220,7 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started · ⛔ blocked · ✂️
 
 | # | Component | File(s) | Owner | Status | Deps | Notes |
 |---|---|---|---|---|---|---|
-| 4.A | **Layer A — Shocking stat hunt** | tracked as 1.11 above + `frontend/src/{lib,components}/{heroStat.ts,HeroStat.tsx}` | Vinh + Stephen | 🟡 | — | Day 3. Always do. No cut trigger. **Frontend renderer scaffolded** (commits a9fad45 + 24de92f + d8f654b) — `HeroStat.tsx` displays above hero h1 with placeholder data per CLAUDE.md Layer A example #3 ("1 in 2"). Vinh's task 1.11 ships actual stat → swap `HERO_STAT` constant in `lib/heroStat.ts` → component picks up. axe-clean across hero+results+mobile. |
+| 4.A | **Layer A — Shocking stat hunt** | tracked as 1.11 above + `frontend/src/{lib,components}/{heroStat.ts,HeroStat.tsx}` | Vinh + Stephen | ✅ | — | Done 2026-05-04. Stat hunt ran 4 hypotheses. Winner: "4 in 5" gap (555/3,222 counties = 17% have any Team USA rep; 2,667 counties zero pipeline). Runner-up for Layer D ch.1: 68% of sub-250K counties beat major-metro Paralympic rate. `heroStat.ts` swapped to real numbers. HeroStat.tsx picks up automatically. |
 | 4.B | **Layer B — NYT/Pudding-grade frontend** | woven into 3.* | Stephen | ⬜ | — | Days 1–8. Custom illustrations, Framer Motion transitions, micro-interactions, sound design. Built INTO conservative components from Day 2 forward. Polish degrades gracefully. |
 | 4.C-back | **Layer C — Gemini Live spike** | `backend/services/gemini_live.py` | Vinh | ⬜ | 2.7 | Day 5 AM. **4-hour spike rule.** If hello-world doesn't work in 4hr, CUT and continue conservative. |
 | 4.C-api | Layer C — `/api/region/qa` endpoint | `backend/routes/qa.py`, `backend/services/gemini_live.py` | Vinh | ⬜ | 4.C-back | Day 5 PM (only if spike succeeds). Multimodal: current view + question → structured JSON answer. Auditor-reviewed. |
@@ -462,4 +461,4 @@ git commit -m "chore(plan): cut 4.E ✂️ — Day 7 not clean enough"
 
 ---
 
-_Last updated: 2026-05-03 by Vinh (tasks 2.2–2.8 ✅)._
+_Last updated: 2026-05-04 by Vinh (tasks 2.9–2.11 ✅, task 1.11 ✅)._
