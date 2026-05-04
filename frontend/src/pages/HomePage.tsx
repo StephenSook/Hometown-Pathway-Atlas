@@ -439,13 +439,20 @@ export default function HomePage() {
       </main>
 
       {view === 'results' && (
-        <>
-          <ComplianceLog
-            entries={activeRegion?.compliance_log ?? []}
-            demoMode={!activeRegion?.compliance_log?.length}
-          />
-          <SectionNav sections={RESULTS_SECTIONS} />
-        </>
+        <ComplianceLog
+          entries={activeRegion?.compliance_log ?? []}
+          demoMode={!activeRegion?.compliance_log?.length}
+        />
+      )}
+      {/* SectionNav must mount AFTER section anchors render. Its
+          IntersectionObserver setup runs once on mount and reads
+          document.getElementById for each section id; if anchors
+          are still inside the loading-skeleton branch, the observer
+          attaches to nothing and the active-section dot stays stuck
+          on the first item forever. Gate on !loading + activeRegion
+          to guarantee the anchors exist before the observer attaches. */}
+      {view === 'results' && !loading && activeRegion && (
+        <SectionNav sections={RESULTS_SECTIONS} />
       )}
 
       <Footer />
