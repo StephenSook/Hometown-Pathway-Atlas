@@ -188,9 +188,9 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started · ⛔ blocked · ✂️
 | 2.3 | ProfileService | `backend/services/profile_service.py` | Vinh | ✅ | 1.8, 2.2 | Done 2026-05-03. ZIP→FIPS via crosswalk. Returns full RegionResponse from county_profiles.parquet. Singleton via lru_cache. ZipNotFoundError + ProfileNotFoundError. |
 | 2.4 | AnalogService | `backend/services/analog_service.py` | Vinh | ✅ | 1.9, 2.2 | Done 2026-05-03. Top 3 from similarity matrix with D10 MSA diversity (≥2 MSAs). Candidate pool=20, diversity-first then fallback. |
 | 2.5 | PathwayService | `backend/services/pathway_service.py` | Vinh | ✅ | 1.8, 2.2 | Done 2026-05-03. All 3 gap categories: observed_strength (dominant percentile track), public_access_signal (Move United chapters, display-only per D2), opportunity_hypothesis (weaker track vs climate peers). Conditional phrasing enforced. |
-| 2.6 | Routes — `/api/region`, `/api/analogs/{fips}`, `/api/pathway/{fips}` | `backend/routes/*.py` | Vinh | ⬜ | 2.3, 2.4, 2.5 | Day 4 PM. **+ add `/api/stats/county/{fips}` returning `{fips, county_name, olympic_per_100k, paralympic_per_100k, olympic_evidence, paralympic_evidence}` for CountyMap hover tooltips (task 0.9 contract).** |
-| 2.7 | GeminiService — region narrative | `backend/services/gemini_service.py` | Vinh | ⬜ | 2.3 | Day 5 AM. Vertex AI structured output schema. Region narrative + analog tradeoff + pattern gap prompts. |
-| 2.8 | GeminiService — test 5 sample counties | `backend/tests/test_gemini.py` | Vinh | ⬜ | 2.7 | Day 5 PM. Verify structured JSON output reliable. |
+| 2.6 | Routes — `/api/region`, `/api/analogs/{fips}`, `/api/pathway/{fips}` | `backend/routes/*.py` | Vinh | ✅ | 2.3, 2.4, 2.5 | Done 2026-05-03. All 4 routers wired in main.py. `/api/stats/county/{fips}` included (task 0.9 contract). |
+| 2.7 | GeminiService — region narrative | `backend/services/gemini_service.py` | Vinh | ✅ | 2.3 | Done 2026-05-03. Vertex AI structured output (response_schema). enrich_region + enrich_analogs (tradeoff + per-analog narrative). Fallback narratives on Gemini failure. Compliance log entries from parity_check. Wired into /api/region + /api/analogs routes. |
+| 2.8 | GeminiService — test 5 sample counties | `backend/tests/test_gemini.py` | Vinh | ✅ | 2.7 | Done 2026-05-03. 20/20 passed (2m42s). 4 test classes × 5 FIPSes: structured output, analogs, parity, compliance schema. All green against live Vertex AI. |
 | 2.9 | HybridAuditor — deterministic layer | `backend/services/auditor.py` | Vinh | ⬜ | 2.7 | Day 6 AM. Regex for banned phrases, name detection, parity mention check, schema validation. |
 | 2.10 | HybridAuditor — Gemini semantic layer | `backend/services/auditor.py` | Vinh | ⬜ | 2.9 | Day 6 PM. Causal-tone classifier. Rewrite loop. Compliance log emission. |
 | 2.11 | Caching layer | `backend/services/cache.py` | Vinh | ⬜ | 2.7 | Day 6 PM. FIPS-keyed deterministic cache for narratives. Don't recall Gemini for same county. |
@@ -461,4 +461,4 @@ git commit -m "chore(plan): cut 4.E ✂️ — Day 7 not clean enough"
 
 ---
 
-_Last updated: 2026-05-03 by Vinh (tasks 2.2–2.5 ✅)._
+_Last updated: 2026-05-03 by Vinh (tasks 2.2–2.8 ✅)._
