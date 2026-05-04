@@ -88,3 +88,86 @@ def test_multiple_causal_verbs_single_entry(auditor: HybridAuditor) -> None:
     result = auditor.deterministic_check(narrative)
     causal_entries = [e for e in result.entries if e.check == "causal_language"]
     assert len(causal_entries) == 1
+
+
+# ---------------------------------------------------------------------------
+# Semantic pass tests — Gemini is mocked, no network calls
+# ---------------------------------------------------------------------------
+from unittest.mock import MagicMock, patch
+
+
+def _mock_gemini_response(is_causal: bool, rewrite: str, confidence: str = "high") -> MagicMock:
+    """Build a fake Gemini response object matching the rewrite schema."""
+    mock_resp = MagicMock()
+    mock_resp.text = (
+        f'{{"is_causal_tone": {str(is_causal).lower()}, '
+        f'"rewrite": "{rewrite}", "confidence": "{confidence}"}}'
+    )
+    return mock_resp
+
+
+@patch("services.auditor.vertexai_model")
+def test_semantic_pass_on_clean_narrative(mock_model: MagicMock, auditor: HybridAuditor) -> None:
+    clean = (
+        "Both Olympic and Paralympic athletes originate from this region. "
+        "The area may correlate with strong coaching infrastructure."
+    )
+    mock_model.generate_content.return_value = _mock_gemini_response(
+        is_causal=False, rewrite=clean
+    )
+    result = auditor.audit(clean)
+    assert result.clean is True
+    gemini_entry = next(e for e in result.entries if e.layer == "gemini")
+    assert gemini_entry.status == "pass"
+
+
+@patch("services.auditor.vertexai_model")
+def test_semantic_rewrite_fixes_causal(mock_model: MagicMock, auditor: HybridAuditor) -> None:
+    causal = (
+        "Cobb County produces elite Olympic and Paralympic swimmers. "
+        "It will continue to be a pipeline."
+    )
+    fixed = (
+        "Cobb County shows strong representation patterns in Olympic and Paralympic swimming. "
+        "The region may correlate with favorable aquatic infrastructure."
+    )
+    mock_model.generate_content.return_value = _mock_gemini_response(
+        is_causal=True, rewrite=fixed
+    )
+    result = auditor.audit(causal)
+    gemini_entry = next(e for e in result.entries if e.check == "causal_tone_semantic")
+    assert gemini_entry.status == "fixed"
+    assert result.final_narrative == fixed
+
+
+@patch("services.auditor.vertexai_model")
+def test_semantic_failure_does_not_block(mock_model: MagicMock, auditor: HybridAuditor) -> None:
+    mock_model.generate_content.side_effect = Exception("Gemini timeout")
+    narrative = (
+        "Both Olympic and Paralympic athletes originate from this region. "
+        "The area may correlate with strong coaching infrastructure."
+    )
+    result = auditor.audit(narrative)
+    gemini_entry = next(e for e in result.entries if e.layer == "gemini")
+    assert gemini_entry.status == "fail"
+    assert result.final_narrative == narrative
+
+
+@patch("services.auditor.vertexai_model")
+def test_rewrite_loop_max_two_attempts(mock_model: MagicMock, auditor: HybridAuditor) -> None:
+    """Gemini keeps returning causal rewrites — auditor gives up after 2 attempts."""
+    still_causal = (
+        "Both Olympic and Paralympic athletes originate here. "
+        "The region produces elite performers."
+    )
+    mock_model.generate_content.return_value = _mock_gemini_response(
+        is_causal=True, rewrite=still_causal
+    )
+    narrative = (
+        "Both Olympic and Paralympic athletes originate here. "
+        "This region produces champions."
+    )
+    result = auditor.audit(narrative)
+    gemini_entry = next(e for e in result.entries if e.check == "causal_tone_semantic")
+    assert gemini_entry.status == "fail"
+    assert mock_model.generate_content.call_count == 2

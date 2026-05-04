@@ -1,11 +1,18 @@
 """HybridAuditor — deterministic rules pass + Gemini semantic rewrite loop."""
 from __future__ import annotations
 
+import json
+import logging
 import re
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
+from vertexai.generative_models import GenerationConfig, GenerativeModel
+
+from config import get_settings
 from schemas.region import ComplianceEntry
+
+logger = logging.getLogger(__name__)
 
 
 _CAUSAL_PATTERN = re.compile(
@@ -17,13 +24,46 @@ _CAUSAL_PATTERN = re.compile(
 _OLYMPIC_PATTERN = re.compile(r"\bOlympic\b", re.IGNORECASE)
 _PARALYMPIC_PATTERN = re.compile(r"\bParalympic\b", re.IGNORECASE)
 
-_NAME_PATTERN = re.compile(r"(?<!\.\s)(?<!\n)\b[A-Z][a-z]+\s+[A-Z][a-z]+\b")
+_NAME_PATTERN = re.compile(r"\b[A-Z][a-z]+\s+[A-Z][a-z]+\b")
 
 _SAFE_BIGRAMS = {
     "Cobb County", "Los Angeles", "New York", "San Francisco", "Salt Lake",
     "Long Beach", "Team USA", "United States", "Cloud Run", "Move United",
-    "Bayesian shrinkage",
+    "Bayesian shrinkage", "Both Olympic", "Both Paralympic",
 }
+
+_REWRITE_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "is_causal_tone": {"type": "boolean"},
+        "rewrite": {"type": "string"},
+        "confidence": {"type": "string", "enum": ["high", "medium", "low"]},
+    },
+    "required": ["is_causal_tone", "rewrite", "confidence"],
+}
+
+_MAX_REWRITE_ATTEMPTS = 2
+
+# Module-level model reference — None until first call, mockable in tests
+vertexai_model: GenerativeModel | None = None
+
+
+def _get_model() -> GenerativeModel:
+    global vertexai_model
+    if vertexai_model is None:
+        s = get_settings()
+        vertexai_model = GenerativeModel(
+            model_name=s.gemini_model,
+            system_instruction=(
+                "You are a compliance auditor for sports analytics content. "
+                "Identify causal language that implies geography deterministically "
+                "produces athletes. Rewrite to use conditional phrasing: "
+                "'originates from', 'shows representation patterns', "
+                "'may correlate with', 'could be associated with'. "
+                "Never use: produces, creates, leads to, guarantees, makes, will, is known for."
+            ),
+        )
+    return vertexai_model
 
 
 def _now_iso() -> str:
@@ -106,6 +146,74 @@ class HybridAuditor:
             name_pass=name_pass,
             final_narrative=narrative,
             entries=entries,
+        )
+
+    def semantic_check(self, narrative: str) -> tuple[str, list[ComplianceEntry]]:
+        """Call Gemini to classify and optionally rewrite causal tone.
+        Never raises — failure returns original narrative with a fail entry.
+        """
+        entries: list[ComplianceEntry] = []
+        current = narrative
+
+        for attempt in range(_MAX_REWRITE_ATTEMPTS):
+            try:
+                model = _get_model()
+                response = model.generate_content(
+                    f"Audit this text for causal language. Return JSON.\n\nText: {current}",
+                    generation_config=GenerationConfig(
+                        temperature=0.1,
+                        response_mime_type="application/json",
+                        response_schema=_REWRITE_SCHEMA,
+                    ),
+                )
+                data = json.loads(response.text)
+            except Exception as exc:
+                logger.warning("HybridAuditor Gemini call failed (attempt %d): %s", attempt + 1, exc)
+                entries.append(ComplianceEntry(
+                    layer="gemini", check="causal_tone_semantic", status="fail",
+                    details=f"Gemini unavailable: {exc}", ts=_now_iso(),
+                ))
+                return current, entries
+
+            if not data.get("is_causal_tone", False):
+                entries.append(ComplianceEntry(
+                    layer="gemini", check="causal_tone_semantic", status="pass",
+                    details=f"Gemini classified as non-causal (confidence={data.get('confidence', 'unknown')}).",
+                    ts=_now_iso(),
+                ))
+                return current, entries
+
+            rewrite = data.get("rewrite", current)
+            det = self.deterministic_check(rewrite)
+            if det.causal_pass:
+                entries.append(ComplianceEntry(
+                    layer="gemini", check="causal_tone_semantic", status="fixed",
+                    details=f"Causal tone detected and rewritten (attempt {attempt + 1}).",
+                    ts=_now_iso(),
+                ))
+                return rewrite, entries
+
+            current = rewrite
+
+        entries.append(ComplianceEntry(
+            layer="gemini", check="causal_tone_semantic", status="fail",
+            details=f"Causal tone persisted after {_MAX_REWRITE_ATTEMPTS} rewrite attempts.",
+            ts=_now_iso(),
+        ))
+        return current, entries
+
+    def audit(self, narrative: str) -> AuditResult:
+        """Run deterministic pass, then Gemini semantic pass. Returns merged result."""
+        det_result = self.deterministic_check(narrative)
+        semantic_narrative, semantic_entries = self.semantic_check(det_result.final_narrative)
+        final_det = self.deterministic_check(semantic_narrative)
+        all_entries = det_result.entries + semantic_entries + final_det.entries
+        return AuditResult(
+            causal_pass=final_det.causal_pass,
+            parity_pass=final_det.parity_pass,
+            name_pass=final_det.name_pass,
+            final_narrative=semantic_narrative,
+            entries=all_entries,
         )
 
 
