@@ -48,6 +48,12 @@ interface ChapterDef {
   heading: ReactNode;
   body: (stats: ReturnType<typeof useGlobalStats>['data']) => ReactNode;
   side: 'left' | 'right' | 'center';
+  /** Big editorial decoration rendered on the OPPOSITE side from the
+   *  card. Each chapter gets its own anchor visual so the empty side
+   *  reads as composed editorial, not blank cream. Massive serif
+   *  numbers + small subtitle, mirroring NYT / Bloomberg data
+   *  journalism conventions. Stephen 2026-05-04 visual review. */
+  decoration?: (stats: ReturnType<typeof useGlobalStats>['data']) => ReactNode;
 }
 
 const CHAPTERS: ChapterDef[] = [
@@ -68,6 +74,13 @@ const CHAPTERS: ChapterDef[] = [
       </p>
     ),
     side: 'left',
+    decoration: (stats) => (
+      <DecorationBigNumber
+        number={stats?.gap.total_counties.toLocaleString() ?? '3,222'}
+        caption="U.S. counties indexed"
+        sub="2016–2024 baseline"
+      />
+    ),
   },
   {
     mode: 'gap',
@@ -89,6 +102,14 @@ const CHAPTERS: ChapterDef[] = [
       </>
     ),
     side: 'right',
+    decoration: (stats) => (
+      <DecorationStackedBar
+        litCount={stats?.gap.counties_with_athletes ?? 555}
+        silentCount={stats?.gap.counties_no_athletes ?? 2667}
+        litLabel="with athletes"
+        silentLabel="silent"
+      />
+    ),
   },
   {
     mode: 'underdog',
@@ -109,6 +130,13 @@ const CHAPTERS: ChapterDef[] = [
       </p>
     ),
     side: 'left',
+    decoration: (stats) => (
+      <DecorationDivergent
+        smallCountyPct={stats?.underdog.pct_beating_metro ?? 68}
+        smallCountyN={stats?.underdog.n_beating_metro ?? 2000}
+        totalSmall={stats?.underdog.n_small_counties ?? 2938}
+      />
+    ),
   },
   {
     mode: 'pathway',
@@ -123,6 +151,7 @@ const CHAPTERS: ChapterDef[] = [
       </p>
     ),
     side: 'right',
+    decoration: () => <DecorationAnalogNetwork />,
   },
   {
     mode: 'cta',
@@ -188,10 +217,28 @@ export default function ScrollytellingHero({ ctaSlot }: ScrollytellingHeroProps)
           (rather than stack below it), so the steps container has a
           negative top-margin equal to one viewport height.
           See react-scrollama README "sticky" example. */}
-      <div className="sticky top-0 h-screen w-full flex items-center justify-center pointer-events-none z-0">
+      <div className="sticky top-0 h-screen w-full flex items-center justify-center pointer-events-none z-0 overflow-hidden">
         <div className="w-full max-w-5xl px-6">
           <ScrollyMap mode={activeChapter.mode} />
         </div>
+        {/* Per-chapter side decoration — big editorial number rendered
+            on the OPPOSITE side from the chapter card. Fades in with
+            chapter activation, fades out on chapter change. CTA
+            chapter has no decoration (centered card + globe). */}
+        {activeChapter.decoration && (
+          <div
+            key={`decoration-${activeIdx}`}
+            className={cn(
+              'absolute top-1/2 -translate-y-1/2 hidden lg:block',
+              'animate-[fadeInDecoration_0.6s_ease-out]',
+              // Decoration sits on OPPOSITE side from card
+              activeChapter.side === 'left' && 'right-12 xl:right-24',
+              activeChapter.side === 'right' && 'left-12 xl:left-24',
+            )}
+          >
+            {activeChapter.decoration(stats.data)}
+          </div>
+        )}
       </div>
 
       {/* Scrollama steps overlayed on the sticky map. Negative
@@ -244,6 +291,185 @@ export default function ScrollytellingHero({ ctaSlot }: ScrollytellingHeroProps)
           ))}
         </Scrollama>
       </div>
+
+      {/* Local keyframe — fade-in for chapter decoration on activation. */}
+      <style>{`
+        @keyframes fadeInDecoration {
+          from { opacity: 0; transform: translate(0, -50%) translateY(16px); }
+          to { opacity: 1; transform: translate(0, -50%) translateY(0); }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Chapter decorations — big editorial elements rendered opposite
+// the chapter card. NYT / Bloomberg data-journalism convention:
+// composed editorial typography reading like a print spread.
+// ─────────────────────────────────────────────────────────────────
+
+interface DecorationBigNumberProps {
+  number: string;
+  caption: string;
+  sub?: string;
+}
+
+function DecorationBigNumber({ number, caption, sub }: DecorationBigNumberProps) {
+  return (
+    <div className="max-w-[320px]">
+      <p className="font-serif italic font-normal text-navy leading-none tracking-tight"
+         style={{ fontSize: 'clamp(80px, 11vw, 168px)' }}>
+        {number}
+      </p>
+      <p className="mt-3 font-mono uppercase tracking-wider text-eyebrow text-navy">
+        {caption}
+      </p>
+      {sub && (
+        <p className="mt-1 font-serif italic text-caption text-muted-text">
+          {sub}
+        </p>
+      )}
+    </div>
+  );
+}
+
+interface DecorationStackedBarProps {
+  litCount: number;
+  silentCount: number;
+  litLabel: string;
+  silentLabel: string;
+}
+
+function DecorationStackedBar({
+  litCount,
+  silentCount,
+  litLabel,
+  silentLabel,
+}: DecorationStackedBarProps) {
+  const total = litCount + silentCount;
+  const litPct = (litCount / total) * 100;
+  return (
+    <div className="max-w-[300px]">
+      <p className="font-mono uppercase tracking-wider text-eyebrow text-navy mb-4">
+        Atlas-wide breakdown
+      </p>
+      {/* Vertical stacked bar — silent on top (large), lit on bottom
+          (small). Lit segment gets navy fill at full saturation;
+          silent segment gets warm-neutral with navy stroke. Visually
+          mirrors the map's gap-mode coloring. */}
+      <div className="flex items-end gap-3">
+        <div className="flex flex-col" style={{ height: '320px', width: '64px' }}>
+          <div
+            className="border border-navy/30 bg-warm-neutral"
+            style={{ height: `${100 - litPct}%`, width: '100%' }}
+          />
+          <div
+            className="bg-navy"
+            style={{ height: `${litPct}%`, width: '100%' }}
+          />
+        </div>
+        <div className="flex flex-col justify-between" style={{ height: '320px' }}>
+          <div>
+            <p className="font-serif italic font-normal text-navy leading-none"
+               style={{ fontSize: 'clamp(40px, 5vw, 64px)' }}>
+              {silentCount.toLocaleString()}
+            </p>
+            <p className="mt-1 font-mono uppercase tracking-wider text-eyebrow text-muted-text">
+              {silentLabel}
+            </p>
+          </div>
+          <div>
+            <p className="font-serif italic font-normal text-navy leading-none"
+               style={{ fontSize: 'clamp(48px, 6vw, 80px)' }}>
+              {litCount.toLocaleString()}
+            </p>
+            <p className="mt-1 font-mono uppercase tracking-wider text-eyebrow text-navy">
+              {litLabel}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+interface DecorationDivergentProps {
+  smallCountyPct: number;
+  smallCountyN: number;
+  totalSmall: number;
+}
+
+function DecorationDivergent({
+  smallCountyPct,
+  smallCountyN,
+  totalSmall,
+}: DecorationDivergentProps) {
+  return (
+    <div className="max-w-[320px]">
+      <p className="font-mono uppercase tracking-wider text-eyebrow text-paralympic-clay mb-3">
+        Paralympic underdog
+      </p>
+      <p className="font-serif italic font-normal text-navy leading-none tracking-tight"
+         style={{ fontSize: 'clamp(96px, 13vw, 200px)' }}>
+        {smallCountyPct.toFixed(0)}%
+      </p>
+      {/* Visual proportion bar — clay-tinted segment showing 68% of
+          small counties beating metro Paralympic median. */}
+      <div className="mt-4 h-2 w-full bg-warm-neutral border border-paralympic-clay/30 overflow-hidden">
+        <div
+          className="h-full bg-paralympic-clay"
+          style={{ width: `${smallCountyPct}%` }}
+        />
+      </div>
+      <p className="mt-3 font-serif italic text-caption text-muted-text leading-snug">
+        {smallCountyN.toLocaleString()} of {totalSmall.toLocaleString()} counties under 250k pop —
+        beating the major-metro Paralympic median per 100k.
+      </p>
+    </div>
+  );
+}
+
+function DecorationAnalogNetwork() {
+  // SVG mini-diagram — 4 dots representing Cobb (center, navy filled)
+  // + 3 analogs (peripheral, olympic-blue ring) connected with subtle
+  // arcs. Editorial-restrained illustration of the "1 source + 3
+  // peers" similarity model. Static — no scroll/state animation
+  // beyond the chapter fade-in handled by parent.
+  return (
+    <div className="max-w-[300px]">
+      <p className="font-mono uppercase tracking-wider text-eyebrow text-navy mb-3">
+        Similarity surface
+      </p>
+      <svg viewBox="0 0 280 280" width="100%" height="auto" aria-hidden="true">
+        {/* Connection arcs */}
+        <g stroke="#B96B5C" strokeWidth="1.2" strokeDasharray="3 3" fill="none" opacity="0.6">
+          <path d="M 140 140 Q 80 70 60 60" />
+          <path d="M 140 140 Q 220 70 240 60" />
+          <path d="M 140 140 Q 220 220 240 240" />
+        </g>
+        {/* 3 analog rings */}
+        {[
+          { cx: 60, cy: 60, label: 'Alexandria, VA' },
+          { cx: 240, cy: 60, label: 'Charleston, SC' },
+          { cx: 240, cy: 240, label: 'Bridgeport, CT' },
+        ].map((a) => (
+          <g key={a.label}>
+            <circle cx={a.cx} cy={a.cy} r="14" fill="none" stroke="#5B7DB1" strokeWidth="2" />
+            <circle cx={a.cx} cy={a.cy} r="6" fill="#5B7DB1" />
+          </g>
+        ))}
+        {/* Source pin (Cobb) */}
+        <circle cx="140" cy="140" r="22" fill="none" stroke="#1F3A5F" strokeWidth="1.5" opacity="0.3" />
+        <circle cx="140" cy="140" r="10" fill="#1F3A5F" stroke="#FFFFFF" strokeWidth="2" />
+        <text x="140" y="180" textAnchor="middle" fontFamily="JetBrains Mono, monospace" fontSize="10" fontWeight={600} fill="#1F3A5F">
+          COBB COUNTY
+        </text>
+      </svg>
+      <p className="mt-2 font-serif italic text-caption text-muted-text leading-snug">
+        Source county at center; 3 analytically-similar peer counties
+        connect via athlete-profile + climate + sport-mix similarity.
+      </p>
     </div>
   );
 }

@@ -53,15 +53,22 @@ interface GeoStyle {
   pressed: Record<string, string | number>;
 }
 
+// Empty + dim modes: counties rendered with navy stroke at low alpha so
+// the map structure reads as a faint blueprint even when no county is
+// "lit." Earlier iteration used the warm-neutral border (#E7E2D9) which
+// disappeared into the warm-neutral background — Stephen flagged Ch 1
+// looked too empty for the demo opener (2026-05-04 visual review).
+// Stronger stroke on empty + dim makes the 3,222-county scaffold
+// visible while still reading as "silence" against the lit chapters.
 const WARM_NEUTRAL: GeoStyle = {
-  default: { fill: '#F5F1EB', stroke: '#E7E2D9', strokeWidth: 0.3, outline: 'none' },
-  hover: { fill: '#F5F1EB', stroke: '#E7E2D9', strokeWidth: 0.3, outline: 'none' },
+  default: { fill: '#F5F1EB', stroke: 'rgba(31, 58, 95, 0.22)', strokeWidth: 0.5, outline: 'none' },
+  hover: { fill: '#F5F1EB', stroke: 'rgba(31, 58, 95, 0.22)', strokeWidth: 0.5, outline: 'none' },
   pressed: { fill: '#F5F1EB', outline: 'none' },
 };
 
 const DIM: GeoStyle = {
-  default: { fill: '#F5F1EB', stroke: '#E7E2D9', strokeWidth: 0.3, outline: 'none', opacity: 0.4 },
-  hover: { fill: '#F5F1EB', stroke: '#E7E2D9', strokeWidth: 0.3, outline: 'none', opacity: 0.4 },
+  default: { fill: '#F5F1EB', stroke: 'rgba(31, 58, 95, 0.12)', strokeWidth: 0.4, outline: 'none', opacity: 0.55 },
+  hover: { fill: '#F5F1EB', stroke: 'rgba(31, 58, 95, 0.12)', strokeWidth: 0.4, outline: 'none', opacity: 0.55 },
   pressed: { fill: '#F5F1EB', outline: 'none' },
 };
 
@@ -78,10 +85,14 @@ const ANALOG: GeoStyle = {
 };
 
 function navyTint(total: number): GeoStyle {
-  const opacity = Math.min(0.55, Math.log10(total + 1) * 0.28);
+  // Lifted opacity floor 0.08 → 0.32 (single-athlete counties were
+  // invisible against warm-neutral background). Cap raised 0.55 → 0.78
+  // so dense metros pop convincingly. Stroke also navy-tinted to give
+  // each lit county a clear edge.
+  const opacity = Math.min(0.78, Math.log10(total + 1) * 0.42 + 0.22);
   return {
-    default: { fill: `rgba(31, 58, 95, ${opacity.toFixed(3)})`, stroke: '#E7E2D9', strokeWidth: 0.3, outline: 'none' },
-    hover: { fill: `rgba(31, 58, 95, ${opacity.toFixed(3)})`, stroke: '#E7E2D9', strokeWidth: 0.3, outline: 'none' },
+    default: { fill: `rgba(31, 58, 95, ${opacity.toFixed(3)})`, stroke: 'rgba(31, 58, 95, 0.45)', strokeWidth: 0.5, outline: 'none' },
+    hover: { fill: `rgba(31, 58, 95, ${opacity.toFixed(3)})`, stroke: 'rgba(31, 58, 95, 0.45)', strokeWidth: 0.5, outline: 'none' },
     pressed: { fill: `rgba(31, 58, 95, ${opacity.toFixed(3)})`, outline: 'none' },
   };
 }
@@ -90,10 +101,13 @@ function clayTint(paralympic: number): GeoStyle {
   // Paralympic-focused tint for underdog chapter — clay (paralympic-
   // brand color) at variable opacity. Counties with paralympic
   // representation pop forward; counties with only Olympic recede.
-  const opacity = Math.min(0.6, Math.log10(paralympic + 1) * 0.4 + 0.15);
+  // Bumped floor 0.15 → 0.38 + cap 0.6 → 0.82 so the underdog signal
+  // reads clearly against the dimmed metro background (Stephen
+  // 2026-05-04 visual review — Ch 3 was too faint).
+  const opacity = Math.min(0.82, Math.log10(paralympic + 1) * 0.5 + 0.38);
   return {
-    default: { fill: `rgba(185, 107, 92, ${opacity.toFixed(3)})`, stroke: '#E7E2D9', strokeWidth: 0.3, outline: 'none' },
-    hover: { fill: `rgba(185, 107, 92, ${opacity.toFixed(3)})`, stroke: '#E7E2D9', strokeWidth: 0.3, outline: 'none' },
+    default: { fill: `rgba(185, 107, 92, ${opacity.toFixed(3)})`, stroke: 'rgba(185, 107, 92, 0.55)', strokeWidth: 0.5, outline: 'none' },
+    hover: { fill: `rgba(185, 107, 92, ${opacity.toFixed(3)})`, stroke: 'rgba(185, 107, 92, 0.55)', strokeWidth: 0.5, outline: 'none' },
     pressed: { fill: `rgba(185, 107, 92, ${opacity.toFixed(3)})`, outline: 'none' },
   };
 }

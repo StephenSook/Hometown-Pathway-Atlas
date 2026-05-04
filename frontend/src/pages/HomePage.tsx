@@ -384,7 +384,13 @@ export default function HomePage() {
                   </div>
 
                   <div className="relative z-10">
-                    <HeroStat stat={HERO_STAT} className="mb-8" />
+                    {/* HeroStat removed from CTA chapter 2026-05-04 PM
+                        — the scrollytelling Ch 2 already delivers the
+                        "4 in 5" stat with full context (3,222 → 555 →
+                        17.2%). Repeating below the scrolly was
+                        redundant + diluted the reveal. SourceTooltip
+                        provenance now lives on the methodology page
+                        Atlas-wide-findings cards. */}
 
                     <section
                       id="region"
