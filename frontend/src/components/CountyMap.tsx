@@ -38,19 +38,72 @@
 
 import { useCallback, useId, useMemo, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
+import { Minus, Plus, RotateCcw } from 'lucide-react';
 import {
   ComposableMap,
   Geographies,
   Geography,
   Marker,
+  ZoomableGroup,
   useMapContext,
 } from 'react-simple-maps';
 import countiesTopo from 'us-atlas/counties-10m.json';
 import type { AnalogEntry } from '../lib/api';
 import type { CountyTooltipData } from './CountyTooltip';
 import CountyTooltip from './CountyTooltip';
+// Static data extracted 2026-05-04 from Vinh's
+// backend/data/processed/county_profiles.parquet (3,222 counties) +
+// move_united_chapters.parquet (260 chapters). Slim shapes:
+//   countyDensity: {fips: [olympic_count, paralympic_count, olympic_percentile]}
+//   moveUnitedChapters: [[lat, lng], ...]
+// Powers the choropleth tinting (background counties darken by athlete
+// representation density) + the Move United chapter dot layer. Bundles
+// inline rather than fetched at runtime so CountyMap renders complete
+// on first paint (already lazy-loaded chunk; ~16KB gz extra).
+import countyDensity from '../data/county_density.json';
+import moveUnitedChapters from '../data/move_united_chapters.json';
 import { fmtPerCapita } from '../lib/format';
 import { cn } from '../lib/utils';
+
+type DensityRow = readonly [number, number, number]; // [olympic, paralympic, percentile]
+const densityMap = countyDensity as Record<string, DensityRow>;
+const chapterCoords = moveUnitedChapters as ReadonlyArray<readonly [number, number]>;
+
+// Choropleth — non-highlighted counties get a navy-tinted fill at
+// variable opacity based on combined athlete count. Sequential scale
+// caps at 35% opacity to stay subtle (doesn't compete with the navy
+// source pin or olympic-blue analog pins). Counties with zero athletes
+// keep the warm-neutral default fill so the map's negative space
+// reads as "no data" not "low data".
+//
+// Module-level cache keyed by fips so we don't allocate a new style
+// object per Geography per render — preserves the memo() bailout that
+// keeps 3,222 counties from re-rendering on every hover state change.
+const densityStyleCache = new Map<string, typeof DEFAULT_STYLE>();
+function getDensityStyle(fips: string): typeof DEFAULT_STYLE {
+  const cached = densityStyleCache.get(fips);
+  if (cached) return cached;
+  const data = densityMap[fips];
+  const total = data ? data[0] + data[1] : 0;
+  if (total === 0) {
+    densityStyleCache.set(fips, DEFAULT_STYLE);
+    return DEFAULT_STYLE;
+  }
+  // Logarithmic scale — most counties have 0-5 athletes, but LA/Cook/
+  // Harris have 50+. Linear would flatten the distribution. Log keeps
+  // visual variance across the long tail. Cap at 0.35 opacity so the
+  // densest counties don't overpower the source pin.
+  const opacity = Math.min(0.35, Math.log10(total + 1) * 0.18);
+  const fill = `rgba(91, 125, 177, ${opacity.toFixed(3)})`;
+  const hoverFill = `rgba(91, 125, 177, ${Math.min(0.55, opacity + 0.18).toFixed(3)})`;
+  const style = {
+    default: { ...DEFAULT_STYLE.default, fill },
+    hover: { ...DEFAULT_STYLE.hover, fill: hoverFill },
+    pressed: { ...DEFAULT_STYLE.pressed, fill },
+  };
+  densityStyleCache.set(fips, style);
+  return style;
+}
 
 // Fallback centroids for mock-only flows (sparse sentinel ZIP 11111
 // + the 4 mock counties). Real backend (Vinh Phase 2 ship 2026-05-03)
@@ -112,7 +165,35 @@ export default function CountyMap({
   className,
 }: CountyMapProps) {
   const [hover, setHover] = useState<HoverState | null>(null);
+  // Zoom + pan state. ZoomableGroup handles drag-pan + scroll-zoom
+  // internally; we maintain coordinates + zoom so external buttons
+  // (+ / − / reset) can drive the same state. Initial centered on
+  // continental US (lng -96, lat 38) at 1x — matches default
+  // geoAlbersUsa rendering of the static map.
+  const [position, setPosition] = useState<{ coordinates: [number, number]; zoom: number }>({
+    coordinates: [-96, 38],
+    zoom: 1,
+  });
   const arrowMarkerId = useId();
+
+  const handleMoveEnd = useCallback(
+    (next: { coordinates: [number, number]; zoom: number }) => {
+      setPosition(next);
+    },
+    [],
+  );
+
+  const zoomIn = useCallback(() => {
+    setPosition((p) => ({ ...p, zoom: Math.min(5, p.zoom * 1.5) }));
+  }, []);
+
+  const zoomOut = useCallback(() => {
+    setPosition((p) => ({ ...p, zoom: Math.max(1, p.zoom / 1.5) }));
+  }, []);
+
+  const resetZoom = useCallback(() => {
+    setPosition({ coordinates: [-96, 38], zoom: 1 });
+  }, []);
 
   // Single source of truth for centroid lookup. Prefers the API-supplied
   // centroid, falls back to FALLBACK_CENTROIDS for mock paths or any
@@ -265,6 +346,14 @@ export default function CountyMap({
             </pattern>
           </defs>
 
+          <ZoomableGroup
+            zoom={position.zoom}
+            center={position.coordinates}
+            onMoveEnd={handleMoveEnd}
+            maxZoom={5}
+            minZoom={1}
+          >
+
           <Geographies geography={countiesTopo}>
             {({ geographies }) =>
               geographies.map((geo) => {
@@ -277,7 +366,7 @@ export default function CountyMap({
                   ? SOURCE_STYLE
                   : isAnalog
                     ? ANALOG_STYLE
-                    : DEFAULT_STYLE;
+                    : getDensityStyle(id);
                 const tip = isHighlighted ? lookup(id, name) : null;
                 return (
                   <Geography
@@ -389,7 +478,55 @@ export default function CountyMap({
               </Marker>
             );
           })}
+
+          {/* Move United chapter density layer — 260 small dots, navy
+              at low opacity. Subtle visual reinforcement of Pillar 5 /
+              Beat 1 narrative ("63% of Paralympic athletes route through
+              this network → network reaches only fraction of US
+              counties"). Renders inside ZoomableGroup so dots scale +
+              pan with the map. */}
+          <MoveUnitedLayer />
+          </ZoomableGroup>
         </ComposableMap>
+
+        {/* Zoom controls — overlaid top-left of figure. Bottom-left is
+            occupied by the ProvenanceFooter (Sources panel); top-left
+            is clear. Stacked vertical pills matching the AUDIT chip +
+            SectionNav design language. Reset only renders when
+            zoom !== 1. */}
+        <div className="absolute top-6 left-6 z-10 hidden md:flex flex-col gap-1.5">
+          <button
+            type="button"
+            onClick={zoomIn}
+            disabled={position.zoom >= 5}
+            aria-label="Zoom in"
+            title="Zoom in"
+            className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-card-white border border-soft-border shadow-md text-navy hover:bg-warm-neutral focus-ring transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <Plus className="h-4 w-4" aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            onClick={zoomOut}
+            disabled={position.zoom <= 1}
+            aria-label="Zoom out"
+            title="Zoom out"
+            className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-card-white border border-soft-border shadow-md text-navy hover:bg-warm-neutral focus-ring transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <Minus className="h-4 w-4" aria-hidden="true" />
+          </button>
+          {position.zoom !== 1 && (
+            <button
+              type="button"
+              onClick={resetZoom}
+              aria-label="Reset map zoom"
+              title="Reset zoom"
+              className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-card-white border border-soft-border shadow-md text-muted-text hover:text-navy hover:bg-warm-neutral focus-ring transition-colors"
+            >
+              <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
+            </button>
+          )}
+        </div>
       </div>
 
       <Legend />
@@ -460,6 +597,46 @@ function PulseRing() {
   );
 }
 
+/**
+ * MoveUnitedLayer — render 260 chapter dots from the bundled JSON.
+ *
+ * Each dot is a small navy circle at low opacity inside a Marker so
+ * react-simple-maps' projection handles lng/lat → SVG coords. Dots
+ * scale + pan with the parent ZoomableGroup transform.
+ *
+ * Visual restraint: r=1.6, opacity 0.35, navy fill — quiet enough to
+ * NOT compete with the source pin, analog pins, or arcs (all of which
+ * are bolder), but visible at first paint as a geographic-density
+ * scatter overlay. Reinforces the Pillar 5 / Beat 1 narrative without
+ * hijacking the visual hierarchy.
+ *
+ * Uses a single <g> with raw <circle> children projected via
+ * useMapContext.projection, NOT 260 individual <Marker> components —
+ * 260 Marker re-renders on every parent state change would be wasteful.
+ */
+function MoveUnitedLayer() {
+  const { projection } = useMapContext();
+  return (
+    <g aria-hidden="true">
+      {chapterCoords.map(([lat, lng], i) => {
+        const projected = projection([lng, lat]);
+        if (!projected) return null;
+        const [x, y] = projected;
+        return (
+          <circle
+            key={`mu-${i}`}
+            cx={x}
+            cy={y}
+            r={1.6}
+            fill="#1F3A5F"
+            fillOpacity={0.35}
+          />
+        );
+      })}
+    </g>
+  );
+}
+
 function formatGeographyLabel(t: CountyTooltipData): string {
   const o =
     t.olympicPer100k === null
@@ -526,6 +703,7 @@ function BezierArc({
         pathLength: { duration: 1.2, delay: 0.3 + index * 0.18, ease: [0.16, 1, 0.3, 1] },
         opacity: { duration: 0.4, delay: 0.3 + index * 0.18 },
       }}
+    />
   );
 }
 
@@ -541,6 +719,30 @@ function Legend() {
       <LegendRow swatch="navy" label="Source county" />
       <LegendRow swatch="olympic" label="Peer counties" />
       <LegendRow swatch="clay" label="Similarity link" />
+      <LegendRow swatch="chapter" label="Move United chapter" />
+      <DensityGradientRow />
+    </div>
+  );
+}
+
+/**
+ * DensityGradientRow — horizontal gradient swatch + label.
+ * Communicates that background-county tint encodes athlete-representation
+ * density (none → highest indexed). Brand-consistent: navy at variable
+ * opacity matches the choropleth fill rule in getDensityStyle.
+ */
+function DensityGradientRow() {
+  return (
+    <div className="flex items-center gap-2">
+      <span
+        aria-hidden="true"
+        className="shrink-0 inline-block h-2 w-12 rounded-sm"
+        style={{
+          background:
+            'linear-gradient(to right, rgba(91,125,177,0) 0%, rgba(91,125,177,0.35) 100%)',
+        }}
+      />
+      <span className="text-caption text-body-text">Athlete density</span>
     </div>
   );
 }
@@ -580,21 +782,30 @@ function LegendRow({
   swatch,
   label,
 }: {
-  swatch: 'navy' | 'olympic' | 'clay';
+  swatch: 'navy' | 'olympic' | 'clay' | 'chapter';
   label: string;
 }) {
   // Decorative swatches use raw hex strokes to satisfy DESIGN_SYSTEM §1.1
   // (olympic-blue + paralympic-clay are restricted to bar fills + ≥24px text).
-  // Hollow circles avoid the small-area background-fill rule.
+  // Hollow circles avoid the small-area background-fill rule. Chapter dot
+  // uses the same low-opacity navy as the actual map dots.
   const stroke: Record<typeof swatch, string> = {
     navy: '#1F3A5F',
     olympic: '#5B7DB1',
     clay: '#B96B5C',
+    chapter: '#1F3A5F',
   };
   const fill: Record<typeof swatch, string> = {
     navy: '#1F3A5F',
     olympic: 'transparent',
     clay: 'transparent',
+    chapter: 'rgba(31,58,95,0.35)',
+  };
+  const strokeWidth: Record<typeof swatch, number> = {
+    navy: 1.5,
+    olympic: 1.5,
+    clay: 1.5,
+    chapter: 0,
   };
   return (
     <div className="flex items-center gap-2">
@@ -608,10 +819,10 @@ function LegendRow({
         <circle
           cx={6}
           cy={6}
-          r={5}
+          r={swatch === 'chapter' ? 2.5 : 5}
           fill={fill[swatch]}
           stroke={stroke[swatch]}
-          strokeWidth={1.5}
+          strokeWidth={strokeWidth[swatch]}
         />
       </svg>
       <span className="text-caption text-body-text">{label}</span>
