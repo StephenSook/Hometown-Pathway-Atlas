@@ -66,8 +66,13 @@ import { fmtPerCapita } from '../lib/format';
 import { cn } from '../lib/utils';
 
 type DensityRow = readonly [number, number, number]; // [olympic, paralympic, percentile]
-const densityMap = countyDensity as Record<string, DensityRow>;
-const chapterCoords = moveUnitedChapters as ReadonlyArray<readonly [number, number]>;
+// Cast through `unknown` because Vite's JSON-import inference widens
+// the array shapes to plain `number[]` (loses tuple arity) — TS won't
+// downcast `number[]` to `readonly [number, number, number]` directly.
+// The runtime shape IS the tuple per the extraction script — the cast
+// just tells the type-system to trust the producer.
+const densityMap = countyDensity as unknown as Record<string, DensityRow>;
+const chapterCoords = moveUnitedChapters as unknown as ReadonlyArray<readonly [number, number]>;
 
 // Choropleth — non-highlighted counties get a navy-tinted fill at
 // variable opacity based on combined athlete count. Sequential scale
