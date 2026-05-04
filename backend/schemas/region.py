@@ -43,6 +43,8 @@ class ComplianceEntry(BaseModel):
     status: Literal["pass", "fail", "fixed"]
     details: str
     ts: str  # ISO8601
+    before: str | None = None  # banned phrase / original text (fail→fixed entries)
+    after: str | None = None   # safe rewrite (fixed entries)
 
 
 class RegionResponse(BaseModel):

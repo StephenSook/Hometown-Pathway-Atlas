@@ -96,6 +96,7 @@ class HybridAuditor:
             entries.append(ComplianceEntry(
                 layer="rules", check="causal_language", status="fail",
                 details=f"Banned phrase detected: '{causal_match.group()}'",
+                before=causal_match.group(),
                 ts=ts,
             ))
         else:
@@ -189,6 +190,8 @@ class HybridAuditor:
                 entries.append(ComplianceEntry(
                     layer="gemini", check="causal_tone_semantic", status="fixed",
                     details=f"Causal tone detected and rewritten (attempt {attempt + 1}).",
+                    before=current,
+                    after=rewrite,
                     ts=_now_iso(),
                 ))
                 return rewrite, entries
