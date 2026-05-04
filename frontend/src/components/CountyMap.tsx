@@ -37,6 +37,7 @@
  */
 
 import { useCallback, useId, useMemo, useState } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 import {
   ComposableMap,
   Geographies,
@@ -305,7 +306,7 @@ export default function CountyMap({
             }
           </Geographies>
 
-          {analogs.map((a) => {
+          {analogs.map((a, index) => {
             const from = centroids.source;
             const to = centroids.analogList.find((x) => x.fips === a.fips)?.coords ?? null;
             if (!from || !to) return null;
@@ -315,12 +316,19 @@ export default function CountyMap({
                 from={from}
                 to={to}
                 markerId={arrowMarkerId}
+                index={index}
               />
             );
           })}
 
           {centroids.source && (
             <Marker coordinates={centroids.source}>
+              {/* Pulsing concentric ring — "you are here" affordance.
+                  Subtle (low opacity, slow 2s cycle) so it doesn't
+                  compete with the analog arcs. Mirrors the AUDIT chip
+                  pulse animation language. Honors prefers-reduced-motion
+                  via PulseRing internal hook. */}
+              <PulseRing />
               <circle r={6} fill="#1F3A5F" stroke="#FFFFFF" strokeWidth={1.5} />
               <text
                 x={10}
@@ -417,6 +425,41 @@ export default function CountyMap({
   );
 }
 
+/**
+ * PulseRing — concentric expanding ring behind the source pin. Visual
+ * "you are here" affordance, mirrors the AUDIT chip pulse language.
+ *
+ * Animates: r from 5 → 14, opacity from 0.5 → 0, repeating every 2s.
+ * The ring is a stroke-only circle (fill="none") so it expands as a
+ * hollow ring rather than a filled disc.
+ *
+ * Honors prefers-reduced-motion: when set, renders a static ring at
+ * mid-state opacity instead of animating.
+ */
+function PulseRing() {
+  const reduceMotion = useReducedMotion() ?? false;
+  if (reduceMotion) {
+    return (
+      <circle r={9} fill="none" stroke="#1F3A5F" strokeOpacity={0.25} strokeWidth={1.25} />
+    );
+  }
+  return (
+    <motion.circle
+      fill="none"
+      stroke="#1F3A5F"
+      strokeWidth={1.25}
+      initial={{ r: 5, opacity: 0.55 }}
+      animate={{ r: [5, 14, 14], opacity: [0.55, 0, 0] }}
+      transition={{
+        duration: 2.2,
+        repeat: Infinity,
+        ease: 'easeOut',
+        times: [0, 0.7, 1],
+      }}
+    />
+  );
+}
+
 function formatGeographyLabel(t: CountyTooltipData): string {
   const o =
     t.olympicPer100k === null
@@ -443,12 +486,18 @@ function BezierArc({
   from,
   to,
   markerId,
+  index = 0,
 }: {
   from: [number, number];
   to: [number, number];
   markerId: string;
+  /** Stagger index — arc N animates draw-on at delay 0.3s + N * 0.18s.
+   *  First arc lands at 0.3s, last at 0.3 + 2 * 0.18 = 0.66s for 3 arcs.
+   *  Sequential reveal feels like data flowing source → peers. */
+  index?: number;
 }) {
   const { projection } = useMapContext();
+  const reduceMotion = useReducedMotion() ?? false;
   const p1 = projection(from);
   const p2 = projection(to);
   if (!p1 || !p2) return null;
@@ -463,7 +512,7 @@ function BezierArc({
   const cx = mx + (-dy / norm) * lift;
   const cy = my + (dx / norm) * lift;
   return (
-    <path
+    <motion.path
       d={`M ${x1} ${y1} Q ${cx} ${cy} ${x2} ${y2}`}
       fill="none"
       stroke="#B96B5C"
@@ -471,7 +520,12 @@ function BezierArc({
       strokeDasharray="4 3"
       strokeLinecap="round"
       markerEnd={`url(#${markerId})`}
-    />
+      initial={reduceMotion ? false : { pathLength: 0, opacity: 0 }}
+      animate={{ pathLength: 1, opacity: 1 }}
+      transition={{
+        pathLength: { duration: 1.2, delay: 0.3 + index * 0.18, ease: [0.16, 1, 0.3, 1] },
+        opacity: { duration: 0.4, delay: 0.3 + index * 0.18 },
+      }}
   );
 }
 
