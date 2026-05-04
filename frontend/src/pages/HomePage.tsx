@@ -67,6 +67,7 @@ const RESULTS_SECTIONS = [
   { id: 'section-pillar5', label: 'Pillar 5' },
 ];
 import { useRegion } from '../hooks/useRegion';
+import { useRegionByFips } from '../hooks/useRegionByFips';
 import { useAnalogs } from '../hooks/useAnalogs';
 import { usePathway } from '../hooks/usePathway';
 import { HERO_STAT } from '../lib/heroStat';
@@ -114,22 +115,44 @@ export default function HomePage() {
   // initialParams from above — both reads are wallclock-pure so a
   // single URLSearchParams instance is fine across mounts.)
   const initialZip = initialParams?.get('zip') ?? null;
+  const initialFips = initialParams?.get('fips') ?? null;
   const [submittedZip, setSubmittedZip] = useState<string | null>(initialZip);
+  // submittedFips alternative input — when user clicks a county on the
+  // CountyMap and confirms via SelectedCountyCard CTA, HomePage hydrates
+  // a new region view from the FIPS instead of the ZIP. URL ?fips=
+  // (without ?zip=) was previously NOT a valid hydration path; with
+  // useRegionByFips (Vinh task B7 ship 2026-05-04) it is now. If both
+  // ?zip and ?fips are present, ZIP wins (ZIP is the canonical user-
+  // input route from the hero form; FIPS is the deeper drill-down).
+  const [submittedFips, setSubmittedFips] = useState<string | null>(
+    !initialZip ? initialFips : null,
+  );
 
-  const isSparse = submittedZip === SPARSE_SENTINEL_ZIP;
+  const isSparse =
+    submittedZip === SPARSE_SENTINEL_ZIP ||
+    submittedFips === '30033'; // mockSparseRegion FIPS — keep sparse-state demo path through fips drill-down too.
 
   // React Query hooks — disabled when sparse sentinel routes to local
   // mock OR when no ZIP submitted yet. useAnalogs + usePathway chain
-  // off the FIPS resolved by useRegion (their hooks are no-op until
-  // region.data lands, per Boolean(fips) enabled guard).
+  // off the FIPS resolved by EITHER useRegion(zip) OR useRegionByFips
+  // (whichever is the active source); their hooks remain no-op until
+  // a region resolves, per Boolean(fips) enabled guard.
   const region = useRegion(isSparse ? null : submittedZip);
-  const analogs = useAnalogs(isSparse ? null : region.data?.fips);
-  const pathway = usePathway(isSparse ? null : region.data?.fips);
+  const regionByFips = useRegionByFips(isSparse ? null : submittedFips);
+  // Active region resolution priority: regionByFips wins when present
+  // (user just drilled in via map), region falls back when only a ZIP
+  // was submitted. Sparse sentinel always wins via the isSparse gate.
+  const resolvedRegion = isSparse
+    ? mockSparseRegion
+    : (regionByFips.data ?? region.data);
+  const chainedFips = isSparse ? null : resolvedRegion?.fips ?? null;
+  const analogs = useAnalogs(chainedFips);
+  const pathway = usePathway(chainedFips);
 
   // Derived data — sparse path uses local mocks, real path uses query
   // results once they land. AnalogList and PatternGapPanel render
   // skeletons inside ResultsSkeleton during their own loading state.
-  const activeRegion = isSparse ? mockSparseRegion : region.data;
+  const activeRegion = resolvedRegion;
   const activeAnalogs = isSparse ? mockAnalogs : analogs.data;
   const activePathway = isSparse ? mockPathway : pathway.data;
 
@@ -137,9 +160,14 @@ export default function HomePage() {
   // any of the 3 queries to be actively fetching. Use isFetching (not
   // isPending) — RQ v5 reports isPending=true for disabled queries that
   // have no data yet, which would stick `loading` on TRUE on initial
-  // landing-view paint and disable the entire form.
+  // landing-view paint and disable the entire form. regionByFips also
+  // counted so the drill-down navigation surfaces a skeleton during
+  // its fetch instead of leaving the previous region's data on screen.
   const loading = !isSparse &&
-    (region.isFetching || analogs.isFetching || pathway.isFetching);
+    (region.isFetching ||
+      regionByFips.isFetching ||
+      analogs.isFetching ||
+      pathway.isFetching);
 
   const mainRef = useRef<HTMLElement>(null);
   // Skip the very first paint — only manage focus on user-driven view change.
@@ -177,13 +205,18 @@ export default function HomePage() {
   // Error recovery — when region query errors out (most often the 00000
   // sentinel 404), revert to hero. QueryCache.onError in lib/queryClient.ts
   // already fired the Sonner toast; this effect just unwinds the view.
+  // Both region (zip path) + regionByFips (fips drill-down path) errors
+  // funnel through the same recovery — toast + unwind to hero. Stale
+  // submittedFips after error cleared so a refresh doesn't re-trigger.
   useEffect(() => {
-    if (region.error && view === 'results' && !isSparse) {
+    const failed = region.error || regionByFips.error;
+    if (failed && view === 'results' && !isSparse) {
       setView('hero');
       setSubmittedZip(null);
+      setSubmittedFips(null);
       window.history.replaceState({}, '', window.location.pathname);
     }
-  }, [region.error, view, isSparse]);
+  }, [region.error, regionByFips.error, view, isSparse]);
 
   // Hash-router for the methodology page + Find Region CTA. Listens for
   // clicks on the Navbar anchors:
@@ -243,19 +276,36 @@ export default function HomePage() {
   // independently of handleSubmit because the FIPS isn't known at
   // submit time for non-sentinel ZIPs.
   useEffect(() => {
-    if (!region.data || isSparse) return;
+    if (!resolvedRegion || isSparse) return;
     const params = new URLSearchParams(window.location.search);
-    if (params.get('fips') === region.data.fips) return;
-    params.set('fips', region.data.fips);
+    if (params.get('fips') === resolvedRegion.fips) return;
+    params.set('fips', resolvedRegion.fips);
     window.history.replaceState({}, '', `?${params.toString()}`);
-  }, [region.data, isSparse]);
+  }, [resolvedRegion, isSparse]);
 
   const handleBack = () => {
     setView('hero');
     setSubmittedZip(null);
+    setSubmittedFips(null);
     // Clear URL params on navigation back so the deep-link doesn't
     // re-trigger results-view hydration if the user refreshes.
     window.history.replaceState({}, '', window.location.pathname);
+  };
+
+  // Map drill-down (B7) — fires when user clicks a non-highlighted
+  // county AND confirms via SelectedCountyCard CTA. Hydrates a new
+  // region view from the FIPS via useRegionByFips. Resets submittedZip
+  // (FIPS drill-down replaces the ZIP-driven state) and updates URL
+  // to ?fips=X (no zip). View stays on results so the page does not
+  // unmount; React Query swaps the data underneath when fetch resolves.
+  const handleSelectCounty = (fips: string) => {
+    setSubmittedZip(null);
+    setSubmittedFips(fips);
+    setView('results');
+    const params = new URLSearchParams();
+    params.set('fips', fips);
+    window.history.replaceState({}, '', `?${params.toString()}`);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // Peer-pin drill-down — when a user clicks an analog pin on the map,
@@ -450,6 +500,7 @@ export default function HomePage() {
                   hoveredAnalogFips={hoveredAnalogFips}
                   onHoverAnalog={setHoveredAnalogFips}
                   onSelectAnalog={handleSelectAnalog}
+                  onSelectCounty={handleSelectCounty}
                 />
               </Suspense>
             </div>

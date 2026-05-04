@@ -229,6 +229,39 @@ export interface CountyStats {
   paralympic_evidence: EvidenceLevel;
 }
 
+/** Global atlas stats — backend `/api/stats/global` (Vinh Layer D ship
+ *  2026-05-04, revision atlas-backend-00007-6k7). Two themed findings:
+ *  - `gap`: the "4 in 5" headline behind HeroStat (Layer A finding)
+ *  - `underdog`: small counties beating metro Paralympic rate (Layer D
+ *    second finding)
+ *  Both expose pre-formatted `headline` strings ready for editorial
+ *  copy + raw numerator/denominator fields for in-component visuals. */
+interface GlobalStatsBlock {
+  /** Pre-formatted display string ready for hero + scrollytelling text. */
+  headline: string;
+}
+
+export interface GapStat extends GlobalStatsBlock {
+  total_counties: number;
+  counties_with_athletes: number;
+  counties_no_athletes: number;
+  pct_with_athletes: number;
+  ratio_display: string;
+}
+
+export interface UnderdogStat extends GlobalStatsBlock {
+  n_small_counties: number;
+  n_beating_metro: number;
+  pct_beating_metro: number;
+  metro_para_median_per_100k: number;
+  pct_display: string;
+}
+
+export interface GlobalStats {
+  gap: GapStat;
+  underdog: UnderdogStat;
+}
+
 export const api = {
   region: (zip: string) =>
     request<RegionResponse>('/api/region', {
@@ -245,4 +278,17 @@ export const api = {
    *  in path (deterministic profile only). Vinh task 0.9 contract. */
   countyStats: (fips: string) =>
     request<CountyStats>(`/api/stats/county/${fips}`),
+
+  /** Region profile by FIPS — same payload shape as `/api/region` but
+   *  keyed by county FIPS instead of ZIP. Powers map drill-down: click
+   *  any county on the map → load that county as the new source region
+   *  without a ZIP round-trip. Vinh task B7 ship 2026-05-04. */
+  regionByFips: (fips: string) =>
+    request<RegionResponse>(`/api/region/by-fips/${fips}`),
+
+  /** Global atlas stats — Layer D scrollytelling source. Vinh task
+   *  Layer D ship 2026-05-04. Single global call (no params), cache
+   *  aggressively (`staleTime` set on hook side). Used by HeroStat
+   *  validation + Layer D editorial chapters. */
+  globalStats: () => request<GlobalStats>('/api/stats/global'),
 };

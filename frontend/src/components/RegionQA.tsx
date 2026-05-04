@@ -225,12 +225,25 @@ export default function RegionQA({ region, className }: RegionQAProps) {
     >
       <header className="flex items-start justify-between gap-3 mb-6">
         <div>
-          <p
-            id={headingId}
-            className="font-mono uppercase tracking-wider text-eyebrow text-navy mb-1"
-          >
-            Ask the Atlas — Gemini region Q&A
-          </p>
+          <div className="flex items-center gap-2 mb-1">
+            <p
+              id={headingId}
+              className="font-mono uppercase tracking-wider text-eyebrow text-navy"
+            >
+              Ask the Atlas — Gemini region Q&A
+            </p>
+            {/* Design-preview eyebrow — surfaces honesty about the
+                stub state directly in the header (footer caveat alone
+                was easy to miss). Renders as a subtle pill, not a
+                warning. Drop this span when /api/region/qa goes live
+                and STUBBED_RESPONSES is replaced with the real call. */}
+            <span
+              aria-label="Design preview — fixed responses; live wire pending backend Q&A endpoint"
+              className="font-mono uppercase tracking-wider text-eyebrow text-muted-text bg-warm-neutral border border-soft-border rounded-full px-2 py-0.5"
+            >
+              Design preview
+            </span>
+          </div>
           <p className="font-serif italic text-caption text-muted-text">
             Reasons over the visible region context. Conditional-phrased
             answer + visible reasoning chain.

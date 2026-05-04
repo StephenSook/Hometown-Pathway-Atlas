@@ -188,6 +188,14 @@ interface CountyMapProps {
    *  matching card. Mirrors the existing AnalogCard click pathway in
    *  reverse direction. */
   onSelectAnalog?: (fips: string) => void;
+  /** Map drill-down — fires when user clicks a non-highlighted county
+   *  AND then confirms via the SelectedCountyCard "Open this county
+   *  profile" CTA. HomePage hydrates a new region view from the FIPS
+   *  via useRegionByFips (Vinh task B7). Two-step flow (click county
+   *  → confirm CTA) instead of one-step navigation prevents accidental
+   *  navigation while a judge is just exploring tooltips during the
+   *  pitch. Bound to `/api/region/by-fips/{fips}` (Vinh ship 2026-05-04). */
+  onSelectCounty?: (fips: string) => void;
   className?: string;
 }
 
@@ -206,9 +214,22 @@ export default function CountyMap({
   hoveredAnalogFips,
   onHoverAnalog,
   onSelectAnalog,
+  onSelectCounty,
   className,
 }: CountyMapProps) {
   const [hover, setHover] = useState<HoverState | null>(null);
+  // Selected county (click-to-load drill-down target). Populated when
+  // user clicks any non-highlighted county and React Query resolves
+  // its CountyStats via /api/stats/county/{fips}. Surfaces in the
+  // SelectedCountyCard (top-right slot) with an "Open this county
+  // profile →" CTA that fires onSelectCounty(fips) so HomePage can
+  // navigate via useRegionByFips (Vinh task B7). Cleared via the
+  // card's dismiss button or when user clicks the source/an analog.
+  const [selectedCounty, setSelectedCounty] = useState<{
+    fips: string;
+    countyName: string;
+    state: string;
+  } | null>(null);
   // Zoom + pan state. ZoomableGroup handles drag-pan + scroll-zoom
   // internally; we maintain coordinates + zoom so external buttons
   // (+ / − / reset) can drive the same state. Initial centered on
@@ -560,14 +581,24 @@ export default function CountyMap({
   // tooltip auto-enriches with per-100k + evidence labels. Skipped
   // for source + analogs (already have data inline). 10-minute stale
   // mirrors useCountyStats hook config.
+  //
+  // Side effect: populates `selectedCounty` so the SelectedCountyCard
+  // (top-right slot) shows the click target with an "Open this county
+  // profile →" CTA. Fires onSelectCounty(fips) on confirmation —
+  // HomePage navigates to that county via useRegionByFips (Vinh B7).
   const handleClickFetch = useCallback(
-    async (id: string) => {
+    async (id: string, name?: string) => {
       if (id === sourceFips || analogFipsSet.has(id)) return;
       try {
-        await queryClient.fetchQuery({
+        const stats = await queryClient.fetchQuery({
           queryKey: ['countyStats', id],
           queryFn: () => api.countyStats(id),
           staleTime: 10 * 60 * 1000,
+        });
+        setSelectedCounty({
+          fips: id,
+          countyName: stats.county_name ?? name ?? 'Unknown county',
+          state: FIPS_TO_STATE[id.slice(0, 2)] ?? '',
         });
         // Force the current hover tooltip to re-read from cache —
         // setHover with a no-op object identity change triggers a
@@ -713,7 +744,7 @@ export default function CountyMap({
                     // the feature is judge-relevant.
                     onMouseMove={(e) => handleMove(e, id, name)}
                     onMouseLeave={clearHover}
-                    onClick={() => handleClickFetch(id)}
+                    onClick={() => handleClickFetch(id, name)}
                     onFocus={(e) => {
                       if (!isHighlighted) return;
                       const rect = (e.target as SVGElement).getBoundingClientRect();
@@ -934,7 +965,50 @@ export default function CountyMap({
 
       <ProvenanceFooter />
 
-      {missingCount > 0 && (
+      {/* Top-right slot. Selected-county drill-down card supersedes the
+          missing-data chip when both apply (drill-down is interactive +
+          time-sensitive while missing-data is purely informational and
+          rarely co-occurs in practice). */}
+      {selectedCounty ? (
+        <div
+          role="status"
+          aria-live="polite"
+          className="absolute top-6 right-6 max-w-[280px] rounded-xl bg-card-white border border-soft-border shadow-md p-3"
+        >
+          <div className="flex items-start justify-between gap-3 mb-1">
+            <div>
+              <p className="font-mono uppercase tracking-wider text-eyebrow text-navy">
+                Selected county
+              </p>
+              <p className="font-sans font-semibold text-body text-navy leading-tight">
+                {selectedCounty.countyName}
+              </p>
+              {selectedCounty.state && (
+                <p className="font-serif italic text-caption text-muted-text">
+                  {selectedCounty.state}
+                </p>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => setSelectedCounty(null)}
+              aria-label="Dismiss selected county"
+              className="text-muted-text hover:text-navy focus-ring rounded text-caption px-1"
+            >
+              ✕
+            </button>
+          </div>
+          {onSelectCounty && (
+            <button
+              type="button"
+              onClick={() => onSelectCounty(selectedCounty.fips)}
+              className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-navy text-card-white px-3 py-2 font-mono uppercase tracking-wider text-eyebrow hover:bg-olympic-blue focus-ring transition-colors"
+            >
+              Open this county profile →
+            </button>
+          )}
+        </div>
+      ) : missingCount > 0 ? (
         <div
           role="status"
           aria-live="polite"
@@ -945,7 +1019,7 @@ export default function CountyMap({
             not be plotted in our indexed location data.
           </p>
         </div>
-      )}
+      ) : null}
 
       {hover && (
         <CountyTooltip

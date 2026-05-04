@@ -16,12 +16,18 @@
  */
 
 import { ArrowLeft } from 'lucide-react';
+import { useGlobalStats } from '../hooks/useGlobalStats';
 
 interface MethodologyPageProps {
   onBack: () => void;
 }
 
 export default function MethodologyPage({ onBack }: MethodologyPageProps) {
+  // Atlas-wide findings — backed by Vinh's `/api/stats/global` ship
+  // 2026-05-04. Falls back to skeleton on first paint, gracefully
+  // hides the section if the endpoint errors (defensive for any future
+  // backend regression that breaks this surface but not the demo path).
+  const stats = useGlobalStats();
   return (
     <article
       aria-labelledby="methodology-heading"
@@ -227,6 +233,35 @@ export default function MethodologyPage({ onBack }: MethodologyPageProps) {
         </ul>
       </Section>
 
+      <Section heading="Atlas-wide findings" eyebrow="Two non-obvious signals">
+        {stats.isPending && (
+          <div aria-label="Loading global stats" className="animate-pulse space-y-3">
+            <div className="h-4 w-3/4 rounded bg-soft-border" />
+            <div className="h-4 w-2/3 rounded bg-soft-border" />
+          </div>
+        )}
+        {stats.data && (
+          <div className="not-prose grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FindingCard
+              label="Representation gap"
+              metric={stats.data.gap.ratio_display}
+              headline={stats.data.gap.headline}
+              footer={`${stats.data.gap.counties_no_athletes.toLocaleString()} of ${stats.data.gap.total_counties.toLocaleString()} counties (${stats.data.gap.pct_with_athletes.toFixed(1)}% with athletes)`}
+            />
+            <FindingCard
+              label="Underdog signal"
+              metric={stats.data.underdog.pct_display}
+              headline={stats.data.underdog.headline}
+              footer={`${stats.data.underdog.n_beating_metro.toLocaleString()} of ${stats.data.underdog.n_small_counties.toLocaleString()} small counties (pop <250k) above the major-metro Paralympic median per 100k`}
+            />
+          </div>
+        )}
+        <p className="font-serif italic text-caption text-muted-text mt-2">
+          Both surfaced via `/api/stats/global`; numerators + denominators
+          shown so the math is verifiable.
+        </p>
+      </Section>
+
       <Section heading="Limits + open questions" eyebrow="Honest framing">
         <p>
           Atlas is descriptive, not predictive. Patterns the similarity
@@ -274,5 +309,31 @@ function Section({ heading, eyebrow, children }: SectionProps) {
         {children}
       </div>
     </section>
+  );
+}
+
+interface FindingCardProps {
+  label: string;
+  metric: string;
+  headline: string;
+  footer: string;
+}
+
+function FindingCard({ label, metric, headline, footer }: FindingCardProps) {
+  return (
+    <div className="rounded-2xl bg-card-white border border-soft-border shadow-sm p-5 flex flex-col gap-3">
+      <p className="font-mono uppercase tracking-wider text-eyebrow text-muted-text">
+        {label}
+      </p>
+      <p className="font-sans font-semibold text-h2 text-navy leading-none">
+        {metric}
+      </p>
+      <p className="font-serif italic text-body text-body-text leading-snug">
+        {headline}
+      </p>
+      <p className="font-mono text-eyebrow text-muted-text mt-auto">
+        {footer}
+      </p>
+    </div>
   );
 }
