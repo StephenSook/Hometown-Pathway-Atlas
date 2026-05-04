@@ -150,12 +150,18 @@ class GeminiService:
             return cached
 
         tradeoff_text = self._generate_tradeoff(analogs_response)
-        audit_result = get_auditor().audit(tradeoff_text)
-        tradeoff_text = audit_result.final_narrative
+        tradeoff_audit = get_auditor().audit(tradeoff_text)
+        tradeoff_text = tradeoff_audit.final_narrative
 
         enriched: list[AnalogEntry] = []
-        for entry in analogs_response.analogs:
-            enriched.append(self._enrich_analog_entry(entry))
+        for i, entry in enumerate(analogs_response.analogs):
+            analog = self._enrich_analog_entry(entry)
+            # Attach tradeoff audit entries to the first analog so they surface in the UI.
+            if i == 0 and tradeoff_audit.entries:
+                analog = analog.model_copy(
+                    update={"compliance_log": tradeoff_audit.entries + analog.compliance_log}
+                )
+            enriched.append(analog)
 
         result = analogs_response.model_copy(
             update={"analogs": enriched, "tradeoff_explanation": tradeoff_text}
@@ -198,6 +204,10 @@ class GeminiService:
             )
             narrative = _fallback_analog_narrative(entry)
             log_entries = _error_log_entry("analog_narrative", str(exc))
+
+        audit_result = get_auditor().audit(narrative)
+        narrative = audit_result.final_narrative
+        log_entries = log_entries + audit_result.entries
 
         return entry.model_copy(update={"narrative": narrative, "compliance_log": log_entries})
 

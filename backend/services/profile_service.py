@@ -53,7 +53,7 @@ class ProfileService:
             fips=fips,
             county_name=str(row["county_name"]),
             state=str(row["state"]),
-            msa_label=str(row["msa_label"]) if row["msa_label"] else "",
+            msa_label="" if _is_null(row["msa_label"]) else str(row["msa_label"]),
             population=int(row["population"]) if not _is_null(row["population"]) else 0,
             centroid=_centroid(row),
             metrics=_build_metrics(row),
@@ -98,18 +98,28 @@ def _centroid(row: pd.Series) -> tuple[float, float] | None:
 
 
 def _build_metrics(row: pd.Series) -> MetricsBlock:
+    def _safe_int(val: object, default: int = 0) -> int:
+        return default if _is_null(val) else int(float(val))
+
+    def _safe_float(val: object, default: float = 0.0) -> float:
+        return default if _is_null(val) else float(val)
+
+    def _safe_evidence(val: object) -> str:
+        s = str(val) if not _is_null(val) else "low"
+        return s if s in ("high", "medium", "low") else "low"
+
     return MetricsBlock(
         olympic=MetricBlock(
-            count=int(row["olympic_count"]),
-            per_100k=round(float(row["olympic_per_100k"]), 2),
-            percentile=round(float(row["olympic_percentile"]), 1),
-            evidence=str(row["olympic_evidence"]),  # type: ignore[arg-type]
+            count=_safe_int(row["olympic_count"]),
+            per_100k=round(_safe_float(row["olympic_per_100k"]), 2),
+            percentile=round(_safe_float(row["olympic_percentile"]), 1),
+            evidence=_safe_evidence(row["olympic_evidence"]),  # type: ignore[arg-type]
         ),
         paralympic=MetricBlock(
-            count=int(row["paralympic_count"]),
-            per_100k=round(float(row["paralympic_per_100k"]), 2),
-            percentile=round(float(row["paralympic_percentile"]), 1),
-            evidence=str(row["paralympic_evidence"]),  # type: ignore[arg-type]
+            count=_safe_int(row["paralympic_count"]),
+            per_100k=round(_safe_float(row["paralympic_per_100k"]), 2),
+            percentile=round(_safe_float(row["paralympic_percentile"]), 1),
+            evidence=_safe_evidence(row["paralympic_evidence"]),  # type: ignore[arg-type]
         ),
     )
 

@@ -108,24 +108,22 @@ def _mock_gemini_response(is_causal: bool, rewrite: str, confidence: str = "high
 
 @patch("services.auditor.vertexai_model")
 def test_semantic_pass_on_clean_narrative(mock_model: MagicMock, auditor: HybridAuditor) -> None:
+    # Clean narrative: deterministic pass → Gemini is NOT called (optimized path).
     clean = (
         "Both Olympic and Paralympic athletes originate from this region. "
         "The area may correlate with strong coaching infrastructure."
     )
-    mock_model.generate_content.return_value = _mock_gemini_response(
-        is_causal=False, rewrite=clean
-    )
     result = auditor.audit(clean)
     assert result.clean is True
-    gemini_entry = next(e for e in result.entries if e.layer == "gemini")
-    assert gemini_entry.status == "pass"
+    assert all(e.layer == "rules" for e in result.entries)
+    mock_model.generate_content.assert_not_called()
 
 
 @patch("services.auditor.vertexai_model")
 def test_semantic_rewrite_fixes_causal(mock_model: MagicMock, auditor: HybridAuditor) -> None:
     causal = (
         "Cobb County produces elite Olympic and Paralympic swimmers. "
-        "It will continue to be a pipeline."
+        "It is known for creating world-class athletes."
     )
     fixed = (
         "Cobb County shows strong representation patterns in Olympic and Paralympic swimming. "
@@ -142,10 +140,11 @@ def test_semantic_rewrite_fixes_causal(mock_model: MagicMock, auditor: HybridAud
 
 @patch("services.auditor.vertexai_model")
 def test_semantic_failure_does_not_block(mock_model: MagicMock, auditor: HybridAuditor) -> None:
+    # Causal narrative: Gemini is called and raises → auditor falls back gracefully.
     mock_model.generate_content.side_effect = Exception("Gemini timeout")
     narrative = (
         "Both Olympic and Paralympic athletes originate from this region. "
-        "The area may correlate with strong coaching infrastructure."
+        "This county produces elite swimmers."
     )
     result = auditor.audit(narrative)
     gemini_entry = next(e for e in result.entries if e.layer == "gemini")

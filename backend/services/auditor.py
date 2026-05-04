@@ -16,8 +16,8 @@ logger = logging.getLogger(__name__)
 
 
 _CAUSAL_PATTERN = re.compile(
-    r"\b(produces?|creates?|leads? to|guarantees?|makes?|is known for"
-    r"|will\s+\w+)\b",
+    r"\b(produces?|creates?|leads? to|led to|guarantees?|makes?|is known for"
+    r"|will\s+(?:produce|create|guarantee|lead|make|generate|ensure|result|cause))\b",
     re.IGNORECASE,
 )
 
@@ -172,9 +172,9 @@ class HybridAuditor:
                 logger.warning("HybridAuditor Gemini call failed (attempt %d): %s", attempt + 1, exc)
                 entries.append(ComplianceEntry(
                     layer="gemini", check="causal_tone_semantic", status="fail",
-                    details=f"Gemini unavailable: {exc}", ts=_now_iso(),
+                    details=f"Gemini unavailable (attempt {attempt + 1}): {exc}", ts=_now_iso(),
                 ))
-                return current, entries
+                continue
 
             if not data.get("is_causal_tone", False):
                 entries.append(ComplianceEntry(
@@ -206,18 +206,24 @@ class HybridAuditor:
         return current, entries
 
     def audit(self, narrative: str) -> AuditResult:
-        """Run deterministic pass, then Gemini semantic pass. Returns merged result."""
+        """Run deterministic pass; if causal fail, run Gemini semantic rewrite."""
         det_result = self.deterministic_check(narrative)
-        semantic_narrative, semantic_entries = self.semantic_check(det_result.final_narrative)
-        final_det = self.deterministic_check(semantic_narrative)
-        all_entries = det_result.entries + semantic_entries + final_det.entries
-        return AuditResult(
-            causal_pass=final_det.causal_pass,
-            parity_pass=final_det.parity_pass,
-            name_pass=final_det.name_pass,
-            final_narrative=semantic_narrative,
-            entries=all_entries,
-        )
+
+        if not det_result.causal_pass:
+            # Only invoke Gemini when deterministic found a banned phrase.
+            semantic_narrative, semantic_entries = self.semantic_check(narrative)
+            all_entries = det_result.entries + semantic_entries
+            # Re-evaluate parity/name on the final (possibly rewritten) narrative.
+            final_det = self.deterministic_check(semantic_narrative)
+            return AuditResult(
+                causal_pass=final_det.causal_pass,
+                parity_pass=final_det.parity_pass,
+                name_pass=final_det.name_pass,
+                final_narrative=semantic_narrative,
+                entries=all_entries,
+            )
+
+        return det_result
 
 
 _auditor = HybridAuditor()

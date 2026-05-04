@@ -17,6 +17,10 @@ _STRONG_PERCENTILE = 70.0   # county is in top-30% nationally
 _WEAK_PERCENTILE = 40.0     # county is in bottom-40% nationally
 
 
+class PathwayNotFoundError(Exception):
+    pass
+
+
 class PathwayService:
     def __init__(self, settings: Settings | None = None) -> None:
         s = settings or get_settings()
@@ -30,7 +34,7 @@ class PathwayService:
         try:
             row = self._profiles.loc[fips]
         except KeyError:
-            return PathwayResponse(source_fips=fips, gaps=[])
+            raise PathwayNotFoundError(f"FIPS {fips!r} not found in county profiles")
 
         gaps: list[GapEntry] = []
         gaps.extend(self._observed_strength(fips, row))
