@@ -40,9 +40,12 @@ import SourceTooltip from './SourceTooltip';
 import { cn } from '../lib/utils';
 
 // Mirror the EXACT banned-verb list from scripts/check-conditional-phrasing.mjs
-// — the frontend safety net should fail-closed against the same surface the
-// CI script protects against. If the CI list changes, update both in sync.
-const BANNED_VERBS = /\b(produces?|producing|creates?|creating|guarantees?|leads to)\b/i; // atlas-phrasing-allow — regex pattern source intentionally contains the verbs
+// PLUS the broader set in GapCard.tsx (causes/makes/results in). Cold-check
+// 2026-05-04 caught that this list was narrower than GapCard's, leaving a
+// gap where Gemini drift on "causes"/"makes"/"results in" would slip past
+// the frontend safety net even though those phrases are caught at backend
+// HybridAuditor (Vinh task 2.9). Aligned with GapCard for defense in depth.
+const BANNED_VERBS = /\b(produces?|producing|creates?|creating|guarantees?|leads?\s+to|led\s+to|causes?|makes?|results?\s+in)\b/i; // atlas-phrasing-allow — regex pattern source intentionally contains the verbs
 
 interface RegionNarrativeProps {
   /** Gemini-generated 2-3 sentence prose. Empty string when backend
