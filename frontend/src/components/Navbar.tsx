@@ -22,13 +22,15 @@ interface NavLink {
   href: string;
 }
 
-// Methodology routes via #about — HomePage hash listener watches for
-// '#about' and swaps view to MethodologyPage. Previously had a separate
-// 'Methodology' entry pointing at the dead '#methodology' anchor (no
-// element with that id exists + handler doesn't watch it). Collapsed to
-// one entry so both labels can't disagree about destination.
+// Stripped down to two real destinations 2026-05-04:
+//  - Atlas wordmark (left) → home / hero view
+//  - Methodology (#about) → MethodologyPage via HomePage hash listener
+//  - Find region (right CTA) → #region anchor on the ZipInput section
+// Previously had a 'Region' nav link with href='#region' that navigated
+// to the same anchor as the CTA — duplicate destination, just decoration.
+// Stephen flagged 2026-05-04 that clicking 'Region' didn't direct to
+// anywhere meaningful (it scrolled to top of landing). Removed.
 const NAV_LINKS: NavLink[] = [
-  { label: 'Region', href: '#region' },
   { label: 'Methodology', href: '#about' },
 ];
 

@@ -179,15 +179,23 @@ export default function HomePage() {
     }
   }, [region.error, view, isSparse]);
 
-  // Hash-router for the methodology page. Listens for clicks on the
-  // Navbar #about anchor; updating window.location.hash triggers the
-  // listener which sets view='methodology'. Day 4 router migration
-  // replaces this with a real /about route.
+  // Hash-router for the methodology page + Find Region CTA. Listens for
+  // clicks on the Navbar anchors:
+  //   #about → MethodologyPage
+  //   #region → reset to hero view + browser scrolls to id="region"
+  //     anchor on the ZipInput section. Clicking Find Region while on
+  //     results view returns user to landing so they can submit a new ZIP.
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const handler = () => {
-      if (window.location.hash === '#about') {
+      const hash = window.location.hash;
+      if (hash === '#about') {
         setView('methodology');
+      } else if (hash === '#region') {
+        // Clicking Find Region from results view → return to hero so the
+        // ZipInput is visible. Browser then scrolls to id="region"
+        // automatically on the next tick.
+        if (view !== 'hero') setView('hero');
       } else if (view === 'methodology') {
         setView('hero');
       }
@@ -271,8 +279,9 @@ export default function HomePage() {
             <HeroStat stat={HERO_STAT} className="mb-8" />
 
             <section
+              id="region"
               aria-labelledby="hero-heading"
-              className="mx-auto max-w-[880px] px-6 text-center"
+              className="mx-auto max-w-[880px] px-6 text-center scroll-mt-32"
             >
               <p className="text-eyebrow font-mono uppercase text-muted-text mb-6">
                 Hometown Pathway Atlas
