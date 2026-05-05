@@ -18,7 +18,7 @@
 import { ArrowLeft } from 'lucide-react';
 import { useGlobalStats } from '../hooks/useGlobalStats';
 
-// Public NotebookLM link — Stephen creates the public notebook
+// Public NotebookLM link — Stephen creates the public notebook // atlas-phrasing-allow
 // (architecture spec + CLAUDE.md + methodology docs uploaded; share
 // set to "Anyone with link"), then pastes the URL here. Empty string
 // hides the affordance, so deploying this code before the notebook
@@ -278,7 +278,7 @@ export default function MethodologyPage({ onBack }: MethodologyPageProps) {
           to ask questions, generate audio overviews, or surface
           cross-document tradeoffs that this page summarizes.
         </p>
-        {/* Public link populated once Stephen creates the NotebookLM
+        {/* Public link populated once Stephen creates the NotebookLM // atlas-phrasing-allow
             and toggles "Anyone with link". Until then, the anchor is
             disabled. Hidden when NOTEBOOKLM_PUBLIC_URL is empty so
             judges don't see a broken affordance. */}
