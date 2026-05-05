@@ -53,11 +53,18 @@ interface RegionNarrativeProps {
   /** Gemini-generated 2-3 sentence prose. Empty string when backend
    *  fallback fired or Vinh's enrich_region hasn't shipped yet. */
   narrative: string;
+  /** Backend RegionResponse.narrative_source. "gemini" = real Vertex call.
+   *  "fallback" = deterministic _fallback_region_narrative payload — flips
+   *  eyebrow + tooltip to a non-misleading variant so we don't claim a
+   *  "Live Vertex AI Gemini" attribution on canned prose at demo time.
+   *  silent-failure-hunter F2. */
+  source?: 'gemini' | 'fallback';
   className?: string;
 }
 
 export default function RegionNarrative({
   narrative,
+  source = 'gemini',
   className,
 }: RegionNarrativeProps) {
   const headingId = useId();
@@ -89,8 +96,16 @@ export default function RegionNarrative({
         id={headingId}
         className="font-mono uppercase tracking-wider text-eyebrow text-muted-text mb-3"
       >
-        <SourceTooltip source="Generated live by Vertex AI Gemini 2.5 Flash. Structured-output (response_schema) with system_instruction enforcing parity + conditional phrasing. Audited at backend (HybridAuditor) and as a frontend safety net before render.">
-          Region narrative — Vertex AI Gemini
+        <SourceTooltip
+          source={
+            source === 'gemini'
+              ? 'Generated live by Vertex AI Gemini 2.5 Flash. Structured-output (response_schema) with system_instruction enforcing parity + conditional phrasing. Audited at backend (HybridAuditor) and as a frontend safety net before render.'
+              : 'Deterministic fallback prose from a backend template. Vertex AI did not respond on this call (quota, IAM, or transient failure). Logged server-side at WARNING level.'
+          }
+        >
+          {source === 'gemini'
+            ? 'Region narrative — Vertex AI Gemini'
+            : 'Region narrative — fallback'}
         </SourceTooltip>
       </p>
       <p className="font-serif italic text-body-lg text-body-text leading-relaxed">

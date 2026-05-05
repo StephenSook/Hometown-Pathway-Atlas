@@ -536,6 +536,7 @@ export default function HomePage() {
                 returns null cleanly, no layout pop-in. */}
             <RegionNarrative
               narrative={activeRegion.narrative}
+              source={activeRegion.narrative_source}
               className="mb-10 max-w-3xl"
             />
 
