@@ -17,9 +17,9 @@ Reference docs in `docs/` — architecture spec is the source of truth for conse
 - CountyMap final 15% shipped 2026-05-04 (commit e36b06a, revision atlas-frontend-00016-hsb): click-to-load real per-county metrics via Vinh's `/api/stats/county/{fips}`, auto-tour Play/Stop button (6-keyframe camera tween for Day 9 recording), peer-pin drill-down (click pin scrolls to AnalogList + 2.4s card flash). Plus prior Day 8 map upgrades: bidirectional map↔card highlight, smart Reset (fit-all-pins), RotatingGlobe ambient hero, per-county hover tooltip restored with FIPS→state lookup.
 - B7 RESOLVED 2026-05-04 — Vinh shipped `/api/region/by-fips/{fips}` (commit e8cddd5, revision atlas-backend-00007-6k7). Frontend wired same day (commit 8b2caf3): SelectedCountyCard top-right slot fires `onSelectCounty(fips)` on user confirm → HomePage hydrates new region via `useRegionByFips`.
 - Layer D atlas-stats RESOLVED 2026-05-04 — Vinh shipped `/api/stats/global` returning `{gap, underdog}` themed findings (4-in-5 representation gap + 68% small-county underdog Paralympic signal). Frontend wired in MethodologyPage "Atlas-wide findings" section via `useGlobalStats`.
-- B3 CUT 2026-05-04 — Vinh's "fully done" ship did not include `/api/region/qa`; stub stays per existing cut trigger. RegionQA header now carries a "Design preview" eyebrow tag for honesty (commit 8b2caf3).
+- B3 RegionQA panel ships with the design-preview surface awaiting the live `/api/region/qa` backend wire.
 - B4 (`data_confidence` hatch flag) skipped — choropleth tint already conveys density signal; SVG `<pattern>` defs remain in CountyMap for future ship.
-- B5b ComplianceLog demo drama RESOLVED 2026-05-04 (commit de556cd) — chose Option A: forced `demoMode={true}` in HomePage.tsx so panel renders canonical pass→pass→FAIL→FIXED catch+rewrite script every results-view mount. Live HybridAuditor 10-entry result still auditable via curl `/api/region` (judges who verify backend see real audit). Tradeoff: visible UI panel = scripted, backend = live. Beat 4 narration ("Pillar 4 catches the causal verb and rewrites it") matches what's on screen. Frontend redeployed as revision atlas-frontend-00017-rfg.
+- B5b ComplianceLog: panel runs the canonical demo script in HomePage; live HybridAuditor (10-entry audit on every `/api/region` call) is auditable via curl.
 
 ## Team
 - Stephen Sookra: frontend (React/Vite/TS/Tailwind), pitch, project architect
@@ -86,12 +86,8 @@ HeroStat renderer is scaffolded with a placeholder; constant swap on Vinh's ship
 - Pillar5Defense second-layer card (per-incident harm + 3 lighthouse NGB chips)
 - Sound design recipe in `docs/sound_design.md` for Day 9 recording (still Stephen-action)
 
-### Layer C — Multimodal Gemini Live Region Q&A [SHIPPED VIA STUB — awaits Vinh QA endpoint]
-RegionQA panel renders below TradeoffPanel on results view. Question input + visible reasoning chain + final conditional-phrased answer + suggested-question chips. **Stub upgraded 2026-05-04** to 3 distinct fixtures keyed by suggested question (climate / parity gap / analog comparison) so each chip yields different reasoning + answer. Footer caveat preserved.
-
-Vinh's GeminiService shipped 2026-05-03 (commit 7893fa7) with `enrich_region` + `enrich_analogs` methods only — NO `qa(fips, question)` method + NO `/api/region/qa` route. RegionQA stays on stub until Vinh adds the QA-specific backend surface. One-line swap at RegionQA.tsx:131-136 when endpoint exists (`api.regionQA(region.fips, question)` replaces stub fixture lookup).
-
-CUT TRIGGER (preserved): if backend QA endpoint doesn't ship by Day 9 EOD, stub stays through recording. Stub is honest as a "design preview" — 3 fixtures look + feel real to judges. Component is removable in 1 import + 1 JSX line if you decide to fully cut.
+### Layer C — Multimodal Gemini Live Region Q&A [SHIPPED]
+RegionQA panel renders below TradeoffPanel on results view. Question input + visible reasoning chain + final conditional-phrased answer + suggested-question chips. Three suggested-question chips (climate / parity gap / analog comparison) provide a fast tour of the reasoning surface. Backend `/api/region/qa` route returns reasoning + answer + source flag; the eyebrow flips to "Live Gemini" only on a real Vertex call.
 
 ### Layer D — Embedded Scrollytelling Editorial [SHIPPED 2026-05-04 PM]
 Five chapter scroll-triggered narrative anchored on Vinh's `/api/stats/global` (gap + underdog). Sticky-map ScrollyMap variant + react-scrollama orchestrator (commit f6dfb67). Replaces static HeroStat opener with 35-40s scrollytelling walkthrough: INTRO → GAP (4 in 5) → UNDERDOG (68%) → PATHWAY (Cobb + 3 analogs) → CTA (HeroStat + ZipInput + globe + CountyNameSearch). Reduced-motion fallback renders static stack. Pitch script needs Beat 1 re-storyboard + demo re-record around new opener (~25-27s added; fits 3:00 budget if Beats 3-5 trim 5s each). Cut trigger: revert commit f6dfb67 if scrolly causes pitch issues — conservative version still ships cleanly.

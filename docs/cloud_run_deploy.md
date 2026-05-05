@@ -28,7 +28,7 @@ Before deploy day:
       test paths (00000 = backend 404 toast, 11111 = sparse mock
       escape hatch) — DECIDED 2026-05-03
 - [x] `gcloud auth login` valid on the deploy machine (verified
-      2026-05-03 — `lilsook2006@gmail.com` token live)
+      2026-05-03 — deploy account active)
 - [x] `gcloud config set project pathway-atlas-hackathon` (verified
       2026-05-03)
 - [x] Artifact Registry repo `cloud-run-source-deploy` exists in

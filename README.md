@@ -29,8 +29,8 @@ Hometown Pathway Atlas changes that.
 
 ## Live demo
 
-- **App:** `https://atlas-frontend-xxxxxx-uc.a.run.app/` *(updated Day 8 post-deploy)*
-- **Video:** `https://youtu.be/<video-id>` *(updated Day 9 post-record)*
+- **App:** https://atlas-frontend-635524063449.us-central1.run.app
+- **Video:** *(link added post-record)*
 - **Try ZIP:** `30060` (Cobb County, GA — anchor region for the demo flow)
 
 ---
