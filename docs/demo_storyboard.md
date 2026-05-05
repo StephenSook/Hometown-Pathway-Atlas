@@ -20,7 +20,10 @@ for the Team USA × Google Cloud Hackathon submission video.
 Per the original 03_demo_outline framing — preserved verbatim:
 
 1. **Solve a fan-centric Team USA problem** (40% Impact criterion).
-   Open with the Move United 63% stat + named-person scenario.
+   Open with the Layer D 5-chapter scrollytelling walkthrough
+   anchored on the live `/api/stats/global` payload — atlas of
+   silence → 4-in-5 gap → 68% small-county finding → pathway
+   not pedigree → find your county.
 2. **Show the technology working in real time** (30% Technical Depth).
    Live URL demo, not slides. Gemini doing real reasoning. Compliance
    Log auditor catching causal language. GCP Console proving deployment.
@@ -92,35 +95,50 @@ narration audio in 3 takes (pick best per beat). Sync in post-prod.
 
 **Shot index maps to pitch_script.md beats.**
 
-### Shot 1 — Hook title card (0:00 — 0:08)
+### Shot 1 — Layer D scrollytelling opener (0:00 — 0:38)
 
-- **Pre-render asset (NOT live app):** title card on warm-neutral
-  background. Bold typography fades in:
-  - Line 1: "63% of 2024 U.S. Paralympic athletes"
-  - Line 2: "came through one network."
-- Source for stat: Move United 2024 Impact Report (141 of 225 ≈ 63%)
-- Tool: Keynote / Figma / browser-rendered HTML — your call
-- Duration: 8s
+**Live app, not pre-render.** Browser at deployed Cloud Run URL,
+scroll position at top, motion confirmed ON (prefers-reduced-motion
+disabled — falls back to static stack which collapses Beat 1 to ~12s
+and breaks the recording).
 
-### Shot 2 — Map overlay (0:08 — 0:15)
+5 chapters trigger via react-scrollama as the cursor scrolls down at
+a deliberate pace (~7s per chapter):
 
-- Subtle US map outline appears. ~20 dots scatter representing Move
-  United chapters. Visibly concentrated, large rural gaps.
-- Text overlay: "In only a fraction of U.S. counties."
-- Optional: pre-render this as a static image OR use the actual
-  CountyMap component zoomed out
+- **Chapter 1 INTRO (0:00 — 0:08).** Sticky map fades in. Eyebrow
+  "01 — An atlas of silence." Heading "There are 3,222 counties in
+  the United States." DecorationBigNumber renders 3,222 on the
+  opposite side. Counties render warm-neutral with faint navy stroke
+  — looks like a blueprint.
+- **Chapter 2 GAP (0:08 — 0:18).** Scroll triggers. Map shifts to
+  gap mode — 555 counties tinted navy by density, 2,667 dim.
+  Eyebrow "02 — The 4-in-5 gap." Heading "4 in 5 counties are silent."
+  DecorationStackedBar renders the lit-vs-silent ratio.
+- **Chapter 3 UNDERDOG (0:18 — 0:28).** Scroll triggers. Map shifts
+  to underdog mode — small Paralympic-rep counties light up clay,
+  metros dim. Eyebrow "03 — The silence isn't where you'd expect."
+  Heading "68% of small counties beat the metro." DecorationDivergent
+  renders the small-county-vs-metro split.
+- **Chapter 4 PATHWAY (0:28 — 0:34).** Scroll triggers. Map zooms
+  to Cobb (13067) navy + 3 fixed analog FIPS (51510 Alexandria, 45019
+  Charleston, 09120 Greater Bridgeport) olympic-blue. Eyebrow
+  "04 — Pathway, not pedigree." Heading "Atlas reads each county's
+  pathway." DecorationAnalogNetwork renders the similarity edges.
+- **Chapter 5 CTA (0:34 — 0:38).** Scroll triggers. Map fades to
+  background opacity. Eyebrow "05 — Find your county." Heading
+  "Your county Team USA story." HeroStat + ZipInput + rotating globe
+  + CountyNameSearch slot in. ZipInput pulses gently.
 
-### Shot 3 — Question card → live URL transition (0:15 — 0:22)
+**Recording pacing:** the scroll cadence drives the entire 38s
+budget. If Stephen scrolls too fast the chapters trigger out of
+sync with narration; too slow and the budget overruns. Practice
+the scroll-pace 3× before live take.
 
-- Map fades. Text appears: "What does Team USA look like from where
-  you're from?"
-- Cursor blinks below the question
-- Cuts to live URL (browser hero view) at 0:22
+### Shot 2 — ZIP submit (0:38 — 0:50)
 
-### Shot 4 — Hero view + ZIP submit (0:22 — 0:45)
-
-- Single take in browser
-- Cursor moves to ZIP input
+- Single continuous take from Shot 1 (no cuts; Chapter 5 reveal
+  flows directly into the ZIP input)
+- Cursor moves to ZipInput (already pulsing from Chapter 5)
 - Type "30060" deliberately (~2 keystrokes/sec)
 - Cursor moves to "Show me" button
 - Click → ResultsSkeleton flashes for ~600ms → results render
@@ -128,7 +146,7 @@ narration audio in 3 takes (pick best per beat). Sync in post-prod.
   immediately on mount — DON'T draw attention yet, narrator covers
   it in Beat 4
 
-### Shot 5 — Results tour (0:45 — 1:25)
+### Shot 3 — Results tour (0:50 — 1:38)
 
 - Continuation of single take
 - Cursor pans across results in this order:
@@ -150,7 +168,11 @@ narration audio in 3 takes (pick best per beat). Sync in post-prod.
 - **Compression vs original:** trimmed from 50s → 40s to make room
   for Shot 5.5 RegionQA without breaking 3:00 total
 
-### Shot 5.5 — RegionQA ★ Layer C (1:25 — 1:45) [OPTIONAL]
+### Shot 4 — RegionQA ★ Layer C (1:38 — 1:58)
+
+Live `/api/region/qa` route — eyebrow flips to "Live Gemini" only on
+a real Vertex call (the source-flag invariant from the F2 + /ultrareview
+remediation waves).
 
 - Continuation of single take
 - Scroll past TradeoffPanel to RegionQA panel ("Ask the Atlas")
@@ -161,20 +183,20 @@ narration audio in 3 takes (pick best per beat). Sync in post-prod.
   3. "Reasoning over climate signature"
   4. "Drafting conditional-phrased response"
 - Final answer fades in on right zone, confidence pill ("medium")
-- **Hold 2s** — judges register the visible Q&A reasoning chain
-- Cursor moves toward right sidebar (transitions to Shot 6)
+- **Hold 2s** — judges register the visible Q&A reasoning chain plus
+  the "Live Gemini" eyebrow tag (proof the response came from a
+  verified Vertex call, not the stub fallback)
+- Cursor moves toward right sidebar (transitions to Shot 5)
 
-**OPTIONAL flag rationale:** This is the Layer C "Gemini in new
-ways" judge play. Currently demos against a hand-authored fixture
-(the live Vertex AI Gemini call swap is a one-line change pending
-Vinh task 2.7). If demo recording is tight on time OR Stephen wants
-zero stub-fixture risk in front of judges, **cut this beat cleanly**
-— timing slot collapses back into Shot 5 (extends results tour by
-20s) or Shot 6 (extends ComplianceLog dwell by 20s). Cutting
-preserves the conservative arc; including adds the Layer C
-multimodality judge signal.
+**Stub-fallback risk note:** if Vertex AI returns an error
+(quota / IAM / deadline) during recording, the eyebrow flips to
+"Design preview" and the response is the deterministic fallback.
+The visual difference is small but a sharp judge will notice.
+Mitigation: warm the backend with one /api/region/qa call ~30s
+before recording. If the warm-up call returns source="fallback",
+abort the take and re-warm.
 
-### Shot 6 — ComplianceLog ★ pivot (1:45 — 2:05)
+### Shot 5 — ComplianceLog ★ pivot (1:58 — 2:28)
 
 - Cursor moves to right sidebar where ComplianceLog lives
 - ComplianceLog has been settled since ~T+5s post-submit — Rules
@@ -190,7 +212,7 @@ multimodality judge signal.
 - Camera (CSS zoom) optional: zoom to 110% on the ComplianceLog panel
   for emphasis
 
-### Shot 7 — Tech Proof cuts (2:05 — 2:25)
+### Shot 6 — Tech Proof cuts (2:28 — 2:48)
 
 - 4 quick cuts (5s each):
 
@@ -217,7 +239,7 @@ multimodality judge signal.
 **Cut 7d (5s):** Quick fade back to live app, scrolled to where
 Pillar5Strip is visible
 
-### Shot 8 — Pillar5Strip ★ (2:25 — 2:50)
+### Shot 7 — Pillar5Strip ★ (2:48 — 3:08)
 
 - Continuation of Shot 7d, scrolled position
 - Pillar5Strip visible in full: 3 columns (TAM ~50M / Cost "Zero" /
@@ -226,7 +248,7 @@ Pillar5Strip is visible
 - Footer callout visible: "Surfaces signals relevant to fans, parents,
   NGB recruiters, and state recreation programs."
 
-### Shot 9 — Close + URL card (2:50 — 3:00)
+### Shot 8 — Close + URL card (3:08 — 3:24, post-trim ~2:50)
 
 - Final card OR pull back to full-page view
 - Atlas wordmark center screen
@@ -400,7 +422,6 @@ anchor sync points.
 ### Preserved from existing storyboard
 
 - 6-scene structure — kept and mapped to pitch_script beats
-- Move United 63% opener — INTEGRATED (was missing from pitch_script v1)
 - Tech Proof scene — INTEGRATED as Beat 4.5 (was missing from
   pitch_script v1; hackathon FAQ requirement)
 - DQ checklist (NIL/IOC/USOPC) — preserved verbatim
@@ -432,21 +453,35 @@ anchor sync points.
 
 ### Added 2026-05-03 (Layer C ship)
 
-- **Shot 5.5 — RegionQA Layer C** added as OPTIONAL beat between
-  results tour (Shot 5) and ComplianceLog pivot (Shot 6). Demo
-  the Gemini Q&A panel (suggested-question chip → reasoning chain
-  → conditional-phrased answer). 20s budget. Stephen decides on
-  recording day whether to include based on dry-run timing + risk
-  appetite (currently demos against hand-authored fixture; live
-  Vertex AI call wires up via 1-line swap when Vinh task 2.7 ships).
-  Shot 5 trimmed from 50s → 40s to make room without breaking
-  3:00 total.
-- **Shot 5 results tour:** added optional SourceTooltip hover beat
-  (1s) on a stat number to flash the editorial-citation popover.
-  Single visual beat that signals the entire 17-tooltip system.
-- **Shot 6 ComplianceLog:** added optional ↻ Replay button click as
+- **Shot 4 (was 5.5) — RegionQA Layer C:** demo the Gemini Q&A panel
+  (suggested-question chip → reasoning chain → conditional-phrased
+  answer). 20s budget. Originally OPTIONAL with hand-authored
+  fixtures; promoted to a fixed beat once `/api/region/qa` route
+  shipped (commit bcbc98e) and the source-flag invariant landed
+  (commits 487acc8 + ef31249) — eyebrow now flips between "Live
+  Gemini" and "Design preview" based on the actual Vertex response.
+- **Shot 3 results tour:** SourceTooltip hover beat (1s) on a stat
+  number to flash the editorial-citation popover. Single visual
+  beat that signals the entire 17-tooltip system.
+- **Shot 5 ComplianceLog:** optional ↻ Replay button click as
   recovery move if the auto-demo cycle landed before cursor arrived.
-- **Shot 7c GitHub repo:** updated reference from
-  `gemini_service.py` (not yet shipped) to README API contract
-  section + `backend/services/profile_service.py` as current
-  strongest structured-output proof.
+- **Shot 6c GitHub repo:** README API contract section +
+  `backend/services/gemini_service.py` (full structured-output
+  proof + the `_classify_vertex_error` observability helper).
+
+### Added 2026-05-04 (Layer D ship + /ultrareview wave)
+
+- **Shot 1 — Layer D scrollytelling opener:** replaced the static
+  title card + map overlay + question card sequence (former Shots
+  1-3) with the live 5-chapter scrollytelling walkthrough anchored
+  on `/api/stats/global`. Move United 63% stat dropped from the
+  pitch entirely — atlas-discovered stats (4-in-5 gap + 68% small-
+  county finding) are stronger differentiators and they live ON
+  SCREEN as part of the visual narrative.
+- **Pre-record check:** verify `prefers-reduced-motion` is OFF
+  before recording. If reduced-motion is on, scrolly chapters
+  collapse to a static stack and Beat 1 budget collapses from 38s
+  to ~12s — breaks the entire downstream timing.
+- **Backend warm-up:** call `/api/region` AND `/api/region/qa`
+  ~30s before recording to prime caches. If either returns
+  `source: "fallback"`, abort the take + re-warm.

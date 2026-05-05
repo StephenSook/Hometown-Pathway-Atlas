@@ -78,9 +78,10 @@ ask any natural-language question about the visible region. Reasoning
 chain visible step-by-step, parallel to the Compliance Log audit-
 stream pattern but at the core UX layer. Conditional phrasing
 enforced by the same hybrid auditor before responses reach the panel.
-Suggested-question chips lower judge friction; a hand-authored
-fixture demos the surface today, with a one-line swap to the live
-Vertex AI Gemini call when the GeminiService backend lands.
+Wired live against the `/api/region/qa` route — the eyebrow flips to
+"Live Gemini" only when the backend confirms a verified Vertex call
+(via the `source` flag returned in the response); fallback responses
+render with a "Design preview" eyebrow so the attribution never lies.
 
 ---
 
