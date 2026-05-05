@@ -214,9 +214,9 @@ export default function MethodologyPage({ onBack }: MethodologyPageProps) {
             unused — neither feeds into similarity scoring.
           </li>
           <li>
-            No IOC or USOPC branding (Olympic rings, torch imagery,
-            "Olympic Games" used loosely). Atlas references the events
-            directly when needed and uses no protected marks.
+            No protected committee marks, rings, torch imagery, or loose
+            event branding. Atlas references the events directly when
+            needed and uses no protected marks.
           </li>
           <li>
             Conditional phrasing only in user-facing strings.
@@ -236,7 +236,7 @@ export default function MethodologyPage({ onBack }: MethodologyPageProps) {
           <li>HUD ZIP–County crosswalk</li>
           <li>NOAA nClimGrid 5km gridded climate</li>
           <li>Move United chapter directory (display-only, never load-bearing)</li>
-          <li>USOPC NGB list (Pillar 5 sourcing context)</li>
+          <li>National Governing Body directory (Pillar 5 sourcing context)</li>
         </ul>
       </Section>
 

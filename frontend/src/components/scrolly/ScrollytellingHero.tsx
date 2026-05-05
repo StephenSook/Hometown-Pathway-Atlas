@@ -29,7 +29,7 @@
  * passed in rather than re-implemented here.
  */
 
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Scrollama, Step } from 'react-scrollama';
 import { useReducedMotion } from 'framer-motion';
 import { useGlobalStats } from '../../hooks/useGlobalStats';
@@ -166,6 +166,23 @@ export default function ScrollytellingHero({ ctaSlot }: ScrollytellingHeroProps)
   const reduceMotion = useReducedMotion() ?? false;
   const stats = useGlobalStats();
   const [activeIdx, setActiveIdx] = useState<number>(0);
+  // Mobile detection — viewport <768px. Sticky positioning is fragile
+  // on mobile (URL bar height changes mid-scroll break sticky offsets).
+  // Detect via matchMedia + listen for resize/rotation. Codex audit
+  // 2026-05-04 PM caught the docstring promised this fallback but
+  // the implementation only branched on prefers-reduced-motion.
+  const [isMobile, setIsMobile] = useState<boolean>(() =>
+    typeof window === 'undefined'
+      ? false
+      : window.matchMedia('(max-width: 767px)').matches,
+  );
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mql = window.matchMedia('(max-width: 767px)');
+    const onChange = () => setIsMobile(mql.matches);
+    mql.addEventListener('change', onChange);
+    return () => mql.removeEventListener('change', onChange);
+  }, []);
 
   const handleStepEnter = ({ data }: { data: unknown }) => {
     if (typeof data === 'number') {
@@ -176,7 +193,7 @@ export default function ScrollytellingHero({ ctaSlot }: ScrollytellingHeroProps)
   // Mobile + reduced-motion fallback — render a static stack of
   // chapter content with no scroll triggers. Sticky map dropped;
   // each chapter shows a static map snapshot followed by its copy.
-  if (reduceMotion) {
+  if (reduceMotion || isMobile) {
     return (
       <div className="relative">
         {CHAPTERS.map((ch, i) => (
@@ -407,7 +424,7 @@ function DecorationDivergent({
 }: DecorationDivergentProps) {
   return (
     <div className="max-w-[320px]">
-      <p className="font-mono uppercase tracking-wider text-eyebrow text-paralympic-clay mb-3">
+      <p className="font-mono uppercase tracking-wider text-eyebrow text-navy mb-3">
         Paralympic underdog
       </p>
       <p className="font-serif italic font-normal text-navy leading-none tracking-tight"

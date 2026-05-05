@@ -241,6 +241,12 @@ export default function CountyMap({
     coordinates: [-96, 38],
     zoom: 1,
   });
+  // Mirror `position` to a ref so tweenCamera can synchronously read
+  // the current value at tween-start without abusing setPosition as a
+  // getter (which fights React 19 StrictMode double-invoke semantics).
+  // Codex audit 2026-05-04 PM caught the prior pattern.
+  const positionRef = useRef(position);
+  positionRef.current = position;
   const reduceMotion = useReducedMotion() ?? false;
   const arrowMarkerId = useId();
 
@@ -263,16 +269,12 @@ export default function CountyMap({
     ): Promise<void> => {
       return new Promise((resolve) => {
         const start = performance.now();
-        // Snapshot current position at tween-start. Functional setState
-        // would race with concurrent updates; capturing once is fine
-        // since the tween is the sole driver during its duration.
-        let startCoords: [number, number] = [-96, 38];
-        let startZoom = 1;
-        setPosition((current) => {
-          startCoords = current.coordinates;
-          startZoom = current.zoom;
-          return current;
-        });
+        // Snapshot current position at tween-start via positionRef
+        // (mirrors `position` state). The earlier setPosition-as-getter
+        // pattern wrote to outer-scope mutables inside an updater,
+        // which breaks under React 19 StrictMode double-invoke.
+        const startCoords: [number, number] = positionRef.current.coordinates;
+        const startZoom: number = positionRef.current.zoom;
         const ease = (t: number) => 1 - Math.pow(1 - t, 3);
         let raf = 0;
         const tick = (now: number) => {
@@ -417,6 +419,15 @@ export default function CountyMap({
   // tourCancelRef.current = true mid-flight bails cleanly.
   const [isTourPlaying, setIsTourPlaying] = useState(false);
   const tourCancelRef = useRef(false);
+  // Cancel any in-flight auto-tour on unmount. Without this, RAF tweens
+  // and pause timers continue firing setPosition against an unmounted
+  // CountyMap (React 19 silently drops the warning but the loop still
+  // runs). Codex audit 2026-05-04 PM.
+  useEffect(() => {
+    return () => {
+      tourCancelRef.current = true;
+    };
+  }, []);
 
   const stopTour = useCallback(() => {
     tourCancelRef.current = true;
@@ -1259,10 +1270,11 @@ function DensityGradientRow() {
  * Without provenance visible within ~10s of the map appearing, the gap claim
  * reads as marketing rather than analytical work.
  *
- * Sources named: USOPC (Team USA roster + NGB list), NFHS (high-school
+ * Sources named: Team USA roster + NGB directory, NFHS (high-school
  * athletic participation), BLS (county economic context), NWS (climate).
- * Update date is hand-set — when backend ingest pipelines refresh on Day 8
- * deploy, bump the date here.
+ * Earlier draft used "USOPC roster" — switched to neutral attribution
+ * 2026-05-04 PM per Codex compliance audit (CLAUDE.md no-IOC/USOPC-
+ * branding rule). Update date is hand-set — bump on each ingest refresh.
  */
 function ProvenanceFooter() {
   return (
@@ -1274,7 +1286,7 @@ function ProvenanceFooter() {
         Sources
       </p>
       <p className="font-serif italic text-caption text-muted-text leading-snug">
-        USOPC roster · NFHS participation · BLS county economics · NWS climate
+        Team USA roster · NFHS participation · BLS county economics · NWS climate
       </p>
       <p className="font-mono text-eyebrow text-muted-text mt-1">
         Joined at county FIPS · Updated 2026-05

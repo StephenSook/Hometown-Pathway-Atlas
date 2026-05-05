@@ -103,7 +103,7 @@ export default function HomePage() {
   const initialView: View =
     typeof window === 'undefined'
       ? 'hero'
-      : initialParams?.has('zip')
+      : initialParams?.has('zip') || initialParams?.has('fips')
         ? 'results'
         : window.location.hash === '#about'
           ? 'methodology'
