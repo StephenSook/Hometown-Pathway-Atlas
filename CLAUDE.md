@@ -86,8 +86,8 @@ HeroStat renderer is scaffolded with a placeholder; constant swap on Vinh's ship
 - Pillar5Defense second-layer card (per-incident harm + 3 lighthouse NGB chips)
 - Sound design recipe in `docs/sound_design.md` for Day 9 recording (still Stephen-action)
 
-### Layer C — Multimodal Gemini Live Region Q&A [SHIPPED]
-RegionQA panel renders below TradeoffPanel on results view. Question input + visible reasoning chain + final conditional-phrased answer + suggested-question chips. Three suggested-question chips (climate / parity gap / analog comparison) provide a fast tour of the reasoning surface. Backend `/api/region/qa` route returns reasoning + answer + source flag; the eyebrow flips to "Live Gemini" only on a real Vertex call.
+### Layer C — Reasoning-Chain Q&A [SHIPPED]
+RegionQA panel renders below TradeoffPanel on results view. Question input + visible reasoning chain + final conditional-phrased answer + suggested-question chips. Three suggested-question chips (climate / parity gap / analog comparison) provide a fast tour of the reasoning surface. Backend `/api/region/qa` route returns reasoning + answer + source flag; the eyebrow flips to "Live Gemini" only on a real Vertex call. Renamed from "Multimodal Gemini Live" 2026-05-05 — current ship is text-input + text-output with visible reasoning steps; voice/audio Gemini Live multimodal is on the post-hackathon roadmap.
 
 ### Layer D — Embedded Scrollytelling Editorial [SHIPPED 2026-05-04 PM]
 Five chapter scroll-triggered narrative anchored on Vinh's `/api/stats/global` (gap + underdog). Sticky-map ScrollyMap variant + react-scrollama orchestrator (commit f6dfb67). Replaces static HeroStat opener with 35-40s scrollytelling walkthrough: INTRO → GAP (4 in 5) → UNDERDOG (68%) → PATHWAY (Cobb + 3 analogs) → CTA (HeroStat + ZipInput + globe + CountyNameSearch). Reduced-motion fallback renders static stack. Pitch script needs Beat 1 re-storyboard + demo re-record around new opener (~25-27s added; fits 3:00 budget if Beats 3-5 trim 5s each). Cut trigger: revert commit f6dfb67 if scrolly causes pitch issues — conservative version still ships cleanly.

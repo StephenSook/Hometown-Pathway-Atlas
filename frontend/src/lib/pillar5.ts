@@ -50,7 +50,8 @@ export interface Pillar5LighthouseNGB {
 
 export const PILLAR5_TAM: Pillar5Block = {
   number: '~50M',
-  label: 'US children ages 6-17 in the addressable youth-sports market',
+  label:
+    'US children ages 6-17 — addressable youth-sports TAM (~27M actively play organized sports per Aspen NSCH+SFIA cross-cut)',
   source: 'Aspen Institute Project Play, State of Play 2024',
 } as const;
 
@@ -61,8 +62,8 @@ export const PILLAR5_COST: Pillar5Block = {
 } as const;
 
 export const PILLAR5_REVENUE_PILLS = [
-  'B2B licensing → 50 NGBs (modeled ~6,000 recruitment positions / year)',
-  'B2G partnerships → ~20,000 high schools via state recreation depts',
+  'B2B licensing → 50 NGBs (modeled ~6,000 recruitment positions / year — heavy-tail; track + swim concentrate)',
+  'B2G partnerships → ~13K school districts (NFHS membership covers ~20,000 high schools)',
 ] as const;
 
 export const PILLAR5_HARM: Pillar5Block = {

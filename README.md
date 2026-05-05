@@ -71,7 +71,7 @@ and rewrite it conditionally to *"could be associated with Olympic
 representation patterns."* Live. Visible. Auditable. **This is the
 Pillar 4 demo moment.**
 
-### 5. RegionQA — Ask the Atlas (Layer C)
+### 5. RegionQA — Ask the Atlas (Layer C: Reasoning-Chain Q&A)
 
 Below the analog narrative, a Gemini-powered Q&A panel lets the user
 ask any natural-language question about the visible region. Reasoning
@@ -327,6 +327,11 @@ Honest read of what ships in production today vs what's experimental.
 - **HybridAuditor** — deterministic regex + Gemini semantic causal-
   tone classification, output flips `narrative_source` flag on
   fallback substitution
+- **Prompts as code** — Vertex AI system instruction extracted to
+  [`backend/prompts/system_instruction.md`](backend/prompts/system_instruction.md),
+  loaded at module init by `_load_system_instruction()` in
+  `gemini_service.py`. Versioned + Apache 2.0 covered + editable
+  without touching service code
 - **Layer D scrollytelling opener** — 5-chapter react-scrollama
   walkthrough with reduced-motion + mobile static fallback
 - **CI gate** — drift checks + frontend build + backend pytest +
@@ -350,9 +355,11 @@ Honest read of what ships in production today vs what's experimental.
 - **Restore React 19 strict hooks rules to error severity** — see
   `frontend/eslint.config.js`; downgraded to warn for the May 11
   submission window with 8 known anti-patterns to refactor
-- **`backend/prompts/` extraction** — currently inline strings in
-  service files; promoting to standalone .txt files signals
-  "prompts as code" and clarifies the Apache 2.0 coverage
+- **Per-NGB heavy-tail recruitment slot model** — current ~6,000
+  positions estimate is a flat 50 NGBs × 120 slots; reality has
+  track + swim concentrating slots while curling + smaller NGBs
+  carry fewer than 10 each. Replace with NGB-specific multipliers
+  once USOPC publishes per-NGB pipeline counts
 
 ---
 

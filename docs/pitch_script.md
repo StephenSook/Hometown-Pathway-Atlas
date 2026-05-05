@@ -38,9 +38,11 @@ reveal. Five chapters anchored on the live `/api/stats/global` payload
 silence." Heading "There are 3,222 counties in the United States."
 DecorationBigNumber on the side renders 3,222.*
 
-> "There are 3,222 counties in the United States. Most public Olympic
-> atlases stop at the state level. At the county level, the surface
-> is silent."
+> "Marcus, an athletic director in Cobb County, Georgia, tried to
+> benchmark his district's adaptive sports program against
+> analytically similar peers — and found only state-level totals.
+> Most public Olympic atlases stop at the state line. At the
+> county level, the surface is silent."
 
 **Chapter 2 — GAP · "The 4-in-5 gap" (0:08 — 0:18).**
 
@@ -232,13 +234,16 @@ Pillar5Strip.*
 *Pan/scroll down to Pillar5Strip ★ at bottom of results view. Three
 columns visible: TAM / Cost framing / Revenue model.*
 
-> "The funnel: 50 million US children, 6,000 modeled NGB pipeline
-> positions, 835 named athletes — Aspen + USOPC. Today, zero
-> public products provide a per-county parity lens for that
-> journey. The unit cost of getting it wrong: 35 to 70 thousand
-> dollars — the year-one budget for one mistargeted community
-> wrestling chapter, sited on gut. Atlas reaches 20,000 NFHS high
-> schools and 50 NGBs. The first per-capita parity tool in the
+> "The funnel: 27 million active student-athletes — the
+> addressable core of the 50 million US children ecosystem.
+> 6,000 modeled NGB pipeline positions, 835 named on Team USA.
+> Today, zero public products provide a per-county parity lens
+> for that journey. The unit cost of getting it wrong: 35 to 70
+> thousand dollars — the year-one budget for one mistargeted
+> community wrestling chapter, sited on gut. Atlas reaches the
+> 13 thousand US school districts that procure athletic software
+> via state recreation B2G, and the 50 NGBs that move the talent
+> pipeline via B2B. The first per-capita parity tool in the
 > market."
 
 ---

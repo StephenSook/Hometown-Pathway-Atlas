@@ -236,7 +236,7 @@ issues that would have shipped to judges otherwise.
   document.title sync. Replay-audit button on the Compliance Log
   header. /about methodology page. Sound design recipe in
   docs/sound_design.md for Day 9 recording.
-- **Layer C — Gemini region Q&A (shipped live).** RegionQA panel
+- **Layer C — Reasoning-Chain Q&A (shipped live).** RegionQA panel
   in the results view fires against the live `/api/region/qa`
   route. Question input + visible reasoning chain + final
   conditional-phrased answer + suggested-question chips. Backend
