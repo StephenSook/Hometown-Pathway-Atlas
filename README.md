@@ -154,80 +154,85 @@ here would invite drift. Frontend types and CountyMap +
 SimilarityBreakdown + SportMix + ClimateBadge + AdaptiveAccessCard +
 AnalogCard render against these directly.
 
-### Vertex AI Gemini narrative schema (forward-spec)
+### The Vertex AI Contract (live, not forward-spec)
 
 Gemini 2.5 Flash is called with `response_mime_type="application/json"` +
 `response_schema` — the model is **constrained** to return JSON matching
 the schema, eliminating prose drift before the auditor sees the output.
-
-This section remains **forward-spec** — Vinh tasks 2.7 (GeminiService)
-and 2.9 (HybridAuditor) ship the Python implementation. The frontend
-already accepts the response shape (`RegionResponse.narrative` and
-`compliance_log`); both currently come back as empty defaults from the
-backend until those tasks land.
+GeminiService + HybridAuditor are **shipped to production** (Cloud Run
+revision `atlas-backend-00011-vx6`). Every `/api/region` call returns
+real Gemini-generated narrative + a 6-entry HybridAuditor compliance
+log; you can verify with `curl https://atlas-backend-635524063449.us-central1.run.app/api/region -X POST -H "Content-Type: application/json" -d '{"zip":"30060"}'`.
 
 ```python
-# backend/services/gemini.py — forward-spec (task 2.7)
+# backend/services/gemini_service.py (live, atlas-backend-00011-vx6)
 from vertexai.generative_models import GenerativeModel, GenerationConfig
 
-NARRATIVE_SCHEMA = {
+_REGION_NARRATIVE_SCHEMA = {
     "type": "object",
     "properties": {
-        "narrative": {
+        "safe_summary": {
             "type": "string",
-            "description": (
-                "2-3 sentence county description. MUST use conditional "
-                "phrasing: 'could be associated with', 'may correlate with', "
-                "'shows representation patterns of', 'originates from'. "
-                "NEVER use causal verbs: produces, creates, guarantees, "
-                "leads to, causes, results in. Drop any athlete name. "
-                "Reference county at FIPS level only, never ZIP."
-            ),
+            "description": "2-3 sentence narrative using ONLY conditional phrasing",
         },
-        "confidence": {"type": "string", "enum": ["high", "medium", "low"]},
+        "key_points": {"type": "array", "items": {"type": "string"}},
+        "uncertainty_note": {"type": "string"},
+        "parity_check": {
+            "type": "object",
+            "properties": {
+                "olympic_mentioned": {"type": "boolean"},
+                "paralympic_mentioned": {"type": "boolean"},
+                "deterministic_language": {"type": "boolean"},
+            },
+            "required": ["olympic_mentioned", "paralympic_mentioned", "deterministic_language"],
+        },
     },
-    "required": ["narrative", "confidence"],
+    "required": ["safe_summary", "key_points", "uncertainty_note", "parity_check"],
 }
 
 config = GenerationConfig(
     response_mime_type="application/json",
-    response_schema=NARRATIVE_SCHEMA,
-    temperature=0.2,  # low — narrative is interpretive but disciplined
-    max_output_tokens=512,
+    response_schema=_REGION_NARRATIVE_SCHEMA,
+    temperature=0.3,
 )
-model = GenerativeModel("gemini-2.5-flash", generation_config=config)
+model = GenerativeModel("gemini-2.5-flash", generation_config=config,
+                       system_instruction=_SYSTEM_INSTRUCTION)
 ```
 
-### Hybrid auditor self-review schema (forward-spec, task 2.9)
+The system instruction enforces 5 hard rules (conditional phrasing,
+Olympic+Paralympic parity, no athlete names, no geographic causation,
+no IOC/USOPC marks). The `parity_check` object inside the response
+schema lets the model self-report compliance — those booleans become
+the first 3 entries in `compliance_log` (layer="gemini").
 
-After narrative generation, the same model is called a second time in
-**self-review mode** with the auditor schema. Combined with the
-deterministic regex layer (`frontend/src/components/GapCard.tsx`
-`CAUSAL_VERBS` constant on the frontend; mirrored in `backend/services/
-auditor.py` regex), this is the hybrid auditor that powers the
-`compliance_log` stream visible in the UI.
+Schemas for `/api/analogs/{fips}` (`_ANALOG_TRADEOFF_SCHEMA` +
+`_ANALOG_NARRATIVE_SCHEMA`) and `/api/region/qa`
+(`_REGION_QA_SCHEMA` with reasoning-step array + confidence
+literal) follow the same constrained-output pattern. All 4 schemas
+live in `backend/services/gemini_service.py:33-115`.
 
-```python
-AUDITOR_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "verdict": {"type": "string", "enum": ["pass", "fail"]},
-        "violations": {
-            "type": "array",
-            "items": {"type": "string"},
-            "description": "List of banned-tone phrases detected, if any.",
-        },
-        "rewritten": {
-            "type": "string",
-            "description": (
-                "Conditional-phrased rewrite of the input narrative. "
-                "Required when verdict=fail; empty string otherwise."
-            ),
-        },
-    },
-    "required": ["verdict", "violations", "rewritten"],
-}
-```
+### Hybrid auditor — semantic vs syntactic
+
+The auditor runs **after** the structured-output Gemini call, in
+**two layers**:
+
+1. **Deterministic regex (syntactic).** A banned-verb list catches
+   simple lexical violations — "produces", "creates", "guarantees",
+   "leads to", "causes". Cheap, instant, but blind to intent.
+2. **Gemini semantic causal-tone classification.** When regex catches
+   nothing, a second Gemini call judges whether the *logical intent*
+   of the prose is deterministic causation, even if the verbs are
+   conditional. Catches "X is the engine of Y" or "geography
+   determines Z" — phrases regex can't pattern-match. If the semantic
+   layer flags the prose, GeminiService runs up to 3 rewrite passes
+   to fix it conditionally; if all 3 fail, the auditor swaps the
+   prose for the deterministic fallback (`_fallback_region_narrative`)
+   and the response's `narrative_source` field flips to `"fallback"`
+   so the frontend's "Live Gemini" eyebrow flip stays honest.
+
+This is the difference between "regex with a Gemini check-box" and
+"AI-to-AI critique enforcing an invariant before serving." The
+HybridAuditor source: `backend/services/auditor.py`.
 
 ### Why this matters for judging
 
@@ -298,6 +303,56 @@ Locked architectural decisions, build order, and cut triggers live in
 
 The Pillar 5 business numbers (TAM, cost framing, revenue model) are
 locked + sourced in [`docs/pitch_pillar5.md`](docs/pitch_pillar5.md).
+
+---
+
+## Project maturity & roadmap
+
+Honest read of what ships in production today vs what's experimental.
+
+### Production-live (deployed to Cloud Run, exercised by the live demo)
+
+- **POST `/api/region`** — ZIP → county FIPS → RegionResponse with
+  Vertex AI Gemini narrative + 6-entry HybridAuditor compliance log
+- **GET `/api/analogs/{fips}`** — 3 peer counties with similarity
+  breakdown + Gemini-generated tradeoff explanation + per-analog narrative
+- **GET `/api/pathway/{fips}`** — 3 Pattern Gap categories
+  (observed strength / public access signal / opportunity hypothesis)
+- **GET `/api/region/by-fips/{fips}`** — direct FIPS lookup for
+  CountyMap drill-down
+- **GET `/api/stats/global`** — atlas-wide gap + underdog stats
+  anchoring the Layer D scrollytelling
+- **POST `/api/region/qa`** — Layer C live Gemini Q&A with reasoning
+  chain + source flag
+- **HybridAuditor** — deterministic regex + Gemini semantic causal-
+  tone classification, output flips `narrative_source` flag on
+  fallback substitution
+- **Layer D scrollytelling opener** — 5-chapter react-scrollama
+  walkthrough with reduced-motion + mobile static fallback
+- **CI gate** — drift checks + frontend build + backend pytest +
+  gitleaks secret scan on every push
+
+### Experimental-preview (shipped but limited)
+
+- **`narrative_source` / `tradeoff_source` flags** — return correctly
+  in the JSON contract but cache discipline is conservative (only
+  Gemini-verified responses cached; fallback responses bypass cache
+  to allow Vertex recovery within the 24h TTL window)
+
+### Roadmap (post-hackathon)
+
+- **Gemini Live multimodal Q&A** — voice input + audio output in
+  Layer C panel. Currently text-only.
+- **Pillar5Defense as a routed page** — currently a panel within
+  the results view; deserves its own URL for partner-facing share
+- **NotebookLM embed of methodology page** — preprocessed knowledge
+  graph for judges to query directly
+- **Restore React 19 strict hooks rules to error severity** — see
+  `frontend/eslint.config.js`; downgraded to warn for the May 11
+  submission window with 8 known anti-patterns to refactor
+- **`backend/prompts/` extraction** — currently inline strings in
+  service files; promoting to standalone .txt files signals
+  "prompts as code" and clarifies the Apache 2.0 coverage
 
 ---
 

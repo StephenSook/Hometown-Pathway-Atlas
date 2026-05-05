@@ -57,13 +57,18 @@ Paste the entire block below into the Project Story textarea.
 ```markdown
 ## Inspiration
 
-63 percent of 2024 U.S. Paralympic athletes came through one national
-network of community-based adaptive sports chapters — Move United. That
-network reaches only a fraction of U.S. counties. A kid in Cobb County
-wanting to know if anyone from a place like hers ever made Team USA has
-no way to find out. State-level maps exist. Athlete finders exist. None
-of them combine the data, treat Olympic and Paralympic equally, or work
-at the county level — the level where local pride lives.
+Elena, a 42-year-old parent in Cobb County, Georgia, spent an
+afternoon searching for a local Paralympic success story to inspire
+her daughter — and found only state-wide aggregates that left her
+own community in total data silence. State-level maps exist. Athlete
+finders exist. None of them combine the data, treat Olympic and
+Paralympic equally, or work at the county level — the level where
+local pride lives. The structural fact under Elena's search: 4 in 5
+U.S. counties show no Team USA athlete representation in our
+2016–2024 indexed sources. 2,667 counties are silent, and 68% of
+small counties under 250,000 people are quietly out-performing the
+major metros in Paralympic representation rates — a signal nobody
+is looking at.
 
 ## What it does
 

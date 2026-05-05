@@ -185,13 +185,15 @@ settled: Rules column shows "Awaiting checks…" (two pass entries
 auto-collapsed), Gemini column shows the green-dotted "fixed" entry
 with rewrite text visible.*
 
-> "While you were looking at the data, this audit was running. Two rule
-> checks passed and auto-collapsed. The Gemini causal-tone check caught
-> a banned phrase — 'Cobb County PRODUCES Olympic athletes.' Our
-> hybrid auditor — deterministic regex plus Gemini semantic analysis —
-> rewrote it conditionally: 'Cobb County could be associated with
-> Olympic representation patterns.' Live. Judge-visible. That's
-> Pillar 4: AI safety as a UI surface, not a postmortem."
+> "While you were looking at the data, this audit was running.
+> Two regex checks passed for syntactic bans. Then Gemini did
+> the harder work — semantic causal-tone classification. It
+> caught 'Cobb County PRODUCES Olympic athletes' by judging the
+> *logical intent* of the prose, not just the word. A regex can't
+> do that. Rewrote it: 'could be associated with Olympic
+> representation patterns.' Real-time AI critique enforcing
+> conditional phrasing before it hits the UI. Pillar 4: AI safety
+> as a UI surface, not a postmortem."
 
 *(Hold gaze on ComplianceLog 2s. This is the differentiation moment.)*
 
@@ -230,13 +232,14 @@ Pillar5Strip.*
 *Pan/scroll down to Pillar5Strip ★ at bottom of results view. Three
 columns visible: TAM / Cost framing / Revenue model.*
 
-> "TAM: ~50 million US children in the addressable youth-sports
-> market — Aspen Institute. Today, zero public products aggregate
-> Olympic and Paralympic representation at county granularity with
-> parity discipline. Atlas reaches ~20,000 high schools via state
-> recreation B2G partnerships and 50 NGBs via B2B licensing. Surfaces
-> signals relevant to fans, parents, NGB recruiters, and state
-> recreation programs — a single per-county lens nobody else has."
+> "The funnel: 50 million US children, 6,000 modeled NGB pipeline
+> positions, 835 named athletes — Aspen + USOPC. Today, zero
+> public products provide a per-county parity lens for that
+> journey. The unit cost of getting it wrong: 35 to 70 thousand
+> dollars — the year-one budget for one mistargeted community
+> wrestling chapter, sited on gut. Atlas reaches 20,000 NFHS high
+> schools and 50 NGBs. The first per-capita parity tool in the
+> market."
 
 ---
 
