@@ -59,6 +59,12 @@ class RegionResponse(BaseModel):
     climate: ClimateBlock
     adaptive_access: AdaptiveAccessBlock
     narrative: str
+    # Distinguishes a real Gemini narrative call from the deterministic
+    # `_fallback_region_narrative()` payload. Mirrors the qa() pattern
+    # that ships source distinction. Frontend can detect when "Live
+    # Gemini" eyebrow on RegionNarrative would be misleading.
+    # silent-failure-hunter audit 2026-05-04 PM CRITICAL.
+    narrative_source: Literal["gemini", "fallback"] = "gemini"
     compliance_log: list[ComplianceEntry]
 
 

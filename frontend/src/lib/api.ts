@@ -108,6 +108,8 @@ export interface RegionResponse {
   adaptive_access: AdaptiveAccess;
   /** Empty string until Vinh task 2.7 (Gemini narrative) ships. */
   narrative: string;
+  /** "gemini" = real call. "fallback" = deterministic _fallback_region_narrative. Mirrors qa() source pattern. */
+  narrative_source?: 'gemini' | 'fallback';
   /** Empty array until Vinh task 2.9 (HybridAuditor) ships. */
   compliance_log: ComplianceLogEntry[];
 }
@@ -136,6 +138,8 @@ export interface AnalogsResponse {
   source_fips: string;
   analogs: AnalogEntry[];
   tradeoff_explanation: string;
+  /** "gemini" = real call. "fallback" = deterministic _fallback_tradeoff_narrative. */
+  tradeoff_source?: 'gemini' | 'fallback';
 }
 
 /** Backend EvidenceBlock — typed but all fields optional. */

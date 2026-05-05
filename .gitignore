@@ -237,3 +237,12 @@ backend/data/raw/
 # macOS Finder metadata
 .DS_Store
 **/.DS_Store
+
+# Local tooling caches — never tracked. .claude (Claude Code session
+# state), .playwright-mcp (browser session snapshots + console logs
+# from MCP playwright runs), .serena (Serena MCP symbol cache),
+# docs/architecture-graph (graphify build artifacts).
+.claude/
+.playwright-mcp/
+.serena/
+docs/architecture-graph/

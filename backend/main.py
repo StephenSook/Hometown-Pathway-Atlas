@@ -11,6 +11,20 @@ from fastapi.middleware.cors import CORSMiddleware
 from config import get_settings
 from routes import analogs, pathway, region, stats
 
+# Configure root logger once at import time. uvicorn's default config
+# only attaches handlers to `uvicorn.error` + `uvicorn.access`, leaving
+# application loggers (services.*, routes.*) silent under default
+# settings. Without this, every Gemini fallback `logger.warning(...)`
+# emits nothing visible in Cloud Run logs — quota exhaustion at judging
+# time would be invisible until raw stderr inspection. silent-failure-
+# hunter audit 2026-05-04 PM CRITICAL.
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+)
+logging.getLogger("services.gemini_service").setLevel(logging.WARNING)
+logging.getLogger("services.auditor").setLevel(logging.WARNING)
+
 logger = logging.getLogger(__name__)
 settings = get_settings()
 

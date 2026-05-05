@@ -9,6 +9,14 @@ from typing import Any, Literal
 
 import vertexai
 from vertexai.generative_models import GenerationConfig, GenerativeModel
+# google-cloud-aiplatform exceptions for distinguishing Vertex error
+# types — bare `except Exception` masks quota exhaustion + IAM
+# regressions identically with transient network errors. Demo-day
+# quota burn would be invisible. silent-failure-hunter audit 2026-05-04.
+try:
+    from google.api_core import exceptions as gcp_exc  # type: ignore[import-untyped]
+except ImportError:  # pragma: no cover
+    gcp_exc = None  # type: ignore[assignment]
 
 from config import Settings, get_settings
 from schemas.analog import AnalogEntry, AnalogsResponse
@@ -150,6 +158,7 @@ class GeminiService:
             return cached
 
         packet = _build_region_packet(region)
+        narrative_source: Literal["gemini", "fallback"] = "gemini"
         try:
             result = self._call(
                 prompt=_region_narrative_prompt(packet),
@@ -158,15 +167,41 @@ class GeminiService:
             narrative = result.get("safe_summary", "")
             log_entries = _make_region_compliance_log(result)
         except Exception as exc:
-            logger.warning("GeminiService.enrich_region failed for %s: %s", region.fips, exc)
+            # Carve out demo-day-critical Vertex errors so they LAND
+            # in Cloud Run Error Reporting (auto-classified as red
+            # error events), not buried as warnings.
+            check_kind = _classify_vertex_error(exc)
+            if check_kind in ("quota", "iam"):
+                logger.error(
+                    "VERTEX_%s region=%s err=%s",
+                    check_kind.upper(),
+                    region.fips,
+                    exc,
+                )
+            else:
+                logger.warning(
+                    "GeminiService.enrich_region failed for %s: %s",
+                    region.fips,
+                    exc,
+                )
             narrative = _fallback_region_narrative(region)
-            log_entries = _error_log_entry("region_narrative", str(exc))
+            log_entries = _error_log_entry(
+                f"region_narrative_{check_kind}" if check_kind != "generic" else "region_narrative",
+                str(exc),
+            )
+            narrative_source = "fallback"
 
         audit_result = get_auditor().audit(narrative, fallback=_fallback_region_narrative(region))
         narrative = audit_result.final_narrative
         log_entries = log_entries + audit_result.entries
 
-        enriched = region.model_copy(update={"narrative": narrative, "compliance_log": log_entries})
+        enriched = region.model_copy(
+            update={
+                "narrative": narrative,
+                "narrative_source": narrative_source,
+                "compliance_log": log_entries,
+            }
+        )
         cache.set(region.fips, "region", enriched)
         return enriched
 
@@ -247,7 +282,7 @@ class GeminiService:
         if isinstance(cached, AnalogsResponse):
             return cached
 
-        tradeoff_text = self._generate_tradeoff(analogs_response)
+        tradeoff_text, tradeoff_source = self._generate_tradeoff(analogs_response)
         tradeoff_audit = get_auditor().audit(tradeoff_text)
         tradeoff_text = tradeoff_audit.final_narrative
 
@@ -270,7 +305,11 @@ class GeminiService:
             enriched.append(analog)
 
         result = analogs_response.model_copy(
-            update={"analogs": enriched, "tradeoff_explanation": tradeoff_text}
+            update={
+                "analogs": enriched,
+                "tradeoff_explanation": tradeoff_text,
+                "tradeoff_source": tradeoff_source,
+            }
         )
         cache.set(analogs_response.source_fips, "analogs", result)
         return result
@@ -279,21 +318,35 @@ class GeminiService:
     # Private helpers
     # ------------------------------------------------------------------
 
-    def _generate_tradeoff(self, analogs_response: AnalogsResponse) -> str:
+    def _generate_tradeoff(
+        self, analogs_response: AnalogsResponse
+    ) -> tuple[str, Literal["gemini", "fallback"]]:
+        """Returns (tradeoff_text, source). Source distinguishes a real
+        Gemini call from `_fallback_tradeoff_narrative()` so the response
+        can ship the source flag for frontend honesty."""
         packet = _build_tradeoff_packet(analogs_response)
         try:
             result = self._call(
                 prompt=_analog_tradeoff_prompt(packet),
                 schema=_ANALOG_TRADEOFF_SCHEMA,
             )
-            return result.get("leader_explanation", "")
+            return result.get("leader_explanation", ""), "gemini"
         except Exception as exc:
-            logger.warning(
-                "GeminiService._generate_tradeoff failed for %s: %s",
-                analogs_response.source_fips,
-                exc,
-            )
-            return _fallback_tradeoff_narrative(analogs_response)
+            check_kind = _classify_vertex_error(exc)
+            if check_kind in ("quota", "iam"):
+                logger.error(
+                    "VERTEX_%s tradeoff source=%s err=%s",
+                    check_kind.upper(),
+                    analogs_response.source_fips,
+                    exc,
+                )
+            else:
+                logger.warning(
+                    "GeminiService._generate_tradeoff failed for %s: %s",
+                    analogs_response.source_fips,
+                    exc,
+                )
+            return _fallback_tradeoff_narrative(analogs_response), "fallback"
 
     def _enrich_analog_entry(self, entry: AnalogEntry) -> AnalogEntry:
         packet = _build_analog_packet(entry)
@@ -470,6 +523,24 @@ def _region_qa_prompt(packet: dict[str, Any]) -> str:
 # ---------------------------------------------------------------------------
 # Compliance log builders
 # ---------------------------------------------------------------------------
+
+def _classify_vertex_error(exc: Exception) -> Literal["quota", "iam", "deadline", "schema", "generic"]:
+    """Map a Vertex AI exception into a coarse category so callers can
+    distinguish demo-day-critical failures (quota, IAM) from transient
+    network errors. Returns 'generic' if google.api_core isn't available
+    or the exception doesn't match a known type."""
+    if gcp_exc is None:
+        return "generic"
+    if isinstance(exc, gcp_exc.ResourceExhausted):
+        return "quota"
+    if isinstance(exc, gcp_exc.PermissionDenied):
+        return "iam"
+    if isinstance(exc, (gcp_exc.DeadlineExceeded, gcp_exc.ServiceUnavailable)):
+        return "deadline"
+    if isinstance(exc, (json.JSONDecodeError, ValueError)):
+        return "schema"
+    return "generic"
+
 
 def _utcnow() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")

@@ -1,10 +1,21 @@
-fastapi
-uvicorn[standard]
-google-cloud-aiplatform
-pandas
-pyarrow
-requests
-beautifulsoup4
-lxml
-openpyxl
-pydantic-settings
+# Pinned 2026-05-04 PM after dependency-audit (Codex/PR/general-purpose):
+# - lxml ≥6.1.0 closes CVE-2026-41066 (XXE local-file read, CVSS 7.5)
+# - google-cloud-aiplatform ≥1.133.0 closes CVE-2026-2472 (XSS in
+#   eval-visualization, not in our path) + CVE-2026-2473 (predictable
+#   bucket cross-tenant RCE in Experiments, also not in our path) —
+#   pinned anyway because public Apache 2.0 repo will trip SCA scanners
+#   on floating google-cloud-aiplatform reference.
+# - requests ≥2.32.5 closes CVE-2026-25645 (low-severity arbitrary
+#   file-write; only used by ingest scripts, build-time only)
+# - All others pinned to known-good versions matching live Cloud Run
+#   atlas-backend-00009-6t7 image.
+fastapi>=0.118.0
+uvicorn[standard]>=0.30.0
+google-cloud-aiplatform>=1.133.0
+pandas>=2.2.0
+pyarrow>=18.0.0
+requests>=2.32.5
+beautifulsoup4>=4.12.0
+lxml>=6.1.0
+openpyxl>=3.1.0
+pydantic-settings>=2.14.0
