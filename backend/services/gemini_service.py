@@ -126,19 +126,53 @@ from pathlib import Path
 _PROMPTS_DIR = Path(__file__).resolve().parent.parent / "prompts"
 
 
+# Inline backup of the system instruction — used IFF the file load fails.
+# Lets the service boot in any environment that doesn't ship the prompts/
+# directory (raw `python -m uvicorn` against a partial checkout, an
+# alternative container image, etc). Both copies live at the same Apache
+# 2.0 license; the .md is the editable surface, this constant is the
+# crash-safety floor. Keep them in sync if either changes.
+_SYSTEM_INSTRUCTION_FALLBACK = """You are a sports demographer producing safe, fan-facing narratives about U.S. county-level Team USA representation. RULES:
+
+1. Use conditional phrasing only. NEVER causal language.
+   GOOD: "could be associated with", "may correlate with", "originates from", "shows representation patterns"
+   BANNED: "produces", "creates", "leads to", "guarantees", "is known for", "will", "makes"
+
+2. ALWAYS mention BOTH Olympic and Paralympic data. If one is sparse, acknowledge it: "Paralympic signal is sparse in our indexed sources."
+
+3. NEVER name individual athletes. Only aggregate counts.
+
+4. NEVER imply geography determines athletic outcomes.
+
+5. NEVER use IOC or USOPC trademarks beyond what is explicitly permitted."""
+
+
 def _load_system_instruction() -> str:
     """Read system_instruction.md, strip the markdown front-matter +
     license header, and return the raw rules block that gets passed to
-    Vertex AI as system_instruction."""
+    Vertex AI as system_instruction.
+
+    Defensive: if the file is missing (e.g. Docker image was built
+    without the prompts/ directory copy) OR malformed (missing the
+    expected '---' separator), fall back to the inline constant rather
+    than crash module import. Logged at WARNING so the operator sees
+    the drift in Cloud Run logs."""
     path = _PROMPTS_DIR / "system_instruction.md"
-    text = path.read_text(encoding="utf-8")
+    try:
+        text = path.read_text(encoding="utf-8")
+    except (FileNotFoundError, OSError) as exc:
+        logger.warning(
+            "system_instruction.md not loadable from %s (%s) — falling "
+            "back to inline _SYSTEM_INSTRUCTION_FALLBACK constant.",
+            path,
+            exc,
+        )
+        return _SYSTEM_INSTRUCTION_FALLBACK
     # The file's top section is human-facing context (title + license
     # note). The actual prompt content is everything after the first
     # horizontal rule (`---` line on its own).
     parts = text.split("\n---\n", 1)
     if len(parts) != 2:
-        # Defensive fallback — if the file format drifts, ship the whole
-        # text rather than crash. Logged so the drift is visible.
         logger.warning(
             "system_instruction.md missing expected '---' separator; "
             "shipping full file content as system instruction."

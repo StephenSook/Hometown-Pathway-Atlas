@@ -45,6 +45,7 @@ COPY services/ ./services/
 COPY routes/ ./routes/
 COPY ingest/ ./ingest/
 COPY data/ ./data/
+COPY prompts/ ./prompts/
 
 # Drop root before runtime — appuser owns /app, runs uvicorn. Cloud Run
 # enforces non-root via container security policies anyway, but baking
