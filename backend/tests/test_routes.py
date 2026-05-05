@@ -166,6 +166,7 @@ def client():
                 f"that may correlate with climate signature and indexed-source coverage."
             ),
             confidence="medium",
+            source="gemini",
             compliance_log=[],
         )
 

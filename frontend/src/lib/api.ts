@@ -243,6 +243,11 @@ export interface RegionQAResponse {
   reasoning: ReasoningStep[];
   answer: string;
   confidence: 'high' | 'medium' | 'low';
+  /** Distinguishes a real Gemini call from the deterministic
+   *  `_fallback_qa()` path. Both paths return HTTP 200; this field
+   *  drives the "Live Gemini" eyebrow flip on the frontend so a
+   *  fallback response doesn't claim to be live. */
+  source: 'gemini' | 'fallback';
   compliance_log: ComplianceLogEntry[];
 }
 

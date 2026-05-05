@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class ZipRequest(BaseModel):
@@ -70,6 +70,15 @@ class RegionQARequest(BaseModel):
     fips: str = Field(..., pattern=r"^\d{5}$")
     question: str = Field(..., min_length=1, max_length=500)
 
+    @field_validator("question")
+    @classmethod
+    def _question_not_blank(cls, v: str) -> str:
+        # min_length=1 alone passes whitespace-only strings — strip first.
+        stripped = v.strip()
+        if not stripped:
+            raise ValueError("question cannot be blank or whitespace-only")
+        return stripped
+
 
 class ReasoningStep(BaseModel):
     step: str
@@ -80,4 +89,10 @@ class RegionQAResponse(BaseModel):
     reasoning: list[ReasoningStep]
     answer: str
     confidence: Literal["high", "medium", "low"]
+    # Distinguish a real Gemini response from the deterministic
+    # `_fallback_qa()` payload — the route returns 200 in either case
+    # so HTTP status alone can't tell the frontend whether the answer
+    # came from a live model. The "Live Gemini" eyebrow tag flips ONLY
+    # when source == "gemini".
+    source: Literal["gemini", "fallback"] = "gemini"
     compliance_log: list[ComplianceEntry] = Field(default_factory=list)

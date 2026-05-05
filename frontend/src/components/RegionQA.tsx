@@ -39,7 +39,7 @@
 
 import { useEffect, useId, useRef, useState } from 'react';
 import { Brain, Loader2, Send } from 'lucide-react';
-import { api, ApiError, type RegionResponse } from '../lib/api';
+import { api, type RegionResponse } from '../lib/api';
 import { cn } from '../lib/utils';
 
 interface RegionQAProps {
@@ -212,22 +212,26 @@ export default function RegionQA({ region, className }: RegionQAProps) {
         answer: result.answer,
         confidence: result.confidence,
       });
-      setHasLiveResponse(true);
+      // Only flip the "Live Gemini" eyebrow when the backend actually
+      // ran a live model call. The route returns 200 even when its
+      // _fallback_qa() deterministic path fired (Gemini exception
+      // → deterministic prose, still HTTP 200). source field
+      // distinguishes the two — Codex audit 2026-05-04 PM HIGH.
+      if (result.source === 'gemini') {
+        setHasLiveResponse(true);
+      }
     } catch (err) {
       if (!mountedRef.current) return;
       if (import.meta.env.DEV) {
         console.warn('[RegionQA] live call failed, using stub fallback:', err);
       }
-      // Stub fallback — same UX as pre-B3 build. Suggested-chip clicks
-      // set textarea to the exact question string so STUBBED_RESPONSES
-      // hits a fixture; free-text falls back to the first stub.
-      // Surface ApiError messages in DEV but stay silent in prod
-      // (QueryCache.onError doesn't cover this non-React-Query path).
-      void err;
-      const stub =
-        err instanceof ApiError
-          ? STUBBED_RESPONSES[question.trim()] ?? FALLBACK_STUB
-          : FALLBACK_STUB;
+      // Stub fallback — chip-specific fixture lookup runs for ALL
+      // failure modes (ApiError, network drop, parse fail). Earlier
+      // iteration gated on `instanceof ApiError`, but a Wi-Fi blip
+      // throws raw TypeError from fetch — the gap-question chip would
+      // then fall back to the climate stub, mismatching the visible
+      // question. PR reviewer 2026-05-04 PM caught.
+      const stub = STUBBED_RESPONSES[question.trim()] ?? FALLBACK_STUB;
       setResponse(stub);
     } finally {
       if (mountedRef.current) setAsking(false);
