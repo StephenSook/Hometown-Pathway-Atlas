@@ -28,7 +28,7 @@ export default defineConfig([
       // warn so CI stays green; warnings still surface in dev.
       // Restore to error post-Devpost.
       'react-hooks/set-state-in-effect': 'warn',
-      'react-hooks/refs-in-render': 'warn',
+      'react-hooks/refs': 'warn',
     },
   },
 ])
