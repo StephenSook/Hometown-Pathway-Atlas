@@ -258,6 +258,7 @@ export default function HomePage() {
 
   const handleSubmit = (zip: string) => {
     setSubmittedZip(zip);
+    setSubmittedFips(null);
     setView('results');
     // URL state sync — push deep-link with zip immediately. The fips
     // param is added in a follow-up effect once region.data lands (we
@@ -269,6 +270,12 @@ export default function HomePage() {
       params.set('fips', mockSparseRegion.fips);
     }
     window.history.replaceState({}, '', `?${params.toString()}`);
+    // Scroll to top so user lands on the region narrative, not at
+    // wherever they were in the scrollytelling. Earlier iteration
+    // preserved scroll position from Ch5 CTA submit (~3500px down)
+    // → user landed on Pillar 5 strip at the bottom of results
+    // (Stephen 2026-05-04 PM bug report).
+    window.scrollTo({ top: 0, behavior: 'instant' });
   };
 
   // Once region.data resolves from backend, append fips to URL params
@@ -305,7 +312,12 @@ export default function HomePage() {
     const params = new URLSearchParams();
     params.set('fips', fips);
     window.history.replaceState({}, '', `?${params.toString()}`);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Instant (not smooth) — same rationale as handleSubmit. User
+    // submitting from CTA chapter (~3500px scroll) needs to land on
+    // region narrative top, not Pillar 5 bottom. Smooth scroll left
+    // them mid-transition with results data appearing under their
+    // current viewport.
+    window.scrollTo({ top: 0, behavior: 'instant' });
   };
 
   // Peer-pin drill-down — when a user clicks an analog pin on the map,
@@ -623,6 +635,11 @@ export default function HomePage() {
           // the scripted demo for narrative clarity. Tradeoff documented
           // in CLAUDE.md "Open coordination" block.
           demoMode={true}
+          // Substitute the demo script's {COUNTY} placeholder with the
+          // active region's county_name. Earlier iteration hardcoded
+          // "Cobb County" — judges submitting Fulton/Wake/etc. saw a
+          // mismatched audit panel (Stephen 2026-05-04 PM bug report).
+          regionCountyName={activeRegion?.county_name}
         />
       )}
       {/* SectionNav must mount AFTER section anchors render. Its

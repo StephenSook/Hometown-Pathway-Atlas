@@ -80,6 +80,13 @@ interface ComplianceLogProps {
   entries?: ComplianceLogEntry[] | null;
   /** Force the canonical pre-scripted demo sequence. Production-guarded. */
   demoMode?: boolean;
+  /** Active region's county_name. Substituted into the demo script's
+   *  `{COUNTY}` placeholder so the catch+rewrite text matches whichever
+   *  county the user actually selected. Without this, the demo script
+   *  hardcoded "Cobb County" regardless of input — judges submitting
+   *  Fulton/Wake/etc. would see a mismatched audit panel
+   *  (Stephen 2026-05-04 PM). */
+  regionCountyName?: string;
   className?: string;
 }
 
@@ -103,6 +110,7 @@ function entryKey(e: ComplianceLogEntry): string {
 export default function ComplianceLog({
   entries,
   demoMode = false,
+  regionCountyName,
   className,
 }: ComplianceLogProps) {
   const labelId = useId();
@@ -168,7 +176,21 @@ export default function ComplianceLog({
     if (import.meta.env.DEV && typeof performance !== 'undefined') {
       performance.mark('compliance-cycle-start');
     }
-    const timeouts = demoComplianceScript.map((entry, i) =>
+    // Substitute {COUNTY} placeholder with the active region's county
+    // name. If no region is loaded yet (demo path on landing), fall
+    // back to "Cobb County" so the script still reads coherently —
+    // matches the canonical demo region when judges first land.
+    const countyLabel = regionCountyName?.trim() || 'Cobb County';
+    const interpolate = (s: string | undefined) =>
+      s ? s.replaceAll('{COUNTY}', countyLabel) : s;
+    const scriptForRender: ComplianceLogEntry[] = demoComplianceScript.map(
+      (e) => ({
+        ...e,
+        before: interpolate(e.before),
+        after: interpolate(e.after),
+      }),
+    );
+    const timeouts = scriptForRender.map((entry, i) =>
       setTimeout(
         () => {
           if (cancelled) return;
@@ -213,8 +235,9 @@ export default function ComplianceLog({
     };
     // replayKey is intentionally in the dep array so click-to-replay
     // restarts the scheduled timeout chain from T+0 with a fresh
-    // cancelled-flag closure.
-  }, [effectiveDemoMode, replayKey]);
+    // cancelled-flag closure. regionCountyName re-fires when user
+    // navigates to a new county so the {COUNTY} substitution updates.
+  }, [effectiveDemoMode, replayKey, regionCountyName]);
 
   // Live mode — sync from props (already coerced to safe array)
   useEffect(() => {

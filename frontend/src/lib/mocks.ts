@@ -17,6 +17,13 @@ import type {
  * Used during demo recording to guarantee judges see the fail→fixed catch.
  * Production code path uses mockRegion.compliance_log instead.
  */
+/** Demo script template — `{COUNTY}` placeholder gets replaced with the
+ *  active region's actual county_name at render time. Earlier iteration
+ *  hardcoded "Cobb County" in `before` + `after`, which made the audit
+ *  panel claim "Cobb County" even when the user submitted a different
+ *  county (Stephen feedback 2026-05-04: "I put in Fulton County 30349
+ *  and the audit still said Cobb"). ComplianceLog applies the
+ *  substitution via `regionCountyName` prop. */
 export const demoComplianceScript: ComplianceLogEntry[] = [
   {
     layer: 'rules',
@@ -35,7 +42,7 @@ export const demoComplianceScript: ComplianceLogEntry[] = [
     check: 'causal_tone',
     status: 'fail',
     details: 'Banned causal verb detected',
-    before: 'Cobb County produces Olympic athletes',
+    before: '{COUNTY} produces Olympic athletes',
     ts: '2026-05-02T14:02:13Z',
   },
   {
@@ -43,7 +50,7 @@ export const demoComplianceScript: ComplianceLogEntry[] = [
     check: 'causal_tone',
     status: 'fixed',
     details: 'Rewritten in conditional phrasing',
-    after: 'Cobb County could be associated with Olympic representation patterns',
+    after: '{COUNTY} could be associated with Olympic representation patterns',
     ts: '2026-05-02T14:02:14Z',
   },
 ];
