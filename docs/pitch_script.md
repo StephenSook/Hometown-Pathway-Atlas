@@ -38,11 +38,11 @@ reveal. Five chapters anchored on the live `/api/stats/global` payload
 silence." Heading "There are 3,222 counties in the United States."
 DecorationBigNumber on the side renders 3,222.*
 
-> "Marcus, an athletic director in Cobb County, Georgia, tried to
-> benchmark his district's adaptive sports program against
-> analytically similar peers — and found only state-level totals.
-> Most public Olympic atlases stop at the state line. At the
-> county level, the surface is silent."
+> "Marcus, 51, an athletic director in Cobb County, voted against
+> a 40 thousand dollar adaptive equipment budget — couldn't find
+> a single peer county to prove his district was actually under-
+> indexed. Most public Olympic atlases stop at the state line.
+> At the county level, the surface is silent."
 
 **Chapter 2 — GAP · "The 4-in-5 gap" (0:08 — 0:18).**
 
@@ -188,14 +188,14 @@ auto-collapsed), Gemini column shows the green-dotted "fixed" entry
 with rewrite text visible.*
 
 > "While you were looking at the data, this audit was running.
-> Two regex checks passed for syntactic bans. Then Gemini did
-> the harder work — semantic causal-tone classification. It
-> caught 'Cobb County PRODUCES Olympic athletes' by judging the
-> *logical intent* of the prose, not just the word. A regex can't
-> do that. Rewrote it: 'could be associated with Olympic
-> representation patterns.' Real-time AI critique enforcing
-> conditional phrasing before it hits the UI. Pillar 4: AI safety
-> as a UI surface, not a postmortem."
+> Regex catches syntactic bans — banned words on a list. Gemini
+> performs *semantic* causal-tone classification — detects when
+> the logical intent is deterministic causation, even if the
+> words are conditional. It caught 'Cobb County PRODUCES Olympic
+> athletes' and rewrote it: 'could be associated with Olympic
+> representation patterns.' This is AI-to-AI critique enforcing
+> a safety invariant before the user ever sees it. Pillar 4: AI
+> safety as a UI surface, not a postmortem."
 
 *(Hold gaze on ComplianceLog 2s. This is the differentiation moment.)*
 
@@ -238,13 +238,13 @@ columns visible: TAM / Cost framing / Revenue model.*
 > addressable core of the 50 million US children ecosystem.
 > 6,000 modeled NGB pipeline positions, 835 named on Team USA.
 > Today, zero public products provide a per-county parity lens
-> for that journey. The unit cost of getting it wrong: 35 to 70
-> thousand dollars — the year-one budget for one mistargeted
-> community wrestling chapter, sited on gut. Atlas reaches the
-> 13 thousand US school districts that procure athletic software
-> via state recreation B2G, and the 50 NGBs that move the talent
-> pipeline via B2B. The first per-capita parity tool in the
-> market."
+> for that journey. Two unit costs of getting it wrong: 35 to 70
+> thousand dollars to mis-site one community wrestling chapter
+> — and 166 thousand dollars to misallocate one elite-pipeline
+> slot, the average USOPC investment per named athlete. Atlas
+> reaches the 13 thousand US school districts via state
+> recreation B2G, and the 50 NGBs via B2B. The first per-capita
+> parity tool in the market."
 
 ---
 
@@ -471,16 +471,20 @@ Adult-proxy personas (NIL-safe — Sookra Council Chairman ruling
 2026-05-03 cautioned that naming youth athletes flirts with NIL-spirit
 risk; specificity moves to administrators / parents / recruiters).
 
-> "Three users at three layers. Marcus, a 51-year-old high-school
-> athletic director in Cobb County who's trying to benchmark his
-> district's adaptive sports funding against analytically similar
-> peer counties. Elena, a 42-year-old parent searching for a local
-> Paralympic success story to inspire her daughter, finding only
-> state-wide aggregates. Sarah, a 38-year-old NGB recruiter trying
-> to identify under-indexed wrestling talent in the Lowndes County
-> area but blocked by tools that can't filter on per-capita county-
-> level representation. Atlas serves all three with the same per-
-> county lens."
+> "Four named users across the funnel. Marcus, 51, an athletic
+> director in Cobb County who voted against a $40K adaptive
+> equipment budget because he couldn't find a single peer
+> county to prove his district was under-indexed. Elena, 42,
+> a parent who gave up after three hours searching for a local
+> Paralympic role model — never knowing three Team USA athletes
+> share her ZIP code. Diane, 45, who enrolled her son in a
+> $5,000-a-year private metro academy because she didn't realize
+> her own public high school was already in the top 6% of US
+> counties for his sport. Sarah, 38, an NGB recruiter who
+> bypassed a high-potential wrestling tournament in Lowndes
+> County because per-capita data couldn't show her the 12-year
+> Olympic hometown lineage hidden under the rural population.
+> Atlas serves all four with the same per-county lens."
 
 ### "How do you avoid touching NIL?"
 

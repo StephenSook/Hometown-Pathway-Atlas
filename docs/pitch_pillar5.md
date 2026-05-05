@@ -63,6 +63,14 @@ quantified unit cost of NOT using Atlas, "we have a market" never matures into
 - **Top-of-funnel context:** USOPC distributed **$139.3M** in grants to athletes + NGBs in 2024 (USOPC 2024 Impact Report). Atlas's value prop sharpens per-county targeting across that grant flow — a 5% efficiency gain on county-level allocation ≈ $7M/yr in better-targeted funding. Modeled, not guaranteed; cited as flow context, not as Atlas's claim of impact.
 - **Audit note (2026-05-03):** Per-incident framing was chosen deliberately OVER abuse-settlement framing (Larry Nassar / USA Gymnastics / SafeSport). Abuse settlements are NOT what Atlas addresses — Atlas is a pipeline-equity siting tool, not a safeguarding tool. Conflating the two would misframe the value prop and create PR risk. If a judge asks "what about safety?", the honest answer is "Atlas is upstream of safety; safety is a different product."
 
+### ~$166K — pipeline opportunity cost per missed elite athlete
+
+- **Number:** ~$166,826 — average annual USOPC investment per named Team USA athlete (Saber-grade per-incident harm — /ultrareview round-3 oracle 2026-05-05)
+- **Method:** USOPC 2024 Impact Report total grant flow $139.3M ÷ Team USA Paris 2024 roster of 835 named athletes (610 Olympic + 225 Paralympic). Both numerator + denominator are sourced; the per-athlete number is calculated, not modeled.
+- **Sources:** USOPC 2024 Impact Report (https://www.usopc.org/who-we-are/impact-report) + USOPC Paris 2024 Team USA Roster announcement
+- **Why:** This is the misallocation cost when an NGB recruits from "pedigree" instead of "pathway." Every six-figure development slot funneled into an over-indexed pedigree region is a slot NOT funneled into one of the 68% of small counties Atlas surfaces as Paralympic over-performers. The $35K–$70K Beat the Streets number is the COMMUNITY tier; this $166K is the ELITE tier. Together they bracket the Atlas value prop from the field office to the Olympic Training Center.
+- **Pitch use:** Beat 5 narration stacks both numbers — "$35-70K to mis-site one community chapter, $166K to misallocate one elite-pipeline slot" — judge gets a bottom-up + top-down quantification in one breath.
+
 ---
 
 ## Revenue model

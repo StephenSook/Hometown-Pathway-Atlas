@@ -25,7 +25,7 @@ NotebookLM accepts up to 50 sources per notebook; we use 7.
 Add as needed:
 - Aspen Project Play *State of Play 2024* PDF (cited as `~50M` source)
 - NFHS *Athletics Participation Survey 2023-24* PDF (cited as `~20K`)
-- Move United *2024 Impact Report* PDF (cited as `63%` opener)
+- Move United *2024 Impact Report* PDF (Q&A reference; the 63% stat is no longer in the live pitch as of 2026-05-04 but Move United remains a Pillar 4 + Pillar 5 source for adaptive-pathway questions)
 - USOPC NGB list page snapshot
 
 ---
@@ -61,14 +61,18 @@ self-assessment.
 ## Prompt 2 — Lead stat punch test
 
 ```
-Read the lead stat in pitch_script.md Beat 1: "63 percent of 2024
-U.S. Paralympic athletes came through one national network of
-community-based adaptive sports chapters."
+Read the current Beat 1 opener in pitch_script.md — Chapter 1 INTRO
+narration plus the Marcus persona line that opens it.
+
+(Note: earlier draft used a Move United 63% lead; that was dropped
+2026-05-04 + replaced with the Layer D scrollytelling opener anchored
+on /api/stats/global gap + underdog stats. If your copy still cites the
+63% Move United line, you have the OLD pitch_script — re-upload from
+HEAD on origin/main.)
 
 You are a hackathon judge who has heard 200 pitches in the last
-8 hours. Read this lead stat aloud once. Does it make you FEEL the
-problem in 1 second, or do you check out at "community-based adaptive
-sports chapters"?
+8 hours. Read the current opener aloud once. Does it make you FEEL the
+problem in 1 second, or does it land flat?
 
 Compare to:
 - StepSafe: "34 million Americans have diabetes. 80% of amputations
@@ -82,7 +86,7 @@ Score the Atlas lead: LANDS / OK / FILLER.
 
 Then propose 3 alternative lead-stat shapes Stephen could use IF he
 queries Vinh's shipped Phase 1 parquet himself today (location:
-backend/data/). Examples of shapes that beat 63%:
+backend/data/). Examples of shapes that could beat the current opener:
 - "The median U.S. Paralympic hometown has [N] people. Cobb County
   has 766,000 — and a kid there still can't find anyone like her."
 - "X counties have produced more Paralympians per capita than

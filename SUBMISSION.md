@@ -57,10 +57,11 @@ Paste the entire block below into the Project Story textarea.
 ```markdown
 ## Inspiration
 
-Elena, a 42-year-old parent in Cobb County, Georgia, spent an
-afternoon searching for a local Paralympic success story to inspire
-her daughter — and found only state-wide aggregates that left her
-own community in total data silence. State-level maps exist. Athlete
+Elena, 42, a parent in Cobb County, Georgia, gave up after three
+hours searching for a local Paralympic role model to inspire her
+daughter — and never knew that three Team USA athletes actually
+share her ZIP code, but every public atlas stopped at the state
+line so she had no way to find them. State-level maps exist. Athlete
 finders exist. None of them combine the data, treat Olympic and
 Paralympic equally, or work at the county level — the level where
 local pride lives. The structural fact under Elena's search: 4 in 5
