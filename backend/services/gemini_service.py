@@ -191,7 +191,17 @@ class GeminiService:
             )
             narrative_source = "fallback"
 
-        audit_result = get_auditor().audit(narrative, fallback=_fallback_region_narrative(region))
+        # Cache the fallback text once so we can both pass it to the
+        # auditor AND compare it against the auditor's final output. If
+        # they match after a Gemini-success path, the auditor swapped
+        # Gemini's prose for the deterministic fallback (parity/causal
+        # check failed past rewrite attempts) — flip the source flag so
+        # the frontend doesn't claim "Live Gemini" on canned text.
+        # /ultrareview F1 audit 2026-05-05 CRITICAL.
+        fallback_text = _fallback_region_narrative(region)
+        audit_result = get_auditor().audit(narrative, fallback=fallback_text)
+        if narrative_source == "gemini" and audit_result.final_narrative == fallback_text:
+            narrative_source = "fallback"
         narrative = audit_result.final_narrative
         log_entries = log_entries + audit_result.entries
 
@@ -202,7 +212,13 @@ class GeminiService:
                 "compliance_log": log_entries,
             }
         )
-        cache.set(region.fips, "region", enriched)
+        # Cache only verified-Gemini results. Caching fallback responses
+        # would lock the source flag on "fallback" for 24h even after
+        # Vertex recovers, AND would serve canned prose for a full day
+        # on what could have been a transient quota blip.
+        # /ultrareview F4 audit 2026-05-05 CRITICAL.
+        if narrative_source == "gemini":
+            cache.set(region.fips, "region", enriched)
         return enriched
 
     def qa(self, region: RegionResponse, question: str) -> RegionQAResponse:
@@ -283,7 +299,17 @@ class GeminiService:
             return cached
 
         tradeoff_text, tradeoff_source = self._generate_tradeoff(analogs_response)
-        tradeoff_audit = get_auditor().audit(tradeoff_text)
+        # Pass the deterministic fallback so the auditor can swap to
+        # safe text when Gemini-rewrite of causal language fails past
+        # _MAX_REWRITE_ATTEMPTS — without this the auditor returns the
+        # original causal text and we ship banned-verb prose to UI.
+        # AND: re-evaluate tradeoff_source after the audit so a Gemini
+        # success that gets swapped to fallback flips the flag.
+        # /ultrareview F2 audit 2026-05-05 CRITICAL.
+        fallback_tradeoff = _fallback_tradeoff_narrative(analogs_response)
+        tradeoff_audit = get_auditor().audit(tradeoff_text, fallback=fallback_tradeoff)
+        if tradeoff_source == "gemini" and tradeoff_audit.final_narrative == fallback_tradeoff:
+            tradeoff_source = "fallback"
         tradeoff_text = tradeoff_audit.final_narrative
 
         # Enrich all analog entries in parallel — each is an independent Gemini call.
@@ -311,7 +337,11 @@ class GeminiService:
                 "tradeoff_source": tradeoff_source,
             }
         )
-        cache.set(analogs_response.source_fips, "analogs", result)
+        # Mirror enrich_region: only cache verified-Gemini results so
+        # transient quota blips don't lock fallback content for 24h.
+        # /ultrareview F4 audit 2026-05-05 CRITICAL.
+        if tradeoff_source == "gemini":
+            cache.set(analogs_response.source_fips, "analogs", result)
         return result
 
     # ------------------------------------------------------------------
@@ -358,11 +388,28 @@ class GeminiService:
             narrative = result.get("safe_summary", "")
             log_entries = _make_analog_compliance_log(result)
         except Exception as exc:
-            logger.warning(
-                "GeminiService._enrich_analog_entry failed for %s: %s", entry.fips, exc
-            )
+            # Mirror enrich_region + _generate_tradeoff: route quota +
+            # IAM to ERROR so they land in Cloud Run Error Reporting,
+            # everything else stays at WARNING. /ultrareview F3 audit
+            # 2026-05-05 — analog entries were the last bare-warning
+            # site after F3 originally landed.
+            check_kind = _classify_vertex_error(exc)
+            if check_kind in ("quota", "iam"):
+                logger.error(
+                    "VERTEX_%s analog=%s err=%s",
+                    check_kind.upper(),
+                    entry.fips,
+                    exc,
+                )
+            else:
+                logger.warning(
+                    "GeminiService._enrich_analog_entry failed for %s: %s", entry.fips, exc
+                )
             narrative = _fallback_analog_narrative(entry)
-            log_entries = _error_log_entry("analog_narrative", str(exc))
+            log_entries = _error_log_entry(
+                f"analog_narrative_{check_kind}" if check_kind != "generic" else "analog_narrative",
+                str(exc),
+            )
 
         audit_result = get_auditor().audit(narrative, fallback=_fallback_analog_narrative(entry))
         narrative = audit_result.final_narrative

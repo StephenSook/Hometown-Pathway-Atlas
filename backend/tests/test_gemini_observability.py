@@ -271,3 +271,198 @@ def test_enrich_analogs_marks_tradeoff_source_fallback_on_quota(
     assert result.tradeoff_source == "fallback"
     # Fallback tradeoff prose must still be non-empty.
     assert result.tradeoff_explanation.strip()
+
+
+# ---------------------------------------------------------------------------
+# /ultrareview F1 + F2 — auditor-substitution must flip source flag
+# ---------------------------------------------------------------------------
+
+def test_enrich_region_flips_source_when_auditor_substitutes_fallback(
+    svc: gs.GeminiService,
+    region: RegionResponse,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Gemini call SUCCEEDS but auditor exhausts rewrite attempts and
+    swaps the prose for the deterministic fallback. Source flag must
+    flip from 'gemini' to 'fallback' so the frontend doesn't claim
+    'Live Gemini' on canned text. /ultrareview F1 invariant."""
+    monkeypatch.setattr(
+        svc,
+        "_call",
+        lambda prompt, schema: {
+            "safe_summary": "Cobb County PRODUCES Olympic athletes.",  # banned verb
+            "olympic_mentioned": True,
+            "paralympic_mentioned": True,
+            "name_leak_check": "no_names",
+            "causal_tone": "ok",
+        },
+    )
+
+    # Auditor that always substitutes the fallback (simulates rewrite-
+    # attempts-exhausted path in the real HybridAuditor).
+    class _SubstitutingAuditor:
+        def audit(self, narrative: str, fallback: str | None = None) -> AuditResult:
+            return AuditResult(
+                causal_pass=False,
+                parity_pass=True,
+                name_pass=True,
+                final_narrative=fallback or narrative,
+                entries=[],
+            )
+
+    monkeypatch.setattr(gs, "get_auditor", lambda: _SubstitutingAuditor())
+    result = svc.enrich_region(region)
+    assert result.narrative_source == "fallback", (
+        "auditor swapped Gemini prose for fallback — source must flip"
+    )
+
+
+def test_enrich_analogs_flips_tradeoff_source_when_auditor_substitutes_fallback(
+    svc: gs.GeminiService,
+    analogs: AnalogsResponse,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Same invariant for the tradeoff path: Gemini-success that the
+    auditor swaps to fallback must flip tradeoff_source. Also verifies
+    the audit() call now passes the fallback arg (without it, the
+    causal text would have shipped). /ultrareview F2 invariant."""
+    monkeypatch.setattr(
+        svc,
+        "_call",
+        lambda prompt, schema: {
+            "leader_explanation": "These counties PRODUCE Olympic talent.",  # banned
+            "safe_summary": "OK summary may correlate with both programs.",
+            "olympic_mentioned": True,
+            "paralympic_mentioned": True,
+            "name_leak_check": "no_names",
+            "causal_tone": "ok",
+        },
+    )
+
+    captured: dict[str, object] = {}
+
+    class _SubstitutingTradeoffAuditor:
+        def audit(self, narrative: str, fallback: str | None = None) -> AuditResult:
+            # First call (tradeoff) — capture args + substitute.
+            # Subsequent calls (per-analog) — passthrough so the test
+            # exercises only the tradeoff substitution path.
+            if "tradeoff_fallback_arg" not in captured:
+                captured["tradeoff_input"] = narrative
+                captured["tradeoff_fallback_arg"] = fallback
+                return AuditResult(
+                    causal_pass=False,
+                    parity_pass=True,
+                    name_pass=True,
+                    final_narrative=fallback or narrative,
+                    entries=[],
+                )
+            return AuditResult(
+                causal_pass=True,
+                parity_pass=True,
+                name_pass=True,
+                final_narrative=narrative,
+                entries=[],
+            )
+
+    monkeypatch.setattr(gs, "get_auditor", lambda: _SubstitutingTradeoffAuditor())
+    result = svc.enrich_analogs(analogs)
+
+    assert captured.get("tradeoff_fallback_arg") is not None, (
+        "tradeoff audit() must be called with fallback= arg, otherwise causal text leaks"
+    )
+    assert result.tradeoff_source == "fallback"
+
+
+# ---------------------------------------------------------------------------
+# /ultrareview F4 — cache must NOT store fallback responses
+# ---------------------------------------------------------------------------
+
+def test_enrich_region_does_not_cache_fallback_response(
+    svc: gs.GeminiService,
+    region: RegionResponse,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Fallback responses must NOT enter the cache, otherwise a transient
+    quota blip locks the source flag on 'fallback' for the cache TTL
+    even after Vertex recovers. /ultrareview F4 invariant."""
+
+    cache_writes: list[tuple[str, str]] = []
+
+    class _SpyCache:
+        def get(self, key: str, kind: str) -> object | None:
+            return None  # always miss → forces every call to re-compute
+
+        def set(self, key: str, kind: str, value: object) -> None:
+            cache_writes.append((key, kind))
+
+    monkeypatch.setattr(gs, "get_narrative_cache", lambda: _SpyCache())
+    monkeypatch.setattr(svc, "_call", lambda *a, **kw: (_ for _ in ()).throw(
+        gcp_exc.ResourceExhausted("quota burn")
+    ))
+
+    result = svc.enrich_region(region)
+    assert result.narrative_source == "fallback"
+    assert cache_writes == [], (
+        "fallback response was cached — cache must skip non-Gemini results"
+    )
+
+
+def test_enrich_region_does_cache_gemini_response(
+    svc: gs.GeminiService,
+    region: RegionResponse,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Negative control: verified-Gemini responses MUST hit the cache —
+    we're skipping fallbacks, not breaking caching wholesale."""
+
+    cache_writes: list[tuple[str, str]] = []
+
+    class _SpyCache:
+        def get(self, key: str, kind: str) -> object | None:
+            return None
+
+        def set(self, key: str, kind: str, value: object) -> None:
+            cache_writes.append((key, kind))
+
+    monkeypatch.setattr(gs, "get_narrative_cache", lambda: _SpyCache())
+    monkeypatch.setattr(
+        svc,
+        "_call",
+        lambda prompt, schema: {
+            "safe_summary": "Cobb County may correlate with Olympic patterns.",
+            "olympic_mentioned": True,
+            "paralympic_mentioned": True,
+            "name_leak_check": "no_names",
+            "causal_tone": "ok",
+        },
+    )
+    result = svc.enrich_region(region)
+    assert result.narrative_source == "gemini"
+    assert cache_writes == [(region.fips, "region")]
+
+
+def test_enrich_analogs_does_not_cache_fallback_tradeoff(
+    svc: gs.GeminiService,
+    analogs: AnalogsResponse,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Same cache-skip invariant for the analogs path — a Vertex quota
+    failure on the tradeoff call must not cache the fallback result."""
+
+    cache_writes: list[tuple[str, str]] = []
+
+    class _SpyCache:
+        def get(self, key: str, kind: str) -> object | None:
+            return None
+
+        def set(self, key: str, kind: str, value: object) -> None:
+            cache_writes.append((key, kind))
+
+    monkeypatch.setattr(gs, "get_narrative_cache", lambda: _SpyCache())
+    monkeypatch.setattr(svc, "_call", lambda *a, **kw: (_ for _ in ()).throw(
+        gcp_exc.ResourceExhausted("quota")
+    ))
+
+    result = svc.enrich_analogs(analogs)
+    assert result.tradeoff_source == "fallback"
+    assert cache_writes == []

@@ -17,7 +17,7 @@ Reference docs in `docs/` — architecture spec is the source of truth for conse
 - CountyMap final 15% shipped 2026-05-04 (commit e36b06a, revision atlas-frontend-00016-hsb): click-to-load real per-county metrics via Vinh's `/api/stats/county/{fips}`, auto-tour Play/Stop button (6-keyframe camera tween for Day 9 recording), peer-pin drill-down (click pin scrolls to AnalogList + 2.4s card flash). Plus prior Day 8 map upgrades: bidirectional map↔card highlight, smart Reset (fit-all-pins), RotatingGlobe ambient hero, per-county hover tooltip restored with FIPS→state lookup.
 - B7 RESOLVED 2026-05-04 — Vinh shipped `/api/region/by-fips/{fips}` (commit e8cddd5, revision atlas-backend-00007-6k7). Frontend wired same day (commit 8b2caf3): SelectedCountyCard top-right slot fires `onSelectCounty(fips)` on user confirm → HomePage hydrates new region via `useRegionByFips`.
 - Layer D atlas-stats RESOLVED 2026-05-04 — Vinh shipped `/api/stats/global` returning `{gap, underdog}` themed findings (4-in-5 representation gap + 68% small-county underdog Paralympic signal). Frontend wired in MethodologyPage "Atlas-wide findings" section via `useGlobalStats`.
-- B3 RegionQA panel ships with the design-preview surface awaiting the live `/api/region/qa` backend wire.
+- B3 RegionQA panel ships against the live `/api/region/qa` backend route; eyebrow flips to "Live Gemini" only on a real Vertex call (source flag returned by backend).
 - B4 (`data_confidence` hatch flag) skipped — choropleth tint already conveys density signal; SVG `<pattern>` defs remain in CountyMap for future ship.
 - B5b ComplianceLog: panel runs the canonical demo script in HomePage; live HybridAuditor (10-entry audit on every `/api/region` call) is auditable via curl.
 

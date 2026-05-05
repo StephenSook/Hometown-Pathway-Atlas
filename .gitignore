@@ -222,6 +222,8 @@ __marimo__/
 # Research dossiers (PDFs, docx) — large binaries kept local only
 /research/
 
+# Raw + intermediate data files — see CLAUDE.md hard rule #1 + #5.
+# Tracked artifacts are .parquet only (post-aggregation).
 backend/data/processed/*.csv
 backend/data/raw/
 
@@ -237,3 +239,6 @@ backend/data/raw/
 .playwright-mcp/
 .serena/
 docs/architecture-graph/
+
+# Personal drafts (emails, notes) — never tracked
+email_*.md

@@ -12,10 +12,15 @@ DATA SOURCES
   - Move United, public Adaptive Sports Chapter directory (display-only,
     never load-bearing in similarity matching).
     https://moveunitedsport.org
-  - Public Team USA roster data, 2016-2024 (athlete names dropped at
-    the aggregation step per the project's NIL hard rule).
-  - NOAA Climate Normals (county-level temperature + precipitation).
-    https://www.ncei.noaa.gov
+  - Public Team USA roster data, 2016-2024, Olympic + Paralympic
+    combined (athlete names dropped at the aggregation step per the
+    project's NIL hard rule).
+  - NFHS Athletics Participation Survey (high school participation
+    context). https://www.nfhs.org
+  - HUD USPS ZIP-to-County crosswalk (ZIP input → county FIPS
+    resolution). https://www.huduser.gov/portal/datasets/usps_crosswalk.html
+  - NOAA nClimGrid 5km gridded climate (county-level temperature +
+    precipitation aggregates). https://www.ncei.noaa.gov/products/land-based-station/nclimgrid
 
 INFRASTRUCTURE + KEY DEPENDENCIES
   - Google Cloud Run (frontend + backend hosting)

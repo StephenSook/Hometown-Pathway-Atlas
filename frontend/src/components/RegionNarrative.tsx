@@ -100,7 +100,7 @@ export default function RegionNarrative({
           source={
             source === 'gemini'
               ? 'Generated live by Vertex AI Gemini 2.5 Flash. Structured-output (response_schema) with system_instruction enforcing parity + conditional phrasing. Audited at backend (HybridAuditor) and as a frontend safety net before render.'
-              : 'Deterministic fallback prose from a backend template. Vertex AI did not respond on this call (quota, IAM, or transient failure). Logged server-side at WARNING level.'
+              : 'Deterministic fallback prose from a backend template. Vertex AI did not respond on this call (quota, IAM, transient failure, or auditor swap). Logged server-side: quota + IAM at ERROR level (Cloud Run Error Reporting); deadline + schema + generic at WARNING.'
           }
         >
           {source === 'gemini'
