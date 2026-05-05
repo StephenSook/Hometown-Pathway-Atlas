@@ -1,0 +1,33 @@
+Hometown Pathway Atlas
+Copyright 2026 Stephen Sookra and Vinh Le
+
+Licensed under the Apache License, Version 2.0. See the LICENSE file
+for the full license text.
+
+This product includes software and data from the following sources:
+
+DATA SOURCES
+  - US Census Bureau, American Community Survey 5-Year Estimates
+    (county population, MSA labels). https://www.census.gov/programs-surveys/acs
+  - Move United, public Adaptive Sports Chapter directory (display-only,
+    never load-bearing in similarity matching).
+    https://moveunitedsport.org
+  - Public Team USA roster data, 2016-2024 (athlete names dropped at
+    the aggregation step per the project's NIL hard rule).
+  - NOAA Climate Normals (county-level temperature + precipitation).
+    https://www.ncei.noaa.gov
+
+INFRASTRUCTURE + KEY DEPENDENCIES
+  - Google Cloud Run (frontend + backend hosting)
+  - Vertex AI Gemini 2.5 Flash (narrative + Q&A generation)
+  - FastAPI (Sebastián Ramírez, MIT) — backend HTTP framework
+  - React + Vite + TypeScript — frontend stack (multiple authors, MIT)
+  - react-simple-maps + us-atlas — geographic visualization (MIT)
+  - react-scrollama — scrollytelling orchestrator (MIT)
+  - Tailwind CSS — design system primitives (MIT)
+  - Pydantic — schema validation (MIT)
+  - pandas, pyarrow, numpy — data pipeline (BSD-3-Clause)
+
+Full dependency licenses are available via:
+  - frontend: `npm ls --all` after `npm ci` in `frontend/`
+  - backend: `pip-licenses` after `pip install -r requirements.txt`
