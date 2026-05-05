@@ -201,7 +201,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     // Wrap response.text() in try too — gzip/encoding errors at the
     // stream layer would otherwise throw past the ApiError, leaving
     // the caller without an HTTP status to act on.
-    let body: unknown = '';
+    let body: unknown;
     try {
       const text = await response.text();
       try {
