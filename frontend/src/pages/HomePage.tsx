@@ -253,6 +253,10 @@ export default function HomePage() {
     if (typeof window !== 'undefined') {
       // Strip the #about hash so refresh doesn't re-route to methodology.
       window.history.replaceState({}, '', window.location.pathname);
+      // Scroll to hero top — same rationale as handleSubmit/handleSelectCounty.
+      // User scrolled deep in /about; clicking back-to-home should land at
+      // top of scrollytelling, not preserve methodology scroll position.
+      window.scrollTo({ top: 0, behavior: 'instant' });
     }
   };
 
@@ -297,6 +301,9 @@ export default function HomePage() {
     // Clear URL params on navigation back so the deep-link doesn't
     // re-trigger results-view hydration if the user refreshes.
     window.history.replaceState({}, '', window.location.pathname);
+    // Scroll to hero top — user scrolled into results, clicking back
+    // should land at top of scrollytelling not preserve results scroll.
+    window.scrollTo({ top: 0, behavior: 'instant' });
   };
 
   // Map drill-down (B7) — fires when user clicks a non-highlighted
