@@ -7,6 +7,7 @@
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Built on Google Cloud](https://img.shields.io/badge/Built%20on-Google%20Cloud-4285F4.svg)](https://cloud.google.com/run)
 [![Gemini](https://img.shields.io/badge/AI-Vertex%20AI%20Gemini-FF6F00.svg)](https://cloud.google.com/vertex-ai)
+[![audit](https://github.com/StephenSook/Hometown-Pathway-Atlas/actions/workflows/audit.yml/badge.svg)](https://github.com/StephenSook/Hometown-Pathway-Atlas/actions/workflows/audit.yml)
 
 Built for the **Team USA × Google Cloud Hackathon Challenge 2** (Hometown
 Success Engine). Submission deadline May 11, 2026.
