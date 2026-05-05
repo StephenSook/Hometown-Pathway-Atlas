@@ -125,15 +125,17 @@ JSON schemas. HybridAuditor (`backend/services/auditor.py`) wraps
 each Gemini output with a deterministic regex layer + a Gemini
 semantic causal-tone layer, rewriting drift before serving. Frontend
 renders whatever the backend emits — the Compliance Log streams the
-live audit entries. RegionQA Layer C currently uses 3 hand-authored
-conditional-phrased fixtures keyed by suggested question; live
-inference is a one-line swap at the marked integration point in
-`RegionQA.tsx` when a `qa()` method + `/api/region/qa` route ship
-(GeminiService has `enrich_region` + `enrich_analogs` only as of
-2026-05-04). Backend response shape (`narrative`,
-`tradeoff_explanation`, `compliance_log`, before/after fields on
-fixed entries) is the authoritative contract — frontend
-TypeScript mirrors it 1:1.
+live audit entries. RegionQA Layer C is wired against the live
+`/api/region/qa` route — GeminiService.qa() returns reasoning steps,
+final answer, confidence, and a `source` flag; the eyebrow flips to
+"Live Gemini" only on a real Vertex call. Backend response shape
+(`narrative`, `narrative_source`, `tradeoff_explanation`,
+`tradeoff_source`, `compliance_log`, before/after fields on fixed
+entries) is the authoritative contract — frontend TypeScript mirrors
+it 1:1. Source flags propagate through to the UI eyebrow so the
+"Live Gemini" attribution never fires on deterministic fallback
+prose, even if the backend HybridAuditor swaps Gemini's draft for
+the safe fallback after exhausting rewrite attempts.
 
 **Hosting:** Google Cloud Run in us-central1 (frontend nginx:alpine,
 backend python:3.12-slim). Artifact Registry + Cloud Build CI.
@@ -229,15 +231,14 @@ issues that would have shipped to judges otherwise.
   document.title sync. Replay-audit button on the Compliance Log
   header. /about methodology page. Sound design recipe in
   docs/sound_design.md for Day 9 recording.
-- **Layer C — Gemini region Q&A (shipped via 3-fixture stub).**
-  RegionQA panel is live in the results view. Question input +
-  visible reasoning chain + final conditional-phrased answer +
-  suggested-question chips. 3 distinct stub fixtures keyed by
-  suggested question (climate/parity-gap/analog-comparison) so each
-  chip yields different reasoning. The swap to the live Vertex AI
-  Gemini call is a one-line change at the marked integration point
-  in RegionQA.tsx when a `qa()` method + `/api/region/qa` route ship
-  on the backend.
+- **Layer C — Gemini region Q&A (shipped live).** RegionQA panel
+  in the results view fires against the live `/api/region/qa`
+  route. Question input + visible reasoning chain + final
+  conditional-phrased answer + suggested-question chips. Backend
+  returns a `source` flag so the "Live Gemini" eyebrow only fires
+  on a verified Vertex call — fallback responses (quota / IAM /
+  deadline / auditor swap) render with a "Design preview" eyebrow
+  instead.
 - **Layer D — Embedded scrollytelling editorial.** 3–4 chapters
   walking through the most surprising findings, anchored on Layer A.
 
