@@ -22,38 +22,75 @@ presenter, not spoken aloud.
 
 ---
 
-## Beat 1 — Problem hook (0:00 — 0:20)
+## Beat 1 — Scrollytelling opener (0:00 — 0:38)
 
-**Word count: ~55 words → ~22s spoken at 2.5 wps.**
+**Word count: ~95 words → ~38s spoken at 2.5 wps.**
 
-*Screen: editorial-style title card with bold typography on navy
-background. Stat fades in over first 8s. Then transition to hero view.*
+*Screen: Atlas hero loaded, browser scroll position at top. Begin
+scrolling down at a deliberate pace (about 1 chapter every ~7 seconds)
+— each react-scrollama trigger lets the narration land on the visual
+reveal. Five chapters anchored on the live `/api/stats/global` payload
+(gap + underdog).*
 
-> "63 percent of 2024 U.S. Paralympic athletes came through one national
-> network of community-based adaptive sports chapters. That network
-> reaches only a fraction of U.S. counties. A kid in Cobb County wanting
-> to know if anyone from a place like hers ever made Team USA — has no
-> way to find out."
+**Chapter 1 — INTRO (0:00 — 0:06).**
 
-*Cuts to live URL. (Pause 1s. Hand to keyboard.)*
+*Sticky map of U.S. counties fades in. Atlas parity-glyph favicon
+mirrors the on-screen logo.*
 
-*Why this opener: Move United 2024 Impact Report — 141 of 225
-Paralympic athletes ≈ 63%. Strongest sourced stat in our research
-corpus. Paralympic-native — establishes parity priority before anyone
-hears "Olympic." No NIL, no IOC branding.*
+> "63 percent of 2024 U.S. Paralympic athletes came through one
+> national network of community-based adaptive sports chapters."
+
+**Chapter 2 — GAP (0:06 — 0:16).**
+
+*Scroll triggers. 2,667 counties wash to muted gray on the map.
+Headline "4 in 5" anchors over the choropleth.*
+
+> "Four in five U.S. counties show no Team USA athlete representation
+> in our 2016 to 2024 indexed sources. Two thousand six hundred sixty
+> seven counties — invisible to every existing pipeline."
+
+**Chapter 3 — UNDERDOG (0:16 — 0:26).**
+
+*Scroll triggers. 2,000 small counties light up in olympic-blue.
+Headline "68%" anchors.*
+
+> "But 68 percent of counties under 250,000 people show Paralympic
+> rates above the major-metro median. The signal is there. Nobody is
+> looking at this granularity."
+
+**Chapter 4 — PATHWAY (0:26 — 0:34).**
+
+*Scroll triggers. Map zooms to Cobb County navy pin; three peer-county
+pins fade in olympic-blue around it.*
+
+> "Atlas surfaces it — county FIPS aggregation, per-capita parity,
+> Olympic and Paralympic side by side."
+
+**Chapter 5 — CTA (0:34 — 0:38).**
+
+*Scroll triggers. Hero CTA reveals — HeroStat + ZipInput + rotating
+globe + CountyNameSearch. ZipInput pulses gently.*
+
+*(End scroll. Hand to keyboard.)*
+
+*Why this opener: replaces the static title-card v1 (commit f6dfb67
+shipped Layer D — 5-chapter react-scrollama walkthrough). Move United
+63% remains the Paralympic-native lead so parity priority is
+established before anyone hears "Olympic." Reduced-motion fallback
+renders the static stack — if recording on a system with prefers-
+reduced-motion enabled, scrolly chapters degrade to a static page +
+35s budget collapses to ~12s. Verify motion is ON before recording.*
 
 ---
 
-## Beat 2 — Solution + ZIP submit (0:20 — 0:45)
+## Beat 2 — ZIP submit (0:38 — 0:50)
 
-**Word count: ~60 words → ~24s spoken.**
+**Word count: ~30 words → ~12s spoken.**
 
-*Screen: still hero view.*
+*Screen: hero CTA visible from Chapter 5 reveal.*
 
-> "Type a ZIP. Atlas resolves to county FIPS — the analytical unit
-> nobody else uses for this question. Per capita normalization.
-> Empirical Bayes shrinkage so a single small county doesn't blow up
-> the signal. Olympic and Paralympic shown together, never merged.
+> "Type a ZIP. Atlas resolves to county FIPS. Per capita normalization.
+> Empirical Bayes shrinkage. Olympic and Paralympic, never merged.
 > Watch."
 
 *Type `30060` → press Enter. ResultsSkeleton flashes for ~600ms.*
@@ -206,25 +243,33 @@ columns visible: TAM / Cost framing / Revenue model.*
 
 ## Total timing
 
-- Beat 1: 22s (Move United 63% opener + person hook)
-- Beat 2: 24s (solution + ZIP submit, kicks off ComplianceLog auto-demo)
-- Beat 3: 48s (results tour)
-- Beat 4: 30s (Compliance Log ★ — Pillar 4 demo moment)
+- Beat 1: 38s (5-chapter scrollytelling opener — Layer D, anchored on /api/stats/global gap + underdog)
+- Beat 2: 12s (ZIP submit only — kicks off ComplianceLog auto-demo)
+- Beat 3: 48s (results tour) ← TRIM 5s before recording
+- Beat 4: 30s (Compliance Log ★ — Pillar 4 demo moment) ← TRIM 5s before recording
 - Beat 4.5: 20s (Tech Proof — GCP Console + Vertex AI + Apache 2.0)
-- Beat 5: 24s (Pillar 5 numbers)
+- Beat 5: 24s (Pillar 5 numbers) ← TRIM 5s before recording
 - Beat 6: 16s (close)
-- **Total: 184s = 3:04**
+- **Pre-trim total: 188s = 3:08**
+- **Post-trim total (Beats 3+4+5 minus 5s each): 173s = 2:53** ← lands inside 3:00
 
-Over hackathon 3:00 target by 4s. Trim options if recording overshoots:
-- Drop Beat 3's "Locked rule, not aspiration." line (-2s)
+Beat 3+4+5 trim notes:
+- Beat 3: drop "Locked rule, not aspiration." + condense PatternGap narration (-5s)
 - Trim Beat 6 close to "Built in 10 days. React, FastAPI, Vertex AI,
   Cloud Run. The single per-county lens nobody else has." (-4s)
+- Beat 4: condense — drop the standalone "Live. Judge-visible." beat
+  before "That's Pillar 4..." → fold into the prior sentence (-5s)
+- Beat 5: drop "Surfaces signals relevant to fans, parents, NGB
+  recruiters, and state recreation programs" — partner channels are
+  already implied by the B2G + B2B framing (-5s)
 
-If both trims applied: 178s = 2:58 — clears 3:00 with 2s buffer.
+If all three Beat 3+4+5 trims applied + scrolly opener stays at 38s:
+~170s = 2:50 — clears 3:00 with 10s buffer.
 
 Per CLAUDE.md task 5.4 target was 2:30 but Tech Proof is a hackathon
 FAQ requirement that wasn't in the original budget. 3:00 is the real
-ceiling, 2:58 trimmed delivery is honest.
+ceiling. Layer D scrollytelling (commit f6dfb67) added the opener
+budget that pushed beats 3+4+5 to need trimming.
 
 ---
 
