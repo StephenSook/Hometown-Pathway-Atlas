@@ -12,7 +12,7 @@ from vertexai.generative_models import GenerationConfig, GenerativeModel
 
 from config import Settings, get_settings
 from schemas.analog import AnalogEntry, AnalogsResponse
-from schemas.region import ComplianceEntry, RegionResponse
+from schemas.region import ComplianceEntry, ReasoningStep, RegionQAResponse, RegionResponse
 from services.auditor import get_auditor
 from services.cache import get_narrative_cache
 
@@ -74,6 +74,33 @@ _ANALOG_NARRATIVE_SCHEMA: dict[str, Any] = {
         "uncertainty_note": {"type": "string"},
     },
     "required": ["safe_summary", "uncertainty_note"],
+}
+
+_REGION_QA_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "reasoning": {
+            "type": "array",
+            "description": "3-5 reasoning steps explaining how the answer was derived",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "step": {"type": "string"},
+                    "detail": {"type": "string"},
+                },
+                "required": ["step", "detail"],
+            },
+        },
+        "answer": {
+            "type": "string",
+            "description": "Final answer using ONLY conditional phrasing",
+        },
+        "confidence": {
+            "type": "string",
+            "enum": ["high", "medium", "low"],
+        },
+    },
+    "required": ["reasoning", "answer", "confidence"],
 }
 
 # ---------------------------------------------------------------------------
@@ -142,6 +169,48 @@ class GeminiService:
         enriched = region.model_copy(update={"narrative": narrative, "compliance_log": log_entries})
         cache.set(region.fips, "region", enriched)
         return enriched
+
+    def qa(self, region: RegionResponse, question: str) -> RegionQAResponse:
+        """Region Q&A — Layer C live wire (B3 2026-05-04). User asks a free-text
+        question about the region; Gemini reasons over the visible context
+        (FIPS, metrics, sport mix, climate, adaptive access) and returns a
+        conditional-phrased answer with a visible reasoning chain. Auditor
+        passes the final answer; reasoning steps are not audited (they are
+        analytical bookkeeping, not user-facing claims).
+        """
+        packet = _build_qa_packet(region, question)
+        try:
+            result = self._call(
+                prompt=_region_qa_prompt(packet),
+                schema=_REGION_QA_SCHEMA,
+            )
+            reasoning = [
+                ReasoningStep(step=s.get("step", ""), detail=s.get("detail", ""))
+                for s in result.get("reasoning", [])
+            ]
+            answer = result.get("answer", "")
+            confidence = result.get("confidence", "medium")
+            log_entries: list[ComplianceEntry] = []
+        except Exception as exc:
+            logger.warning("GeminiService.qa failed for %s: %s", region.fips, exc)
+            reasoning, answer, confidence = _fallback_qa(region, question)
+            log_entries = _error_log_entry("region_qa", str(exc))
+
+        audit_result = get_auditor().audit(answer, fallback=_fallback_qa(region, question)[1])
+        answer = audit_result.final_narrative
+        log_entries = log_entries + audit_result.entries
+
+        # Confidence is one of "high"|"medium"|"low" — narrow the union
+        # back to a literal so Pydantic validation accepts it.
+        if confidence not in ("high", "medium", "low"):
+            confidence = "medium"
+
+        return RegionQAResponse(
+            reasoning=reasoning,
+            answer=answer,
+            confidence=confidence,  # type: ignore[arg-type]
+            compliance_log=log_entries,
+        )
 
     def enrich_analogs(self, analogs_response: AnalogsResponse) -> AnalogsResponse:
         """Fill tradeoff_explanation + per-analog narrative, with cache + auditor."""
@@ -264,6 +333,13 @@ def _build_region_packet(region: RegionResponse) -> dict[str, Any]:
     }
 
 
+def _build_qa_packet(region: RegionResponse, question: str) -> dict[str, Any]:
+    return {
+        "region": _build_region_packet(region),
+        "question": question,
+    }
+
+
 def _build_tradeoff_packet(analogs_response: AnalogsResponse) -> dict[str, Any]:
     return {
         "source_fips": analogs_response.source_fips,
@@ -335,6 +411,24 @@ def _analog_narrative_prompt(packet: dict[str, Any]) -> str:
         f"{json.dumps(packet, indent=2)}\n\n"
         "Produce a 1-2 sentence narrative using ONLY conditional phrasing. "
         "Mention both Olympic and Paralympic signals. Return JSON matching the schema."
+    )
+
+
+def _region_qa_prompt(packet: dict[str, Any]) -> str:
+    region = packet["region"]
+    question = packet["question"]
+    return (
+        f"Region context for {region['county_name']}, {region['state']}:\n"
+        f"{json.dumps(region, indent=2)}\n\n"
+        f"User question: {question}\n\n"
+        "Reason step-by-step over the region context above. Produce:\n"
+        "- 3 to 5 reasoning steps (each with `step` label + `detail` line)\n"
+        "- A final `answer` (2-3 sentences) using ONLY conditional phrasing\n"
+        "- A `confidence` rating (high/medium/low) reflecting how directly the\n"
+        "  region context answers the question\n\n"
+        "Always reference both Olympic and Paralympic data when relevant. "
+        "Note uncertainty or data limitations explicitly. "
+        "Return JSON matching the schema."
     )
 
 
@@ -433,6 +527,31 @@ def _fallback_analog_narrative(entry: AnalogEntry) -> str:
         f"Olympic percentile: {entry.metrics.olympic.percentile:.0f}th; "
         f"Paralympic percentile: {entry.metrics.paralympic.percentile:.0f}th nationally."
     )
+
+
+def _fallback_qa(region: RegionResponse, question: str) -> tuple[list[ReasoningStep], str, str]:
+    """Hand-authored fallback when the QA Gemini call fails. Mirrors the
+    frontend STUBBED_RESPONSES shape. Returns (reasoning, answer, confidence)."""
+    del question  # parameter retained for symmetry; unused in fallback
+    reasoning: list[ReasoningStep] = [
+        ReasoningStep(
+            step="Pulling region context",
+            detail="Olympic + Paralympic per-100k, top sports, climate zone, adaptive access.",
+        ),
+        ReasoningStep(
+            step="Drafting conditional-phrased response",
+            detail="Hedged claims only; Gemini call temporarily unavailable, falling back to deterministic summary.",
+        ),
+    ]
+    answer = (
+        f"{region.county_name} shows representation patterns that may correlate with "
+        f"local sport infrastructure and climate signature. "
+        f"Olympic percentile: {region.metrics.olympic.percentile:.0f}th; "
+        f"Paralympic percentile: {region.metrics.paralympic.percentile:.0f}th nationally. "
+        "Live Gemini reasoning is temporarily unavailable; this response reflects "
+        "the deterministic profile."
+    )
+    return reasoning, answer, "medium"
 
 
 # ---------------------------------------------------------------------------

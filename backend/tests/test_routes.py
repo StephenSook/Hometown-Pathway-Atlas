@@ -148,6 +148,26 @@ def client():
         mock_gemini = MagicMock()
         mock_gemini.enrich_region.side_effect = lambda r: r
         mock_gemini.enrich_analogs.side_effect = lambda r: r
+        # qa() mock — return a deterministic conditional-phrased response.
+        from schemas.region import ReasoningStep, RegionQAResponse
+        mock_gemini.qa.side_effect = lambda region, question: RegionQAResponse(
+            reasoning=[
+                ReasoningStep(
+                    step="Pulling region context",
+                    detail="Olympic + Paralympic per-100k, top sports, climate, adaptive access.",
+                ),
+                ReasoningStep(
+                    step="Drafting conditional-phrased response",
+                    detail="Hedged claims only.",
+                ),
+            ],
+            answer=(
+                f"{region.county_name} could be associated with regional pathway dynamics "
+                f"that may correlate with climate signature and indexed-source coverage."
+            ),
+            confidence="medium",
+            compliance_log=[],
+        )
 
         with patch("routes.region.get_gemini_service", return_value=mock_gemini), \
              patch("routes.analogs.get_gemini_service", return_value=mock_gemini):
@@ -470,6 +490,69 @@ class TestGlobalStatsRoute:
 
         gap = resp.json()["gap"]
         assert gap["pct_with_athletes"] == pytest.approx(20.0, abs=0.1)
+
+
+# ---------------------------------------------------------------------------
+# POST /api/region/qa (B3 — Layer C live wire)
+# ---------------------------------------------------------------------------
+
+class TestRegionQA:
+    def test_valid_payload_returns_200(self, client: TestClient) -> None:
+        with patch(
+            "services.profile_service.ProfileService.get_profile",
+            return_value=_make_region(),
+        ):
+            resp = client.post(
+                "/api/region/qa",
+                json={"fips": "13067", "question": "What might explain this region’s sport pattern?"},
+            )
+        assert resp.status_code == 200
+        body = resp.json()
+        assert "reasoning" in body
+        assert "answer" in body
+        assert body["confidence"] in ("high", "medium", "low")
+        assert isinstance(body["reasoning"], list)
+        assert len(body["reasoning"]) >= 1
+        for step in body["reasoning"]:
+            assert "step" in step
+            assert "detail" in step
+
+    def test_unknown_fips_returns_404(self, client: TestClient) -> None:
+        from services.profile_service import ProfileNotFoundError
+        with patch(
+            "services.profile_service.ProfileService.get_profile",
+            side_effect=ProfileNotFoundError("FIPS not found"),
+        ):
+            resp = client.post(
+                "/api/region/qa",
+                json={"fips": "99999", "question": "Test?"},
+            )
+        assert resp.status_code == 404
+
+    def test_invalid_fips_format_returns_422(self, client: TestClient) -> None:
+        resp = client.post(
+            "/api/region/qa",
+            json={"fips": "abc", "question": "Test?"},
+        )
+        assert resp.status_code == 422
+
+    def test_empty_question_returns_422(self, client: TestClient) -> None:
+        resp = client.post(
+            "/api/region/qa",
+            json={"fips": "13067", "question": ""},
+        )
+        assert resp.status_code == 422
+
+    def test_question_over_500_chars_returns_422(self, client: TestClient) -> None:
+        resp = client.post(
+            "/api/region/qa",
+            json={"fips": "13067", "question": "x" * 501},
+        )
+        assert resp.status_code == 422
+
+    def test_missing_question_field_returns_422(self, client: TestClient) -> None:
+        resp = client.post("/api/region/qa", json={"fips": "13067"})
+        assert resp.status_code == 422
 
 
 # ---------------------------------------------------------------------------

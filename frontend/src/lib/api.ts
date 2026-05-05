@@ -229,6 +229,28 @@ export interface CountyStats {
   paralympic_evidence: EvidenceLevel;
 }
 
+/** Region Q&A — Layer C live wire (B3 ship 2026-05-04). User asks a
+ *  free-text question about the region; Gemini reasons over the visible
+ *  context (FIPS, metrics, sport mix, climate, adaptive access) and
+ *  returns a conditional-phrased answer + visible reasoning chain.
+ *  Frontend RegionQA fell back to STUBBED_RESPONSES until this shipped. */
+export interface ReasoningStep {
+  step: string;
+  detail: string;
+}
+
+export interface RegionQAResponse {
+  reasoning: ReasoningStep[];
+  answer: string;
+  confidence: 'high' | 'medium' | 'low';
+  compliance_log: ComplianceLogEntry[];
+}
+
+export interface RegionQARequest {
+  fips: string;
+  question: string;
+}
+
 /** Global atlas stats — backend `/api/stats/global` (Vinh Layer D ship
  *  2026-05-04, revision atlas-backend-00007-6k7). Two themed findings:
  *  - `gap`: the "4 in 5" headline behind HeroStat (Layer A finding)
@@ -291,4 +313,15 @@ export const api = {
    *  aggressively (`staleTime` set on hook side). Used by HeroStat
    *  validation + Layer D editorial chapters. */
   globalStats: () => request<GlobalStats>('/api/stats/global'),
+
+  /** Region Q&A — Layer C live wire (B3 ship 2026-05-04). Replaces
+   *  STUBBED_RESPONSES in RegionQA component when the backend qa
+   *  endpoint resolves. Body: { fips, question }. Returns reasoning
+   *  chain + final conditional-phrased answer + confidence rating
+   *  + audit log. Caller falls back to stub on ApiError. */
+  regionQA: (fips: string, question: string) =>
+    request<RegionQAResponse>('/api/region/qa', {
+      method: 'POST',
+      body: JSON.stringify({ fips, question } satisfies RegionQARequest),
+    }),
 };

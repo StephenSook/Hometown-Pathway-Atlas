@@ -56,4 +56,22 @@
     outline: 2px solid #1f3a5f;
     outline-offset: 1px;
   }
+
+  /* Methodology page drop-cap — NYT-magazine first-letter on the first
+     paragraph of each Section. .prose-atlas containers wrap the body
+     prose; the rule applies only to the *first* direct-child p, which
+     is the section's lead paragraph. Pseudo-element styling so it
+     doesn't fight inline content; floated left so wrapped lines hug
+     the cap clean. Editorial-restraint signal. */
+  .prose-atlas > p:first-child::first-letter {
+    font-family: 'Instrument Serif', 'Source Serif Pro', Georgia, serif;
+    font-style: italic;
+    font-weight: 400;
+    font-size: 4.4rem;
+    line-height: 0.9;
+    color: #1f3a5f;
+    float: left;
+    padding: 0.4rem 0.65rem 0 0;
+    margin-top: 0.15rem;
+  }
 }

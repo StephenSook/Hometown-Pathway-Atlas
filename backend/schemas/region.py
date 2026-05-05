@@ -60,3 +60,24 @@ class RegionResponse(BaseModel):
     adaptive_access: AdaptiveAccessBlock
     narrative: str
     compliance_log: list[ComplianceEntry]
+
+
+# ---------------------------------------------------------------------------
+# Region Q&A — Layer C live wire (B3, 2026-05-04)
+# ---------------------------------------------------------------------------
+
+class RegionQARequest(BaseModel):
+    fips: str = Field(..., pattern=r"^\d{5}$")
+    question: str = Field(..., min_length=1, max_length=500)
+
+
+class ReasoningStep(BaseModel):
+    step: str
+    detail: str
+
+
+class RegionQAResponse(BaseModel):
+    reasoning: list[ReasoningStep]
+    answer: str
+    confidence: Literal["high", "medium", "low"]
+    compliance_log: list[ComplianceEntry] = Field(default_factory=list)

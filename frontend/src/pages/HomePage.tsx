@@ -422,18 +422,38 @@ export default function HomePage() {
 
                       <ZipInput onSubmit={handleSubmit} loading={loading} />
 
-                      <p className="mt-6 font-serif italic text-caption text-muted-text">
-                        or try{' '}
-                        <button
-                          type="button"
-                          onClick={() => handleSubmit('30060')}
-                          disabled={loading}
-                          className="font-mono uppercase tracking-wider text-eyebrow text-navy hover:text-olympic-blue focus-ring rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                          aria-label="Auto-load Cobb County, GA demo (ZIP 30060)"
-                        >
-                          Cobb County, GA →
-                        </button>
-                      </p>
+                      {/* Sample-region grid — 4 ready-to-load county
+                          profiles for judges who don't want to type a
+                          ZIP. Cobb GA = canonical demo; the other 3
+                          (Mecklenburg NC, Wake NC, Jefferson KY) sample
+                          metro-county variety across regions + climate
+                          zones. All 4 fire handleSelectCounty(fips)
+                          which routes through useRegionByFips, the same
+                          B7 drill-down pathway map-click already uses. */}
+                      <div className="mt-6">
+                        <p className="font-mono uppercase tracking-wider text-eyebrow text-muted-text mb-3">
+                          Or try a sample region
+                        </p>
+                        <div className="flex flex-wrap justify-center gap-2">
+                          {[
+                            { fips: '13067', label: 'Cobb, GA' },
+                            { fips: '37119', label: 'Mecklenburg, NC' },
+                            { fips: '37183', label: 'Wake, NC' },
+                            { fips: '21111', label: 'Jefferson, KY' },
+                          ].map((s) => (
+                            <button
+                              key={s.fips}
+                              type="button"
+                              onClick={() => handleSelectCounty(s.fips)}
+                              disabled={loading}
+                              className="inline-flex items-center gap-2 rounded-full border border-soft-border bg-card-white px-4 py-2 font-mono uppercase tracking-wider text-eyebrow text-navy hover:border-navy hover:bg-warm-neutral focus-ring transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              aria-label={`Load ${s.label} county profile`}
+                            >
+                              {s.label} →
+                            </button>
+                          ))}
+                        </div>
+                      </div>
 
                       <div className="mt-8 max-w-md mx-auto">
                         <CountyNameSearch
