@@ -227,14 +227,21 @@ abort the take and re-warm.
 - Model: gemini-2.5-flash
 - Recent calls visible (NOT zero usage)
 
-**Cut 7c (5s):** GitHub repo
-- README visible — scroll to "API contract" section showing the
-  4 live endpoints + Pydantic schemas link
-- Apache 2.0 LICENSE in About sidebar
-- Architecture diagram OR `backend/services/profile_service.py`
-  showing Pydantic-typed business logic (gemini_service.py once
-  Vinh task 2.7 ships, otherwise profile_service is the strongest
-  current proof of structured output)
+**Cut 7c (5s):** GitHub repo — split-screen Pydantic + System Prompt
+- LEFT half: `backend/schemas/region.py` showing `RegionResponse`
+  Pydantic class with `narrative_source: Literal["gemini", "fallback"]`
+  + `compliance_log: list[ComplianceEntry]` typed fields
+- RIGHT half: `backend/services/gemini_service.py:33` showing the
+  `_REGION_NARRATIVE_SCHEMA` dict — the actual JSON schema constraining
+  Vertex AI's structured output (parity_check object with olympic_mentioned
+  + paralympic_mentioned + deterministic_language booleans)
+- Frame the cut so Pydantic class + Gemini schema are visible side-by-
+  side in the same screenshot — the contract is the inference-time
+  constraint, not just app-level type-hinting
+- Apache 2.0 LICENSE visible in repo About sidebar
+- The split-screen choice lands harder for a DevRel judge than a
+  single-file scroll: it shows that the Pydantic types AND the Vertex
+  AI response_schema are the SAME contract, not parallel duck-typing
 
 **Cut 7d (5s):** Quick fade back to live app, scrolled to where
 Pillar5Strip is visible

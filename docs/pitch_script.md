@@ -460,6 +460,33 @@ tab.
 > day). Layer C — multimodal Gemini Live region Q&A. Temporal layer
 > across 2016-2024 Games."
 
+### "Who actually uses this?"
+
+Adult-proxy personas (NIL-safe — Sookra Council Chairman ruling
+2026-05-03 cautioned that naming youth athletes flirts with NIL-spirit
+risk; specificity moves to administrators / parents / recruiters).
+
+> "Three users at three layers. Marcus, a 51-year-old high-school
+> athletic director in Cobb County who's trying to benchmark his
+> district's adaptive sports funding against analytically similar
+> peer counties. Elena, a 42-year-old parent searching for a local
+> Paralympic success story to inspire her daughter, finding only
+> state-wide aggregates. Sarah, a 38-year-old NGB recruiter trying
+> to identify under-indexed wrestling talent in the Lowndes County
+> area but blocked by tools that can't filter on per-capita county-
+> level representation. Atlas serves all three with the same per-
+> county lens."
+
+### "How do you avoid touching NIL?"
+
+> "Three places we drop names: at ingest, after geocode aggregation
+> only [fips, sport, year, olympic_or_paralympic] survives. In the
+> Gemini system instruction, hard rule #3 explicitly bans athlete
+> names. In the HybridAuditor, regex layer pattern-matches on common
+> name patterns plus titles, and the Gemini semantic layer flags any
+> first-name + lastname construction. Triple-layered. The CSV inputs
+> were also scrubbed from git history with filter-repo on May 4."
+
 ---
 
 ## Practice protocol
