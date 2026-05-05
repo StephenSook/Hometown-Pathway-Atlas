@@ -228,9 +228,12 @@ issues that would have shipped to judges otherwise.
 
 ## What's next
 
-- **Layer A — Shocking Stat Hunt.** Renderer scaffolded with a
-  placeholder; the HeroStat constant swaps in real-time when Vinh
-  surfaces the genuinely-non-obvious county-FIPS pattern.
+- **Layer A — Shocking Stat Hunt (shipped).** "4 in 5 U.S.
+  counties show no Team USA athlete representation in our
+  2016–2024 indexed sources" lands on the HeroStat as live data
+  via /api/stats/global. Live numerator + denominator visible on
+  the methodology page alongside the 68% small-county Paralympic
+  underdog finding.
 - **Layer B — Editorial polish (shipped).** SourceTooltip primitive
   surfaces source citations on every metric (NYT/Pudding pattern).
   Atlas-branded favicon + OG image + per-route meta. Per-FIPS
