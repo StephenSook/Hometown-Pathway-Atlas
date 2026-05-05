@@ -22,7 +22,7 @@ presenter, not spoken aloud.
 
 ---
 
-## Beat 1 — Scrollytelling opener (0:00 — 0:38)
+## Beat 1 — Scrollytelling opener (0:00 — 0:38) · **STEPHEN**
 
 **Word count: ~95 words → ~38s spoken at 2.5 wps.**
 
@@ -32,58 +32,70 @@ scrolling down at a deliberate pace (about 1 chapter every ~7 seconds)
 reveal. Five chapters anchored on the live `/api/stats/global` payload
 (gap + underdog).*
 
-**Chapter 1 — INTRO (0:00 — 0:06).**
+**Chapter 1 — INTRO · "An atlas of silence" (0:00 — 0:08).**
 
-*Sticky map of U.S. counties fades in. Atlas parity-glyph favicon
-mirrors the on-screen logo.*
+*Sticky map of U.S. counties fades in. Eyebrow "01 — An atlas of
+silence." Heading "There are 3,222 counties in the United States."
+DecorationBigNumber on the side renders 3,222.*
 
-> "63 percent of 2024 U.S. Paralympic athletes came through one
-> national network of community-based adaptive sports chapters."
+> "There are 3,222 counties in the United States. Most public Olympic
+> atlases stop at the state level. At the county level, the surface
+> is silent."
 
-**Chapter 2 — GAP (0:06 — 0:16).**
+**Chapter 2 — GAP · "The 4-in-5 gap" (0:08 — 0:18).**
 
-*Scroll triggers. 2,667 counties wash to muted gray on the map.
-Headline "4 in 5" anchors over the choropleth.*
+*Scroll triggers. Map fills with the gap mode — 2,667 counties dim,
+555 light up. Eyebrow "02 — The 4-in-5 gap." Headline "4 in 5
+counties are silent." DecorationStackedBar renders the lit-vs-silent
+ratio.*
 
-> "Four in five U.S. counties show no Team USA athlete representation
-> in our 2016 to 2024 indexed sources. Two thousand six hundred sixty
-> seven counties — invisible to every existing pipeline."
+> "Of those 3,222 counties, only 555 — 17 percent — show any Team USA
+> athlete representation in our 2016 to 2024 indexed sources. The
+> other 2,667 counties form the negative space lit on the map."
 
-**Chapter 3 — UNDERDOG (0:16 — 0:26).**
+**Chapter 3 — UNDERDOG · "The silence isn't where you'd expect" (0:18 — 0:28).**
 
-*Scroll triggers. 2,000 small counties light up in olympic-blue.
-Headline "68%" anchors.*
+*Scroll triggers. Map shifts to underdog mode — 2,000 small counties
+glow paralympic-clay. Eyebrow "03 — The silence isn't where you'd
+expect." Headline "68% of small counties beat the metro."*
 
 > "But 68 percent of counties under 250,000 people show Paralympic
-> rates above the major-metro median. The signal is there. Nobody is
-> looking at this granularity."
+> athlete representation rates above the major-metro median. The
+> pipeline lives in the small counties — not where you'd expect."
 
-**Chapter 4 — PATHWAY (0:26 — 0:34).**
+**Chapter 4 — PATHWAY · "Pathway, not pedigree" (0:28 — 0:34).**
 
 *Scroll triggers. Map zooms to Cobb County navy pin; three peer-county
-pins fade in olympic-blue around it.*
+pins (Alexandria, Charleston, Greater Bridgeport) fade in olympic-
+blue around it. DecorationAnalogNetwork renders the similarity edges.*
 
-> "Atlas surfaces it — county FIPS aggregation, per-capita parity,
-> Olympic and Paralympic side by side."
+> "Atlas reads each county's pathway. Olympic and Paralympic ranked
+> separately. Climate and sport mix held constant. Three analytically
+> similar peer counties for every input."
 
-**Chapter 5 — CTA (0:34 — 0:38).**
+**Chapter 5 — CTA · "Find your county" (0:34 — 0:38).**
 
-*Scroll triggers. Hero CTA reveals — HeroStat + ZipInput + rotating
-globe + CountyNameSearch. ZipInput pulses gently.*
+*Scroll triggers. Hero CTA reveals — eyebrow "05 — Find your county,"
+heading "Your county Team USA story." HeroStat + ZipInput + rotating
+globe + CountyNameSearch slot in. ZipInput pulses.*
 
 *(End scroll. Hand to keyboard.)*
 
 *Why this opener: replaces the static title-card v1 (commit f6dfb67
-shipped Layer D — 5-chapter react-scrollama walkthrough). Move United
-63% remains the Paralympic-native lead so parity priority is
-established before anyone hears "Olympic." Reduced-motion fallback
-renders the static stack — if recording on a system with prefers-
-reduced-motion enabled, scrolly chapters degrade to a static page +
-35s budget collapses to ~12s. Verify motion is ON before recording.*
+shipped Layer D — 5-chapter react-scrollama walkthrough anchored on
+the live `/api/stats/global` payload). Voiceover lands each chapter's
+on-screen content directly — no disconnect between what the judge
+hears and what the judge sees. The 4-in-5 gap (Chapter 2) and the
+68% small-county Paralympic finding (Chapter 3) are both atlas-
+discovered stats unique to this build — strongest differentiators
+in the pitch. Reduced-motion fallback renders the static stack —
+if recording on a system with prefers-reduced-motion enabled,
+scrolly chapters degrade to a static page and the 38s budget
+collapses to ~12s. Verify motion is ON before recording.*
 
 ---
 
-## Beat 2 — ZIP submit (0:38 — 0:50)
+## Beat 2 — ZIP submit (0:38 — 0:50) · **STEPHEN**
 
 **Word count: ~30 words → ~12s spoken.**
 
@@ -103,7 +115,7 @@ demo cycle is complete and ComplianceLog has settled at the visual
 
 ---
 
-## Beat 3 — Results tour (0:45 — 1:35)
+## Beat 3 — Results tour (0:50 — 1:38) · **STEPHEN leads · VINH cameo on the empirical Bayes line**
 
 **Word count: ~120 words → ~48s spoken.**
 
@@ -142,7 +154,7 @@ of US counties for Olympic hometowns). Move United chapters within
 
 ---
 
-## Beat 4 — Compliance Log ★ (Pillar 4 demo moment) (1:35 — 2:05)
+## Beat 4 — Compliance Log ★ (Pillar 4 demo moment) (1:38 — 2:08) · **VINH**
 
 **B5b note (2026-05-04):** Vinh's HybridAuditor is now LIVE on the
 deployed backend (rev 00005-2rk). On a clean Gemini draft the audit
@@ -185,7 +197,7 @@ with rewrite text visible.*
 
 ---
 
-## Beat 4.5 — Tech proof (1:55 — 2:15) ★ hackathon FAQ requirement
+## Beat 4.5 — Tech proof (2:08 — 2:28) ★ hackathon FAQ requirement · **VINH**
 
 **Word count: ~50 words → ~20s spoken.**
 
@@ -211,7 +223,7 @@ Pillar5Strip.*
 
 ---
 
-## Beat 5 — Pillar 5 numbers (2:15 — 2:40)
+## Beat 5 — Pillar 5 numbers (2:28 — 2:52) · **STEPHEN**
 
 **Word count: ~60 words → ~24s spoken.**
 
@@ -228,7 +240,7 @@ columns visible: TAM / Cost framing / Revenue model.*
 
 ---
 
-## Beat 6 — Close (2:40 — 2:55)
+## Beat 6 — Close (2:52 — 3:08, post-trim 2:50) · **STEPHEN + VINH (joint sign-off)**
 
 **Word count: ~40 words → ~16s spoken.**
 
@@ -238,6 +250,77 @@ columns visible: TAM / Cost framing / Revenue model.*
 > The single per-county lens nobody else has. Thank you."
 
 *(Hand off to judges.)*
+
+---
+
+## Presenter splits
+
+Per Sookra Methodology Section 2 (Team Composition): one person can
+hold two roles. Stephen owns Product Manager + Presenter; Vinh owns
+Builder (data + tech). The pitch reflects that division — Stephen
+leads the narrative arc, Vinh anchors the technical credibility moments.
+
+| Beat | Lead | Why |
+|---|---|---|
+| 1 — Scrollytelling opener | **Stephen** | Story / narrative arc. The 5-chapter visual is the editorial hook; Stephen's job is to land each chapter title with timing on the scroll triggers. |
+| 2 — ZIP submit | **Stephen** | Product call-to-action. Sets up the demo. |
+| 3 — Results tour | **Stephen leads** · Vinh cameo | Stephen narrates the visual tour. Vinh interjects on the empirical Bayes shrinkage line — it lands harder from the data engineer who actually shipped the shrinkage prior. |
+| 4 — Compliance Log ★ | **Vinh** | Pillar 4 demo moment. The HybridAuditor (Vinh's task 2.9) is his system — having him narrate the catch + rewrite is the most credible delivery. |
+| 4.5 — Tech proof | **Vinh** | GCP Console + Vertex AI quota + Apache 2.0 repo. Hackathon FAQ requirement is a "show your stack" moment — owner-narration matches the "structured output schemas, hybrid auditor" claim. |
+| 5 — Pillar 5 numbers | **Stephen** | Business framing. TAM, cost-per-incident, partner channels — back to the product/market voice. |
+| 6 — Close | **Stephen + Vinh** | Joint sign-off. Both names on the build. |
+
+### What Stephen could talk about (presenter / product / story)
+
+- **Beat 1 chapter narration** — the editorial story the 5 chapters
+  walk through (atlas of silence → 4-in-5 gap → 68% small-county
+  finding → pathway not pedigree → find your county).
+- **Beat 2** — ZIP-as-input architectural decision; FIPS as analytical
+  unit nobody else uses.
+- **Beat 3 (lead)** — Cobb County tour: population, peer counties
+  (Alexandria, Charleston, Greater Bridgeport), Olympic + Paralympic
+  parity panel, three pattern gaps.
+- **Beat 5** — Pillar 5 business numbers: ~50M TAM, ~20K high schools
+  via state recreation B2G, 50 NGBs via B2B licensing.
+- **Beat 6** — close: per-capita parity, county granularity, audit-
+  grade compliance.
+- **Q&A — product/policy questions:** judge weighting, conditional-
+  phrasing rule, NIL hard rule, hometown definition, baseline window
+  decision.
+
+### What Vinh could talk about (builder / data / tech)
+
+- **Beat 3 cameo (empirical Bayes line):** "Per-capita normalization
+  with empirical Bayes shrinkage so a single small county doesn't
+  blow up the signal." This is his shrinkage prior — owner-narration.
+- **Beat 4** — HybridAuditor demo: deterministic regex layer + Gemini
+  semantic causal-tone layer. The catch+rewrite sequence is his
+  system end-to-end.
+- **Beat 4.5** — GCP Console, Vertex AI Gemini structured output
+  schemas, Cloud Run revision history, Artifact Registry, Apache 2.0
+  repo. Owner of the backend stack.
+- **Q&A — technical depth:** how GeminiService classifies Vertex
+  errors (quota / IAM / deadline / schema / generic), why
+  `narrative_source` flag exists, similarity matrix construction,
+  parquet pre-compute architecture, why /api/region cold-start hits
+  ~8s vs warm ~140ms, how cache invalidation handles fallback
+  responses, NarrativeCache TTL.
+
+### Recording day signal
+
+Before the recording starts, do a 30-second handoff dry-run:
+1. Stephen narrates Beat 1 → 2 → first half of Beat 3.
+2. Stephen pauses on the "empirical Bayes shrinkage" line; Vinh
+   delivers it.
+3. Stephen continues Beat 3 to the end, lands "Watch the audit panel."
+4. Vinh takes over for Beat 4 (full HybridAuditor narration).
+5. Vinh continues into Beat 4.5 (the 4-cut tech-proof sequence).
+6. Vinh hands back to Stephen on Beat 5.
+7. Stephen closes Beat 5 + Beat 6.
+
+Practice this handoff rhythm 1× before the live take. Voice-level
+match matters — Vinh's delivery should slot into Stephen's pace, not
+break the recording's audio cohesion.
 
 ---
 
