@@ -1,0 +1,537 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Beat 4.5 — Structured output composite</title>
+<style>
+  :root {
+    /* Atlas Editorial palette (DESIGN_SYSTEM.md §1.1) */
+    --c-navy: #1F3A5F;
+    --c-oly: #5B7DB1;
+    --c-para: #B96B5C;
+    --c-warm: #F5F1EB;
+    --c-card: #FFFFFF;
+    --c-border: #E7E2D9;
+    --c-body: #1C2433;
+    --c-muted: #6B7280;
+    --c-teal: #2E8B57;
+    --c-amber: #D97706;
+
+    /* Code-block dark palette */
+    --c-code-bg: #14213D;
+    --c-code-bg-2: #1B2A4E;
+    --c-code-text: #E7E2D9;
+    --c-code-comment: #7A8AA8;
+    --c-code-keyword: #8FAEDC;
+    --c-code-string: #D49080;
+    --c-code-number: #E5C97B;
+    --c-code-class: #F5E6C8;
+    --c-code-highlight-bg: rgba(46, 139, 87, 0.20);
+    --c-code-highlight-border: #2E8B57;
+
+    --font-sans: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+    --font-serif: 'Instrument Serif', 'Source Serif Pro', Georgia, serif;
+    --font-mono: 'JetBrains Mono', 'IBM Plex Mono', 'SF Mono', Menlo, Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    background: #2a2520;
+    font-family: var(--font-sans);
+    color: var(--c-body);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .canvas {
+    width: 1920px;
+    height: 1080px;
+    background: var(--c-warm);
+    position: relative;
+    overflow: hidden;
+    /* faint paper-texture-ish gradient */
+    background-image:
+      radial-gradient(ellipse at top left, rgba(31,58,95,0.04), transparent 60%),
+      radial-gradient(ellipse at bottom right, rgba(185,107,92,0.03), transparent 55%);
+  }
+
+  /* ======================================================
+     Header band (top-left, asymmetric)
+  ====================================================== */
+  .header {
+    position: absolute;
+    top: 64px;
+    left: 80px;
+    right: 80px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 48px;
+  }
+
+  .header-left { max-width: 1200px; }
+
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--c-muted);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .eyebrow .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--c-teal);
+  }
+  .eyebrow .sep { color: var(--c-border); }
+
+  h1.title {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    font-size: 76px;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    color: var(--c-navy);
+  }
+  h1.title em {
+    font-style: italic;
+    color: var(--c-para);
+  }
+
+  .subtitle {
+    margin-top: 20px;
+    font-size: 22px;
+    line-height: 1.5;
+    color: var(--c-body);
+    max-width: 1100px;
+  }
+  .subtitle .arrow-glyph {
+    color: var(--c-oly);
+    font-family: var(--font-mono);
+    padding: 0 6px;
+  }
+  .subtitle code {
+    font-family: var(--font-mono);
+    font-size: 18px;
+    background: var(--c-card);
+    padding: 2px 8px;
+    border: 1px solid var(--c-border);
+    color: var(--c-navy);
+  }
+
+  /* Top-right meta strip */
+  .meta {
+    text-align: right;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--c-muted);
+    line-height: 1.7;
+  }
+  .meta .label {
+    color: var(--c-navy);
+    font-weight: 600;
+    letter-spacing: 0.05em;
+  }
+
+  /* ======================================================
+     Three-card pipeline
+  ====================================================== */
+  .pipeline {
+    position: absolute;
+    top: 360px;
+    left: 80px;
+    right: 80px;
+    height: 600px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 48px;
+  }
+
+  .card {
+    background: var(--c-card);
+    border: 1px solid var(--c-border);
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 1px 2px rgba(28, 36, 51, 0.04),
+                0 12px 28px -10px rgba(28, 36, 51, 0.10);
+    position: relative;
+  }
+
+  /* Stage marker — top-left tab */
+  .stage-tab {
+    position: absolute;
+    top: -1px;
+    left: -1px;
+    background: var(--c-navy);
+    color: var(--c-warm);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.15em;
+    padding: 8px 14px 8px 12px;
+    text-transform: uppercase;
+  }
+  .card:nth-child(2) .stage-tab { background: var(--c-oly); }
+  .card:nth-child(3) .stage-tab { background: var(--c-para); }
+
+  .card-head {
+    padding: 56px 28px 22px 28px;
+    border-bottom: 1px solid var(--c-border);
+  }
+  .card-eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    color: var(--c-muted);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .card-title {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    font-size: 30px;
+    line-height: 1.15;
+    color: var(--c-navy);
+    margin-bottom: 8px;
+    letter-spacing: -0.01em;
+  }
+  .card-sub {
+    font-size: 14px;
+    line-height: 1.45;
+    color: var(--c-muted);
+  }
+  .card-sub .lang-pill {
+    display: inline-block;
+    background: var(--c-warm);
+    color: var(--c-navy);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    padding: 2px 7px;
+    border-radius: 3px;
+    margin-right: 6px;
+    border: 1px solid var(--c-border);
+  }
+
+  /* Code body */
+  .code {
+    flex: 1;
+    background: var(--c-code-bg);
+    color: var(--c-code-text);
+    font-family: var(--font-mono);
+    font-size: 14px;
+    line-height: 1.55;
+    padding: 22px 26px;
+    position: relative;
+    overflow: hidden;
+  }
+  .code .filepath {
+    position: absolute;
+    top: 12px;
+    right: 18px;
+    font-size: 11px;
+    color: var(--c-code-comment);
+    letter-spacing: 0.05em;
+  }
+  .code pre {
+    margin-top: 18px;
+    font: inherit;
+    white-space: pre;
+  }
+  .kw { color: var(--c-code-keyword); }
+  .str { color: var(--c-code-string); }
+  .num { color: var(--c-code-number); }
+  .cls { color: var(--c-code-class); }
+  .com { color: var(--c-code-comment); font-style: italic; }
+  .punct { color: #95A6C7; }
+
+  /* Highlighted line — the cross-surface contract anchor */
+  .hl {
+    background: var(--c-code-highlight-bg);
+    border-left: 3px solid var(--c-code-highlight-border);
+    padding-left: 8px;
+    margin-left: -11px;
+    display: block;
+  }
+
+  /* SVG arrows between cards */
+  .arrows {
+    position: absolute;
+    top: 360px;
+    left: 80px;
+    right: 80px;
+    height: 600px;
+    pointer-events: none;
+    z-index: 5;
+  }
+
+  /* ======================================================
+     Footer band
+  ====================================================== */
+  .footer {
+    position: absolute;
+    bottom: 56px;
+    left: 80px;
+    right: 80px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    border-top: 1px solid var(--c-border);
+    padding-top: 24px;
+  }
+  .footer-claim {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: 22px;
+    color: var(--c-navy);
+    line-height: 1.3;
+    max-width: 900px;
+  }
+  .footer-claim strong {
+    font-style: normal;
+    font-family: var(--font-sans);
+    font-weight: 600;
+    background: var(--c-teal);
+    color: var(--c-warm);
+    padding: 2px 10px;
+    margin-right: 6px;
+    letter-spacing: 0.02em;
+  }
+  .footer-meta {
+    text-align: right;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--c-muted);
+    line-height: 1.7;
+    letter-spacing: 0.04em;
+  }
+  .footer-meta .v {
+    color: var(--c-navy);
+    font-weight: 600;
+  }
+
+  /* Decorative parity glyph (top-right of canvas) */
+  .glyph {
+    position: absolute;
+    top: 64px;
+    right: 80px;
+    width: 56px; height: 56px;
+    background: var(--c-navy);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .glyph svg { display: block; }
+
+</style>
+</head>
+<body>
+<div class="canvas">
+
+  <!-- Atlas glyph (top-right) -->
+  <div class="glyph" title="Atlas parity glyph">
+    <svg width="28" height="28" viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg">
+      <rect x="6" y="5" width="5" height="18" rx="1" fill="#5B7DB1"/>
+      <rect x="17" y="5" width="5" height="18" rx="1" fill="#B96B5C"/>
+    </svg>
+  </div>
+
+  <!-- ======================================================
+       HEADER
+  ====================================================== -->
+  <div class="header">
+    <div class="header-left">
+      <div class="eyebrow">
+        <span class="dot"></span>
+        <span>BEAT 4.5</span>
+        <span class="sep">/</span>
+        <span>TECHNICAL STACK</span>
+        <span class="sep">/</span>
+        <span>STRUCTURED OUTPUT</span>
+      </div>
+      <h1 class="title">
+        Same contract.<br>
+        <em>Three surfaces.</em>
+      </h1>
+      <div class="subtitle">
+        Vertex AI <code>response_schema</code>
+        <span class="arrow-glyph">→</span>
+        FastAPI Pydantic <code>RegionResponse</code>
+        <span class="arrow-glyph">→</span>
+        React TypeScript interface.
+        Schema-bound end-to-end. No free-form JSON crosses a layer.
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================
+       PIPELINE — 3 CODE CARDS
+  ====================================================== -->
+  <div class="pipeline">
+
+    <!-- ========== CARD 1: VERTEX SCHEMA ========== -->
+    <div class="card">
+      <div class="stage-tab">01 · UPSTREAM</div>
+      <div class="card-head">
+        <div class="card-eyebrow">VERTEX AI · GEMINI 2.5 FLASH</div>
+        <div class="card-title">Structured&nbsp;output schema</div>
+        <div class="card-sub">
+          <span class="lang-pill">PY</span>
+          Constrains every Gemini call. Vertex rejects responses that
+          fail this shape — bad JSON cannot reach the backend.
+        </div>
+      </div>
+      <div class="code">
+        <span class="filepath">backend/services/gemini_service.py · L33</span>
+<pre><span class="hl"><span class="kw">_REGION_NARRATIVE_SCHEMA</span><span class="punct">:</span> <span class="cls">dict</span><span class="punct">[</span><span class="cls">str</span><span class="punct">,</span> <span class="cls">Any</span><span class="punct">]</span> <span class="punct">=</span> <span class="punct">{</span></span>
+    <span class="str">"type"</span><span class="punct">:</span> <span class="str">"object"</span><span class="punct">,</span>
+    <span class="str">"properties"</span><span class="punct">:</span> <span class="punct">{</span>
+        <span class="str">"safe_summary"</span><span class="punct">:</span> <span class="punct">{</span>
+            <span class="str">"type"</span><span class="punct">:</span> <span class="str">"string"</span><span class="punct">,</span>
+            <span class="str">"description"</span><span class="punct">:</span> <span class="str">"2-3 sentence</span>
+<span class="str">                narrative using ONLY</span>
+<span class="str">                conditional phrasing"</span><span class="punct">,</span>
+        <span class="punct">},</span>
+        <span class="str">"key_points"</span><span class="punct">:</span> <span class="punct">{</span><span class="str">"type"</span><span class="punct">:</span> <span class="str">"array"</span><span class="punct">,</span> <span class="punct">...},</span>
+        <span class="str">"uncertainty_note"</span><span class="punct">:</span> <span class="punct">{</span><span class="str">"type"</span><span class="punct">:</span> <span class="str">"string"</span><span class="punct">},</span>
+        <span class="str">"parity_check"</span><span class="punct">:</span> <span class="punct">{</span><span class="str">"type"</span><span class="punct">:</span> <span class="str">"object"</span><span class="punct">,</span> <span class="punct">...},</span>
+    <span class="punct">},</span>
+    <span class="str">"required"</span><span class="punct">:</span> <span class="punct">[</span><span class="str">"safe_summary"</span><span class="punct">,</span> <span class="str">"key_points"</span><span class="punct">,</span>
+                 <span class="str">"uncertainty_note"</span><span class="punct">,</span> <span class="str">"parity_check"</span><span class="punct">],</span>
+<span class="punct">}</span>
+
+<span class="com"># passed to Vertex as response_schema= on every call</span></pre>
+      </div>
+    </div>
+
+    <!-- ========== CARD 2: PYDANTIC ========== -->
+    <div class="card">
+      <div class="stage-tab">02 · BACKEND CONTRACT</div>
+      <div class="card-head">
+        <div class="card-eyebrow">FASTAPI · PYDANTIC v2</div>
+        <div class="card-title">API response model</div>
+        <div class="card-sub">
+          <span class="lang-pill">PY</span>
+          Validates every <code style="font-family:var(--font-mono);font-size:12px">/api/region</code> response.
+          The <code style="font-family:var(--font-mono);font-size:12px">narrative_source</code> flag distinguishes
+          a real Vertex call from the deterministic fallback.
+        </div>
+      </div>
+      <div class="code">
+        <span class="filepath">backend/schemas/region.py · L50</span>
+<pre><span class="kw">class</span> <span class="cls">RegionResponse</span><span class="punct">(</span><span class="cls">BaseModel</span><span class="punct">):</span>
+    fips<span class="punct">:</span> <span class="cls">str</span>
+    county_name<span class="punct">:</span> <span class="cls">str</span>
+    state<span class="punct">:</span> <span class="cls">str</span>
+    msa_label<span class="punct">:</span> <span class="cls">str</span>
+    population<span class="punct">:</span> <span class="cls">int</span>
+    centroid<span class="punct">:</span> <span class="cls">tuple</span><span class="punct">[</span><span class="cls">float</span><span class="punct">,</span> <span class="cls">float</span><span class="punct">]</span> <span class="punct">|</span> <span class="kw">None</span>
+    metrics<span class="punct">:</span> <span class="cls">MetricsBlock</span>
+    top_sports<span class="punct">:</span> <span class="cls">list</span><span class="punct">[</span><span class="cls">SportEntry</span><span class="punct">]</span>
+    climate<span class="punct">:</span> <span class="cls">ClimateBlock</span>
+    adaptive_access<span class="punct">:</span> <span class="cls">AdaptiveAccessBlock</span>
+    narrative<span class="punct">:</span> <span class="cls">str</span>
+<span class="hl">    narrative_source<span class="punct">:</span> <span class="cls">Literal</span><span class="punct">[</span><span class="str">"gemini"</span><span class="punct">,</span> <span class="str">"fallback"</span><span class="punct">]</span> <span class="punct">=</span> <span class="str">"gemini"</span></span>
+    compliance_log<span class="punct">:</span> <span class="cls">list</span><span class="punct">[</span><span class="cls">ComplianceEntry</span><span class="punct">]</span>
+
+
+<span class="com"># silent-failure-hunter F2: flag flips to "fallback"</span>
+<span class="com"># when Vertex errors → frontend hides "Live Gemini"</span>
+<span class="com"># eyebrow rather than misattributing canned prose.</span></pre>
+      </div>
+    </div>
+
+    <!-- ========== CARD 3: TYPESCRIPT ========== -->
+    <div class="card">
+      <div class="stage-tab">03 · FRONTEND CONTRACT</div>
+      <div class="card-head">
+        <div class="card-eyebrow">REACT · TYPESCRIPT STRICT</div>
+        <div class="card-title">Client-side interface</div>
+        <div class="card-sub">
+          <span class="lang-pill">TS</span>
+          Mirrors the Pydantic shape. Same
+          <code style="font-family:var(--font-mono);font-size:12px">'gemini' | 'fallback'</code>
+          literal — type-safe across the wire, no runtime cast.
+        </div>
+      </div>
+      <div class="code">
+        <span class="filepath">frontend/src/lib/api.ts · L94</span>
+<pre><span class="kw">export interface</span> <span class="cls">RegionResponse</span> <span class="punct">{</span>
+  fips<span class="punct">:</span> <span class="cls">string</span><span class="punct">;</span>
+  county_name<span class="punct">:</span> <span class="cls">string</span><span class="punct">;</span>
+  state<span class="punct">:</span> <span class="cls">string</span><span class="punct">;</span>
+  msa_label<span class="punct">:</span> <span class="cls">string</span><span class="punct">;</span>
+  population<span class="punct">:</span> <span class="cls">number</span><span class="punct">;</span>
+  centroid<span class="punct">:</span> <span class="cls">Centroid</span><span class="punct">;</span>
+  metrics<span class="punct">:</span> <span class="punct">{</span>
+    olympic<span class="punct">:</span> <span class="cls">MetricsEntry</span><span class="punct">;</span>
+    paralympic<span class="punct">:</span> <span class="cls">MetricsEntry</span><span class="punct">;</span>
+  <span class="punct">};</span>
+  top_sports<span class="punct">:</span> <span class="cls">SportEntry</span><span class="punct">[];</span>
+  climate<span class="punct">:</span> <span class="cls">ClimateBlock</span><span class="punct">;</span>
+  adaptive_access<span class="punct">:</span> <span class="cls">AdaptiveAccessBlock</span><span class="punct">;</span>
+  narrative<span class="punct">:</span> <span class="cls">string</span><span class="punct">;</span>
+<span class="hl">  narrative_source<span class="punct">?:</span> <span class="str">'gemini'</span> <span class="punct">|</span> <span class="str">'fallback'</span><span class="punct">;</span></span>
+  compliance_log<span class="punct">:</span> <span class="cls">ComplianceLogEntry</span><span class="punct">[];</span>
+<span class="punct">}</span>
+
+<span class="com">// "gemini" = real Vertex call. "fallback" =</span>
+<span class="com">// deterministic _fallback_region_narrative.</span>
+<span class="com">// Mirrors Pydantic Literal — no contract drift.</span></pre>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ======================================================
+       SVG ARROWS BETWEEN CARDS
+  ====================================================== -->
+  <svg class="arrows" viewBox="0 0 1760 600" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5"
+        markerWidth="10" markerHeight="10" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#1F3A5F"/>
+      </marker>
+    </defs>
+    <!-- arrow 1 → 2 -->
+    <g>
+      <line x1="571" y1="300" x2="603" y2="300"
+            stroke="#1F3A5F" stroke-width="3" marker-end="url(#arrow)"/>
+      <text x="587" y="282" text-anchor="middle"
+            font-family="JetBrains Mono, monospace" font-size="11"
+            letter-spacing="0.12em" fill="#6B7280">VALIDATES</text>
+    </g>
+    <!-- arrow 2 → 3 -->
+    <g>
+      <line x1="1159" y1="300" x2="1191" y2="300"
+            stroke="#1F3A5F" stroke-width="3" marker-end="url(#arrow)"/>
+      <text x="1175" y="282" text-anchor="middle"
+            font-family="JetBrains Mono, monospace" font-size="11"
+            letter-spacing="0.12em" fill="#6B7280">SERIALIZES</text>
+    </g>
+  </svg>
+
+  <!-- ======================================================
+       FOOTER
+  ====================================================== -->
+  <div class="footer">
+    <div class="footer-claim">
+      <strong>Apache 2.0</strong>
+      Reproducible end-to-end — same shape enforced upstream by Vertex,
+      mid-stream by Pydantic, downstream by TypeScript.
+    </div>
+    <div class="footer-meta">
+      <div><span class="v">github.com/StephenSook/Hometown-Pathway-Atlas</span></div>
+      <div>commit&nbsp;<span class="v">838b377</span> · backend&nbsp;<span class="v">atlas-backend-00007-6k7</span></div>
+      <div>frontend&nbsp;<span class="v">atlas-frontend-00018-wf8</span> · region&nbsp;us-central1</div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
